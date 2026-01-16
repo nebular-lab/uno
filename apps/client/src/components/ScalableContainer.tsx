@@ -45,7 +45,7 @@ export const ScalableContainer: React.FC<ScalableContainerProps> = ({
     >
       {isInitialized && (
         <div
-          className="relative bg-gray-900"
+          className="relative bg-card"
           style={{
             width: BASE_WIDTH * scale,
             height: BASE_HEIGHT * scale,
