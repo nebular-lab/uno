@@ -72,6 +72,11 @@ agent-browser screenshot path.png # Save to file
 agent-browser screenshot --full   # Full page
 ```
 
+**Important:** Always save screenshots to the `screenshots/` folder in the project root.
+```bash
+agent-browser screenshot screenshots/example.png
+```
+
 ### Wait
 ```bash
 agent-browser wait @e1                     # Wait for element
