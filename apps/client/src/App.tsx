@@ -1,12 +1,20 @@
-import { useAtomValue } from "jotai";
-import { screenAtom } from "./atoms/appAtoms";
+import { useAtomValue, useSetAtom } from "jotai";
+import { navigateToTitleAtom, screenAtom } from "./atoms/appAtoms";
 import { ScalableContainer } from "./components/ScalableContainer";
+import { useBeforeUnload } from "./hooks/useBeforeUnload";
 import { CreateRoomScreen } from "./screens/CreateRoomScreen";
 import { LobbyScreen } from "./screens/LobbyScreen";
 import { TitleScreen } from "./screens/TitleScreen";
 
 function App() {
   const screen = useAtomValue(screenAtom);
+  const navigateToTitle = useSetAtom(navigateToTitleAtom);
+
+  // ブラウザ離脱防止（タイトル画面以外でリロード・タブ閉じ・戻るボタン時に確認表示）
+  useBeforeUnload({
+    currentScreen: screen.screen,
+    onNavigateAway: navigateToTitle,
+  });
 
   const renderScreen = () => {
     switch (screen.screen) {
