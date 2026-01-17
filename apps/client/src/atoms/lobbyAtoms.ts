@@ -19,6 +19,9 @@ export const lobbyLoadingAtom = atom(false);
 // エラー状態
 export const lobbyErrorAtom = atom<string | null>(null);
 
+// 異常切断状態（ダイアログ表示用）
+export const disconnectedAtom = atom(false);
+
 // ロビーに接続
 export const connectToLobbyAtom = atom(null, async (_get, set) => {
   set(lobbyLoadingAtom, true);
@@ -49,6 +52,18 @@ export const connectToLobbyAtom = atom(null, async (_get, set) => {
     // ルーム削除
     lobby.onMessage("-", (roomId: string) => {
       set(roomsAtom, (prev) => prev.filter((r) => r.roomId !== roomId));
+    });
+
+    // 切断ハンドリング
+    lobby.onLeave((code) => {
+      if (code === 1000 || code === 4000) {
+        // TODO: 正常切断時の処理
+      } else {
+        // 異常切断（サーバーダウン、ネットワーク断絶など）
+        set(disconnectedAtom, true);
+      }
+      set(lobbyRoomAtom, null);
+      set(roomsAtom, []);
     });
   } catch (error) {
     const message =
@@ -87,6 +102,17 @@ export const createRoomAtom = atom(null, async (get, set) => {
 
     set(gameRoomAtom, room);
 
+    // 切断ハンドリング
+    room.onLeave((code) => {
+      if (code === 1000) {
+        // TODO: 正常切断時の処理
+      } else {
+        // 異常切断（サーバーダウン、ネットワーク断絶など）
+        set(disconnectedAtom, true);
+      }
+      set(gameRoomAtom, null);
+    });
+
     // ロビーから切断
     const lobby = get(lobbyRoomAtom);
     if (lobby) {
@@ -122,6 +148,17 @@ export const joinRoomAtom = atom(null, async (get, set, roomId: string) => {
     });
 
     set(gameRoomAtom, room);
+
+    // 切断ハンドリング
+    room.onLeave((code) => {
+      if (code === 1000) {
+        // TODO: 正常切断時の処理
+      } else {
+        // 異常切断（サーバーダウン、ネットワーク断絶など）
+        set(disconnectedAtom, true);
+      }
+      set(gameRoomAtom, null);
+    });
 
     // ロビーから切断
     const lobby = get(lobbyRoomAtom);

@@ -1,6 +1,16 @@
-import { useAtomValue, useSetAtom } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { navigateToTitleAtom, screenAtom } from "./atoms/appAtoms";
+import { disconnectedAtom } from "./atoms/lobbyAtoms";
 import { ScalableContainer } from "./components/ScalableContainer";
+import { Button } from "./components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "./components/ui/dialog";
 import { useBeforeUnload } from "./hooks/useBeforeUnload";
 import { CreateRoomScreen } from "./screens/CreateRoomScreen";
 import { LobbyScreen } from "./screens/LobbyScreen";
@@ -9,12 +19,19 @@ import { TitleScreen } from "./screens/TitleScreen";
 function App() {
   const screen = useAtomValue(screenAtom);
   const navigateToTitle = useSetAtom(navigateToTitleAtom);
+  const [disconnected, setDisconnected] = useAtom(disconnectedAtom);
 
   // ブラウザ離脱防止（タイトル画面以外でリロード・タブ閉じ・戻るボタン時に確認表示）
   useBeforeUnload({
     currentScreen: screen.screen,
     onNavigateAway: navigateToTitle,
   });
+
+  // 異常切断ダイアログのOKボタン押下時
+  const handleDisconnectOk = () => {
+    setDisconnected(false);
+    navigateToTitle();
+  };
 
   const renderScreen = () => {
     switch (screen.screen) {
@@ -33,7 +50,26 @@ function App() {
     }
   };
 
-  return <ScalableContainer>{renderScreen()}</ScalableContainer>;
+  return (
+    <>
+      <ScalableContainer>{renderScreen()}</ScalableContainer>
+
+      {/* 異常切断ダイアログ */}
+      <Dialog open={disconnected}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>接続が切断されました</DialogTitle>
+            <DialogDescription>
+              サーバーとの接続が切断されました。タイトル画面に戻ります。
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={handleDisconnectOk}>OK</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
 }
 
 export default App;
