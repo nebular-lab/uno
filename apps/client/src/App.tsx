@@ -1,6 +1,8 @@
 import { useAtomValue } from "jotai";
 import { screenAtom } from "./atoms/appAtoms";
 import { ScalableContainer } from "./components/ScalableContainer";
+import { CreateRoomScreen } from "./screens/CreateRoomScreen";
+import { LobbyScreen } from "./screens/LobbyScreen";
 import { TitleScreen } from "./screens/TitleScreen";
 
 function App() {
@@ -11,7 +13,9 @@ function App() {
       case "title":
         return <TitleScreen />;
       case "lobby":
-        return <div>Lobby Screen (TODO)</div>;
+        return <LobbyScreen />;
+      case "createRoom":
+        return <CreateRoomScreen />;
       case "room":
         return <div>Room Screen (TODO)</div>;
       case "game":

@@ -1,70 +1,29 @@
-# Dobon UNO Server
+# Welcome to Colyseus!
 
-## セットアップ
+This project has been created using [⚔️ `create-colyseus-app`](https://github.com/colyseus/create-colyseus-app/) - an npm init template for kick starting a Colyseus project in TypeScript.
 
-```bash
-npm install
+[Documentation](http://docs.colyseus.io/)
+
+## :crossed_swords: Usage
+
+```
+npm start
 ```
 
-## テスト実行
+## Structure
 
-```bash
-# 全テストを実行
-npm test
+- `index.ts`: main entry point, register an empty room handler and attach [`@colyseus/monitor`](https://github.com/colyseus/colyseus-monitor)
+- `src/rooms/MyRoom.ts`: an empty room handler for you to implement your logic
+- `src/rooms/schema/MyRoomState.ts`: an empty schema used on your room's state.
+- `loadtest/example.ts`: scriptable client for the loadtest tool (see `npm run loadtest`)
+- `package.json`:
+    - `scripts`:
+        - `npm start`: runs `ts-node-dev index.ts`
+        - `npm test`: runs mocha test suite
+        - `npm run loadtest`: runs the [`@colyseus/loadtest`](https://github.com/colyseus/colyseus-loadtest/) tool for testing the connection, using the `loadtest/example.ts` script.
+- `tsconfig.json`: TypeScript configuration file
 
-# watchモードで実行
-npm run test:watch
 
-# 特定のテストファイルのみ実行
-npm test PlayCardCommand.test.ts
-```
+## License
 
-## テストの構造
-
-### @colyseus/testingを使用
-
-Colyseusの公式テストライブラリを使用してRoomをセットアップし、実際のゲームフローをテストします。
-
-```typescript
-// Colyseusテストサーバーを起動
-const colyseus = await boot({
-  initializeGameServer: (gameServer) => {
-    gameServer.define("game", GameRoom);
-  },
-});
-
-// Roomを作成
-const room = await colyseus.createRoom<GameRoom>("game", {});
-
-// クライアントを接続
-const client1 = await colyseus.connectTo(room);
-const client2 = await colyseus.connectTo(room);
-
-// ゲーム状態をセットアップ
-room.state.players.set(client1.sessionId, player1);
-
-// クライアントからメッセージを送信
-await client1.send("playCard", "r5");
-
-// 状態の変更を検証
-expect(player1.handCount).toBe(0);
-expect(room.state.currentTurnPlayerId).toBe(client2.sessionId);
-```
-
-## テストの例
-
-### PlayCardCommand.test.ts
-
-- ✅ 通常のカードを出す
-- ✅ スキップカードを出す
-- ✅ リバースカードを出す
-- ✅ ドロー2カードを出す
-- ✅ ワイルドカードを出す
-- ✅ 検証: 自分のターンでない
-
-各テストケースで以下を検証：
-- 手札の枚数変化
-- 場のカード変化
-- 手番の移動
-- ゲーム状態フラグ（drawStack, turnDirection, waitingForColorChoice）
-- タイマーの開始
+MIT

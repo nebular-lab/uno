@@ -1,10 +1,11 @@
 // 画面の種類
-export type ScreenType = "title" | "lobby" | "room" | "game";
+export type ScreenType = "title" | "lobby" | "createRoom" | "room" | "game";
 
 // 画面状態（Discriminated Union）
 export type ScreenState =
   | { screen: "title" }
   | { screen: "lobby" }
+  | { screen: "createRoom" }
   | { screen: "room"; roomId: string }
   | { screen: "game"; roomId: string };
 
@@ -23,6 +24,7 @@ export interface AppState {
 export type AppAction =
   | { type: "SET_PLAYER_NAME"; name: string }
   | { type: "NAVIGATE_TO_LOBBY" }
+  | { type: "NAVIGATE_TO_CREATE_ROOM" }
   | { type: "NAVIGATE_TO_ROOM"; roomId: string }
   | { type: "NAVIGATE_TO_GAME"; roomId: string }
   | { type: "NAVIGATE_TO_TITLE" };

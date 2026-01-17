@@ -16,6 +16,10 @@ export const navigateToLobbyAtom = atom(null, (_get, set) => {
   set(screenAtom, { screen: "lobby" });
 });
 
+export const navigateToCreateRoomAtom = atom(null, (_get, set) => {
+  set(screenAtom, { screen: "createRoom" });
+});
+
 export const navigateToRoomAtom = atom(null, (_get, set, roomId: string) => {
   set(screenAtom, { screen: "room", roomId });
 });

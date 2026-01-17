@@ -1,5 +1,5 @@
 import { Dispatcher } from "@colyseus/command";
-import { GameState } from "@dobon-uno/shared/dist/schema/GameState";
+import { type CreateRoomOptions, GameState, Player } from "@dobon-uno/shared";
 import { type Client, Room } from "colyseus";
 import { ChooseColorCommand } from "../commands/ChooseColorCommand";
 import { DobonCommand } from "../commands/DobonCommand";
@@ -12,8 +12,9 @@ import { PlayCardCommand } from "../commands/PlayCardCommand";
 
 export class GameRoom extends Room<GameState> {
   dispatcher = new Dispatcher(this);
+  maxClients = 6;
 
-  onCreate() {
+  onCreate(_options: CreateRoomOptions) {
     this.state = new GameState();
     this.state.roomId = this.roomId;
 
@@ -77,9 +78,42 @@ export class GameRoom extends Room<GameState> {
     });
   }
 
-  onJoin(client: Client) {
+  onJoin(client: Client, options: CreateRoomOptions) {
     console.log(`${client.sessionId} joined`);
-    // TODO: プレイヤー作成処理
+
+    // プレイヤーを作成
+    const player = new Player();
+    player.sessionId = client.sessionId;
+    player.name = options.playerName;
+    player.seatId = this.state.players.size + 1;
+    player.isConnected = true;
+
+    // 最初のプレイヤーをオーナーに設定
+    if (this.state.players.size === 0) {
+      player.isOwner = true;
+    }
+
+    // プレイヤーを追加
+    this.state.players.set(client.sessionId, player);
+
+    // メタデータを更新
+    this.updateMetadata();
+  }
+
+  private updateMetadata() {
+    // オーナーを取得
+    let ownerName: string | undefined;
+    for (const player of this.state.players.values()) {
+      if (player.isOwner) {
+        ownerName = player.name;
+        break;
+      }
+    }
+
+    // メタデータを設定
+    this.setMetadata({
+      ownerName,
+    });
   }
 
   onLeave(client: Client) {
