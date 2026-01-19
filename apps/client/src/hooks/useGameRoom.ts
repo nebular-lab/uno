@@ -43,15 +43,17 @@ export const useGameRoom = () => {
     null,
     null,
   ]);
-  const [mySessionId, setMySessionId] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
+
+  // mySessionIdはgameRoomStateから計算可能
+  const mySessionId =
+    gameRoomState.status === "connected" ? gameRoomState.room.sessionId : null;
 
   // ルーム状態の購読
   useEffect(() => {
     if (gameRoomState.status !== "connected") return;
 
     const room = gameRoomState.room;
-    setMySessionId(room.sessionId);
 
     // 初期状態を設定
     const updatePlayers = (state: GameState) => {
