@@ -100,11 +100,19 @@ export const useGameRoom = () => {
       (p) => p !== null && myPlayer && p.name === myPlayer.name,
     ) ?? -1;
 
+  // 自分がホストかどうか
+  const isHost = mySeatIndex >= 0 && (players[mySeatIndex]?.isHost ?? false);
+
+  // 準備完了しているプレイヤー数
+  const readyCount = players.filter((p) => p?.isReady).length;
+
   return {
     players,
     mySessionId,
     mySeatIndex,
     isReady,
+    isHost,
+    readyCount,
     toggleReady,
     leaveRoom,
     isConnected: gameRoomState.status === "connected",

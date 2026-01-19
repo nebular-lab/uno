@@ -61,8 +61,18 @@ const ReadyToggle = ({
 };
 
 export const WaitingRoomScreen = ({ roomId }: Props) => {
-  const { players, mySeatIndex, isReady, toggleReady, leaveRoom } =
-    useGameRoom();
+  const {
+    players,
+    mySeatIndex,
+    isReady,
+    isHost,
+    readyCount,
+    toggleReady,
+    leaveRoom,
+  } = useGameRoom();
+
+  // ゲーム開始可能かどうか（準備完了が3人以上）
+  const canStartGame = readyCount >= 3;
 
   // 自分が下中央（position 3）に来るように回転
   // displayIndex: 画面上の表示位置（0-5）
@@ -106,13 +116,42 @@ export const WaitingRoomScreen = ({ roomId }: Props) => {
 
       {/* 退席ボタン（左下） */}
       <div className="absolute bottom-4 left-4">
-        <Button onClick={leaveRoom} size="lg" variant="secondary">
+        <Button className="h-20 px-10" onClick={leaveRoom} variant="secondary">
           退席
         </Button>
       </div>
 
-      {/* 準備状態トグル（右下） */}
-      <div className="absolute bottom-4 right-4">
+      {/* 準備状態トグル・ゲーム開始ボタン（右下） */}
+      <div className="absolute bottom-4 right-4 flex items-center gap-4">
+        {isHost ? (
+          <>
+            <span
+              className={cn(
+                "text-sm",
+                canStartGame ? "text-green-400" : "text-zinc-400",
+              )}
+            >
+              {canStartGame
+                ? "ゲームを開始できます！"
+                : `あと${3 - readyCount}人の準備が必要`}
+            </span>
+            <Button
+              className="h-20 px-8"
+              disabled={!canStartGame}
+              onClick={() => {
+                // TODO: ゲーム開始イベントをサーバーに送る
+              }}
+            >
+              ゲーム開始
+            </Button>
+          </>
+        ) : (
+          isReady && (
+            <span className="text-sm text-zinc-400">
+              ホストがゲームを開始するのをお待ちください
+            </span>
+          )
+        )}
         <ReadyToggle isReady={isReady} onToggle={toggleReady} />
       </div>
     </TableContainer>
