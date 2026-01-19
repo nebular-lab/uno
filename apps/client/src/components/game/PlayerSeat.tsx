@@ -96,7 +96,7 @@ const PlayerStatusBadge = ({
         )}
         style={{ width: size, height: size }}
       >
-        {isReady ? "Ready" : "Waiting"}
+        {isReady ? "準備完了" : "準備中"}
       </div>
       {/* HOSTバッジ（上に重ねて表示） */}
       {isHost && (
