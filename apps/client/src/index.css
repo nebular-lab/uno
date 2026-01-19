@@ -44,6 +44,12 @@
   --sidebar-accent-foreground: oklch(0.985 0 0); /* zinc-50 */
   --sidebar-border: oklch(0.274 0.006 286.033); /* zinc-800 */
   --sidebar-ring: oklch(0.552 0.016 285.938); /* zinc-500 */
+
+  /* Game UI colors */
+  --table-surface: oklch(0.37 0.013 285.805); /* zinc-700 */
+  --player-nameplate-background: oklch(0.274 0.006 286.033); /* zinc-800 */
+  --player-nameplate-foreground: oklch(0.928 0.006 264.531); /* gray-200 */
+  --avatar-fallback-background: oklch(0.446 0.03 256.802); /* gray-600 */
 }
 
 @theme inline {
@@ -85,6 +91,12 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Game UI colors */
+  --color-table-surface: var(--table-surface);
+  --color-player-nameplate-background: var(--player-nameplate-background);
+  --color-player-nameplate-foreground: var(--player-nameplate-foreground);
+  --color-avatar-fallback-background: var(--avatar-fallback-background);
 }
 
 @layer base {

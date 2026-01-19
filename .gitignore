@@ -38,6 +38,7 @@ coverage/
 # Temporary
 *.tmp
 .cache/
+temp/
 
 # Screenshots
 screenshots/*

@@ -19,6 +19,7 @@ import { useBeforeUnload } from "./hooks/useBeforeUnload";
 import { CreateRoomScreen } from "./screens/CreateRoomScreen";
 import { LobbyScreen } from "./screens/LobbyScreen";
 import { TitleScreen } from "./screens/TitleScreen";
+import { WaitingRoomScreen } from "./screens/WaitingRoomScreen";
 
 function App() {
   const screen = useAtomValue(screenAtom);
@@ -51,8 +52,8 @@ function App() {
         return <LobbyScreen />;
       case "createRoom":
         return <CreateRoomScreen />;
-      case "room":
-        return <div>Room Screen (TODO)</div>;
+      case "waitingRoom":
+        return <WaitingRoomScreen roomId={screen.roomId} />;
       case "game":
         return <div>Game Screen (TODO)</div>;
       default:

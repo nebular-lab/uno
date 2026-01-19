@@ -120,13 +120,13 @@ export const createRoomAtom = atom(null, async (get, set) => {
       }
     });
 
-    // ロビーから切断してゲーム画面へ遷移
+    // ロビーから切断して待機画面へ遷移
     const lobbyState = get(lobbyStateAtom);
     if (lobbyState.status === "connected") {
       await lobbyState.lobby.leave();
       set(lobbyStateAtom, { status: "idle" });
     }
-    set(screenAtom, { screen: "game", roomId: room.roomId });
+    set(screenAtom, { screen: "waitingRoom", roomId: room.roomId });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "ルームの作成に失敗しました";
@@ -162,13 +162,13 @@ export const joinRoomAtom = atom(null, async (get, set, roomId: string) => {
       }
     });
 
-    // ロビーから切断してゲーム画面へ遷移
+    // ロビーから切断して待機画面へ遷移
     const lobbyState = get(lobbyStateAtom);
     if (lobbyState.status === "connected") {
       await lobbyState.lobby.leave();
       set(lobbyStateAtom, { status: "idle" });
     }
-    set(screenAtom, { screen: "game", roomId: room.roomId });
+    set(screenAtom, { screen: "waitingRoom", roomId: room.roomId });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "ルームへの参加に失敗しました";
