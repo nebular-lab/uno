@@ -10,7 +10,7 @@ export class Player extends Schema {
   @type("number") score: number = 0; // 累計スコア
   @type("boolean") isOwner: boolean = false;
   @type("boolean") isConnected: boolean = true;
-  @type("boolean") willJoinNextGame: boolean = true; // 次ゲーム参加フラグ
+  @type("boolean") isReady: boolean = false;
   @type("number") turnOrder: number = 0; // 手番順（リバースで動的に変わる）
   @type("number") timeRemaining: number = 0; // タイマー残り秒数（0なら非アクティブ）
 

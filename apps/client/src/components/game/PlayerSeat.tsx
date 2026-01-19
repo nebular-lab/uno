@@ -11,6 +11,7 @@ export type Player = {
 type Props = {
   player: Player;
   isCurrentPlayer?: boolean;
+  displayIndex?: number; // 表示位置（回転後の位置）
 };
 
 // 6人の位置定義（0:上中央 → 時計回り）
@@ -58,8 +59,15 @@ const EmptyBadge = ({ size = 70 }: { size?: number }) => {
 };
 
 // 空席表示
-export const EmptySeat = ({ seatIndex }: { seatIndex: number }) => {
-  const seatPos = seatPositions[seatIndex] ?? seatPositions[0];
+export const EmptySeat = ({
+  seatIndex,
+  displayIndex,
+}: {
+  seatIndex: number;
+  displayIndex?: number; // 表示位置（回転後の位置）
+}) => {
+  const posIndex = displayIndex ?? seatIndex;
+  const seatPos = seatPositions[posIndex] ?? seatPositions[0];
 
   return (
     <div className={cn("absolute size-fit", seatPos)}>
@@ -127,10 +135,15 @@ const PlayerNamePlate = ({
   );
 };
 
-export const PlayerSeat = ({ player, isCurrentPlayer }: Props) => {
-  const seatPos = seatPositions[player.seatIndex] ?? seatPositions[0];
-  const avatarPos = avatarPositions[player.seatIndex] ?? avatarPositions[0];
-  const namePos = namePositions[player.seatIndex] ?? namePositions[0];
+export const PlayerSeat = ({
+  player,
+  isCurrentPlayer,
+  displayIndex,
+}: Props) => {
+  const posIndex = displayIndex ?? player.seatIndex;
+  const seatPos = seatPositions[posIndex] ?? seatPositions[0];
+  const avatarPos = avatarPositions[posIndex] ?? avatarPositions[0];
+  const namePos = namePositions[posIndex] ?? namePositions[0];
 
   return (
     <div className={cn("absolute size-fit", seatPos)}>

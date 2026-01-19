@@ -81,6 +81,41 @@ export class GameRoom extends Room<GameState, RoomMetadata> {
         color: color,
       });
     });
+
+    // Ready状態を切り替え
+    this.onMessage("toggleReady", (client) => {
+      const player = this.state.players.get(client.sessionId);
+      if (player) {
+        player.isReady = !player.isReady;
+      }
+    });
+
+    // 退席
+    this.onMessage("leaveRoom", (client) => {
+      client.leave();
+    });
+  }
+
+  // 席の配置優先順（1, 3, 5, 2, 4, 6 の順）
+  private static readonly SEAT_PRIORITY = [1, 3, 5, 2, 4, 6];
+
+  /**
+   * 次に空いている席を取得（優先順位順）
+   */
+  private getNextAvailableSeat(): number {
+    const occupiedSeats = new Set<number>();
+    for (const player of this.state.players.values()) {
+      occupiedSeats.add(player.seatId);
+    }
+
+    for (const seatId of GameRoom.SEAT_PRIORITY) {
+      if (!occupiedSeats.has(seatId)) {
+        return seatId;
+      }
+    }
+
+    // 全席埋まっている場合（通常は発生しない）
+    return 1;
   }
 
   onJoin(client: Client, options: CreateRoomOptions) {
@@ -90,7 +125,7 @@ export class GameRoom extends Room<GameState, RoomMetadata> {
     const player = new Player();
     player.sessionId = client.sessionId;
     player.name = options.playerName;
-    player.seatId = this.state.players.size + 1;
+    player.seatId = this.getNextAvailableSeat();
     player.isConnected = true;
 
     // 最初のプレイヤーをオーナーに設定
@@ -122,7 +157,29 @@ export class GameRoom extends Room<GameState, RoomMetadata> {
 
   onLeave(client: Client) {
     console.log(`${client.sessionId} left`);
-    // TODO: プレイヤー退出処理
+
+    const player = this.state.players.get(client.sessionId);
+    if (!player) return;
+
+    // 待機中の場合はプレイヤーを削除
+    if (this.state.phase === "waiting") {
+      const wasOwner = player.isOwner;
+      this.state.players.delete(client.sessionId);
+
+      // オーナーが退出した場合、次のプレイヤーをオーナーに
+      if (wasOwner && this.state.players.size > 0) {
+        const nextOwner = this.state.players.values().next().value;
+        if (nextOwner) {
+          nextOwner.isOwner = true;
+        }
+      }
+
+      // メタデータを更新
+      this.updateMetadata();
+    } else {
+      // ゲーム中の場合は接続状態のみ更新
+      player.isConnected = false;
+    }
   }
 
   onDispose() {

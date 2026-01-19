@@ -1,42 +1,75 @@
-import { useState } from "react";
-import {
-  EmptySeat,
-  type Player,
-  PlayerSeat,
-} from "@/components/game/PlayerSeat";
+import { EmptySeat, PlayerSeat } from "@/components/game/PlayerSeat";
 import { Table } from "@/components/game/Table";
 import { TableContainer } from "@/components/game/TableContainer";
 import { Button } from "@/components/ui/button";
+import { useGameRoom } from "@/hooks/useGameRoom";
+import { cn } from "@/lib/utils";
 
 type Props = {
   roomId: string;
 };
 
-// モックデータ（後で実際のデータに置き換え）
-// nullは空席を表す
-const mockPlayers: (Player | null)[] = [
-  { seatIndex: 0, name: "Player 1", cardCount: 0, isHost: true, isReady: true },
-  { seatIndex: 1, name: "Player 2", cardCount: 0, isReady: true },
-  null, // 空席
-  { seatIndex: 3, name: "You", cardCount: 0, isReady: true },
-  null, // 空席
-  { seatIndex: 5, name: "Player 6", cardCount: 0, isReady: false },
-];
+// 準備状態トグル
+const ReadyToggle = ({
+  isReady,
+  onToggle,
+}: {
+  isReady: boolean;
+  onToggle: () => void;
+}) => {
+  return (
+    <button
+      className={cn(
+        "flex h-20 w-64 items-center justify-center gap-3 rounded-full px-6 text-lg font-medium transition-all",
+        isReady
+          ? "bg-green-600 text-white"
+          : "bg-zinc-700 text-zinc-300 hover:bg-zinc-600",
+      )}
+      onClick={onToggle}
+      type="button"
+    >
+      {/* チェックボックス風のインジケーター */}
+      <div
+        className={cn(
+          "flex size-6 items-center justify-center rounded border-2 transition-colors",
+          isReady
+            ? "border-white bg-white text-green-600"
+            : "border-zinc-400 bg-transparent",
+        )}
+      >
+        {isReady && (
+          <svg
+            aria-label="チェック"
+            className="size-4"
+            fill="none"
+            role="img"
+            stroke="currentColor"
+            strokeWidth={3}
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M5 13l4 4L19 7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        )}
+      </div>
+      <span>{isReady ? "準備完了" : "準備できたらタップ"}</span>
+    </button>
+  );
+};
 
 export const WaitingRoomScreen = ({ roomId }: Props) => {
-  // 自分のプレイヤーインデックス（後で実際のデータに置き換え）
-  const myPlayerIndex = 3;
+  const { players, mySeatIndex, isReady, toggleReady, leaveRoom } =
+    useGameRoom();
 
-  // Ready状態（後で実際のデータに置き換え）
-  const [isReady, setIsReady] = useState(false);
-
-  const handleToggleReady = () => {
-    setIsReady((prev) => !prev);
-  };
-
-  const handleLeaveRoom = () => {
-    // TODO: 退席処理を実装
-    console.log("Leave room");
+  // 自分が下中央（position 3）に来るように回転
+  // displayIndex: 画面上の表示位置（0-5）
+  // actualIndex: 実際のプレイヤーの席番号
+  const getActualIndex = (displayIndex: number): number => {
+    if (mySeatIndex === -1) return displayIndex; // 自分がいない場合は回転なし
+    return (displayIndex + mySeatIndex - 3 + 6) % 6;
   };
 
   return (
@@ -46,19 +79,25 @@ export const WaitingRoomScreen = ({ roomId }: Props) => {
         <Table />
       </div>
 
-      {/* プレイヤーシート */}
-      {mockPlayers.map((player, seatIndex) =>
-        player ? (
+      {/* プレイヤーシート（0-5の表示位置、自分が下中央に来るよう回転） */}
+      {[0, 1, 2, 3, 4, 5].map((displayIndex) => {
+        const actualIndex = getActualIndex(displayIndex);
+        const player = players[actualIndex];
+        return player ? (
           <PlayerSeat
-            isCurrentPlayer={player.seatIndex === myPlayerIndex}
-            key={`seat-${player.seatIndex}`}
+            displayIndex={displayIndex}
+            isCurrentPlayer={actualIndex === mySeatIndex}
+            key={`seat-${actualIndex}`}
             player={player}
           />
         ) : (
-          // biome-ignore lint/suspicious/noArrayIndexKey: 席の順序は固定のためindexをキーとして使用
-          <EmptySeat key={`empty-seat-${seatIndex}`} seatIndex={seatIndex} />
-        ),
-      )}
+          <EmptySeat
+            displayIndex={displayIndex}
+            key={`empty-seat-${actualIndex}`}
+            seatIndex={actualIndex}
+          />
+        );
+      })}
 
       {/* ルームID表示 */}
       <div className="absolute top-4 left-4 rounded bg-slate-800/80 px-3 py-1 text-sm text-white">
@@ -67,16 +106,14 @@ export const WaitingRoomScreen = ({ roomId }: Props) => {
 
       {/* 退席ボタン（左下） */}
       <div className="absolute bottom-4 left-4">
-        <Button onClick={handleLeaveRoom} size="lg" variant="secondary">
+        <Button onClick={leaveRoom} size="lg" variant="secondary">
           退席
         </Button>
       </div>
 
-      {/* Ready/Waiting切り替えボタン（右下） */}
+      {/* 準備状態トグル（右下） */}
       <div className="absolute bottom-4 right-4">
-        <Button onClick={handleToggleReady} size="lg" variant="default">
-          {isReady ? "Waiting" : "Ready"}
-        </Button>
+        <ReadyToggle isReady={isReady} onToggle={toggleReady} />
       </div>
     </TableContainer>
   );
