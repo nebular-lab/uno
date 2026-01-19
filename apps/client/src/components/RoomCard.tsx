@@ -1,9 +1,10 @@
-import type { RoomListingData } from "@dobon-uno/shared";
+import type { RoomMetadata } from "@dobon-uno/shared";
+import type { RoomAvailable } from "colyseus.js";
 import { Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface RoomCardProps {
-  room: RoomListingData;
+  room: RoomAvailable<RoomMetadata>;
   onJoin?: () => void;
 }
 

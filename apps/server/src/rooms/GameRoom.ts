@@ -1,5 +1,10 @@
 import { Dispatcher } from "@colyseus/command";
-import { type CreateRoomOptions, GameState, Player } from "@dobon-uno/shared";
+import {
+  type CreateRoomOptions,
+  GameState,
+  Player,
+  type RoomMetadata,
+} from "@dobon-uno/shared";
 import { type Client, Room } from "colyseus";
 import { ChooseColorCommand } from "../commands/ChooseColorCommand";
 import { DobonCommand } from "../commands/DobonCommand";
@@ -10,7 +15,7 @@ import { PassCommand } from "../commands/PassCommand";
 // Commands
 import { PlayCardCommand } from "../commands/PlayCardCommand";
 
-export class GameRoom extends Room<GameState> {
+export class GameRoom extends Room<GameState, RoomMetadata> {
   dispatcher = new Dispatcher(this);
   maxClients = 6;
 
@@ -110,7 +115,6 @@ export class GameRoom extends Room<GameState> {
       }
     }
 
-    // メタデータを設定
     this.setMetadata({
       ownerName,
     });

@@ -8,5 +8,5 @@ export { Player } from "./schema/Player";
 export type {
   CreateRoomOptions,
   JoinRoomOptions,
-  RoomListingData,
+  RoomMetadata,
 } from "./types/lobby";

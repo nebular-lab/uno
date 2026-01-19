@@ -1,6 +1,10 @@
-import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import { navigateToTitleAtom, screenAtom } from "./atoms/appAtoms";
-import { disconnectedAtom } from "./atoms/lobbyAtoms";
+import {
+  gameStateAtom,
+  lobbyStateAtom,
+  resetDisconnectedAtom,
+} from "./atoms/connectionAtoms";
 import { ScalableContainer } from "./components/ScalableContainer";
 import { Button } from "./components/ui/button";
 import {
@@ -18,8 +22,10 @@ import { TitleScreen } from "./screens/TitleScreen";
 
 function App() {
   const screen = useAtomValue(screenAtom);
+  const lobbyState = useAtomValue(lobbyStateAtom);
+  const gameState = useAtomValue(gameStateAtom);
   const navigateToTitle = useSetAtom(navigateToTitleAtom);
-  const [disconnected, setDisconnected] = useAtom(disconnectedAtom);
+  const resetDisconnected = useSetAtom(resetDisconnectedAtom);
 
   // ブラウザ離脱防止（タイトル画面以外でリロード・タブ閉じ・戻るボタン時に確認表示）
   useBeforeUnload({
@@ -27,9 +33,13 @@ function App() {
     onNavigateAway: navigateToTitle,
   });
 
+  // 異常切断状態の判定
+  const isDisconnected =
+    lobbyState.status === "disconnected" || gameState.status === "disconnected";
+
   // 異常切断ダイアログのOKボタン押下時
   const handleDisconnectOk = () => {
-    setDisconnected(false);
+    resetDisconnected();
     navigateToTitle();
   };
 
@@ -55,7 +65,7 @@ function App() {
       <ScalableContainer>{renderScreen()}</ScalableContainer>
 
       {/* 異常切断ダイアログ */}
-      <Dialog open={disconnected}>
+      <Dialog open={isDisconnected}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>接続が切断されました</DialogTitle>

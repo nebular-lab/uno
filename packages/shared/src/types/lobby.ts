@@ -1,12 +1,6 @@
-// LobbyRoomから受け取るルーム情報
-export interface RoomListingData {
-  roomId: string;
-  name: string;
-  clients: number;
-  maxClients: number;
-  metadata?: {
-    ownerName?: string;
-  };
+// ルームのメタデータ（サーバー・クライアント共通）
+export interface RoomMetadata {
+  ownerName?: string;
 }
 
 // ルーム作成オプション

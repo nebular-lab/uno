@@ -1,4 +1,4 @@
-import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { navigateToCreateRoomAtom, playerAtom } from "../atoms/appAtoms";
@@ -6,17 +6,13 @@ import {
   connectToLobbyAtom,
   disconnectFromLobbyAtom,
   joinRoomAtom,
-  lobbyErrorAtom,
-  lobbyLoadingAtom,
-  roomsAtom,
-} from "../atoms/lobbyAtoms";
+  lobbyStateAtom,
+} from "../atoms/connectionAtoms";
 import { RoomCard } from "../components/RoomCard";
 
 export function LobbyScreen() {
   const player = useAtomValue(playerAtom);
-  const rooms = useAtomValue(roomsAtom);
-  const loading = useAtomValue(lobbyLoadingAtom);
-  const [error, setError] = useAtom(lobbyErrorAtom);
+  const lobbyState = useAtomValue(lobbyStateAtom);
   const connectToLobby = useSetAtom(connectToLobbyAtom);
   const disconnectFromLobby = useSetAtom(disconnectFromLobbyAtom);
   const joinRoom = useSetAtom(joinRoomAtom);
@@ -33,6 +29,11 @@ export function LobbyScreen() {
     joinRoom(roomId);
   };
 
+  const isLoading =
+    lobbyState.status === "connecting" || lobbyState.status === "idle";
+  const error = lobbyState.status === "error" ? lobbyState.error : null;
+  const rooms = lobbyState.status === "connected" ? lobbyState.rooms : [];
+
   return (
     <div className="h-full flex flex-col bg-card text-foreground">
       {/* ヘッダー */}
@@ -47,27 +48,20 @@ export function LobbyScreen() {
       <div className="flex-1 overflow-auto p-4">
         {/* エラー表示 */}
         {error && (
-          <div className="mb-4 p-3 bg-destructive/10 text-destructive rounded-lg flex items-center justify-between">
+          <div className="mb-4 p-3 bg-destructive/10 text-destructive rounded-lg">
             <span>{error}</span>
-            <button
-              className="text-sm underline"
-              onClick={() => setError(null)}
-              type="button"
-            >
-              閉じる
-            </button>
           </div>
         )}
 
         {/* ローディング */}
-        {loading && (
+        {isLoading && (
           <div className="flex items-center justify-center py-8">
             <span className="text-muted-foreground">読み込み中...</span>
           </div>
         )}
 
         {/* ルーム一覧 */}
-        {!loading && rooms.length === 0 && (
+        {!isLoading && rooms.length === 0 && (
           <div className="flex items-center justify-center py-8">
             <span className="text-muted-foreground">
               現在、開いているルームはありません
@@ -75,7 +69,7 @@ export function LobbyScreen() {
           </div>
         )}
 
-        {!loading && rooms.length > 0 && (
+        {!isLoading && rooms.length > 0 && (
           <div className="flex flex-col gap-3">
             {rooms.map((room) => (
               <RoomCard

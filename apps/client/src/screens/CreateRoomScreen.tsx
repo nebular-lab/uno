@@ -1,17 +1,15 @@
 import { useAtomValue, useSetAtom } from "jotai";
 import { Button } from "@/components/ui/button";
 import { navigateToLobbyAtom } from "../atoms/appAtoms";
-import {
-  createRoomAtom,
-  lobbyErrorAtom,
-  lobbyLoadingAtom,
-} from "../atoms/lobbyAtoms";
+import { createRoomAtom, gameStateAtom } from "../atoms/connectionAtoms";
 
 export function CreateRoomScreen() {
-  const loading = useAtomValue(lobbyLoadingAtom);
-  const error = useAtomValue(lobbyErrorAtom);
+  const gameState = useAtomValue(gameStateAtom);
   const createRoom = useSetAtom(createRoomAtom);
   const navigateToLobby = useSetAtom(navigateToLobbyAtom);
+
+  const isLoading = gameState.status === "joining";
+  const error = gameState.status === "error" ? gameState.error : null;
 
   const handleCreate = () => {
     createRoom();
@@ -42,15 +40,15 @@ export function CreateRoomScreen() {
       <div className="p-4 border-t space-y-3">
         <Button
           className="w-full text-lg py-6"
-          disabled={loading}
+          disabled={isLoading}
           onClick={handleCreate}
           variant="outline"
         >
-          {loading ? "作成中..." : "作成"}
+          {isLoading ? "作成中..." : "作成"}
         </Button>
         <Button
           className="w-full text-lg py-6"
-          disabled={loading}
+          disabled={isLoading}
           onClick={navigateToLobby}
           variant="ghost"
         >
