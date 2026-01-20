@@ -1,6 +1,7 @@
 import { Command } from "@colyseus/command";
 import type { GameRoom } from "../rooms/GameRoom";
 import { createDeck, shuffleDeck } from "../utils/deck";
+import { CountdownCommand } from "./CountdownCommand";
 
 interface Payload {
   sessionId: string;
@@ -83,11 +84,9 @@ export class StartGameCommand extends Command<GameRoom, Payload> {
       }
       this.state.deckCount = this.room.deck.length;
 
-      // カウントダウンフェーズへ移行（Step 4で実装）
+      // カウントダウンフェーズへ移行
       this.room.clock.setTimeout(() => {
-        this.state.phase = "countdown";
-        // TODO: CountdownCommandを実装後に置き換え
-        // this.room.dispatcher.dispatch(new CountdownCommand());
+        this.room.dispatcher.dispatch(new CountdownCommand());
       }, 500);
     }
   }
