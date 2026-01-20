@@ -6,8 +6,13 @@ import { Player } from "./Player";
 export class GameState extends Schema {
   // 基本情報
   @type("string") roomId: string = "";
-  @type("string") phase: string = "waiting"; // waiting/playing/result
+  @type("string") phase: string = "waiting"; // waiting/dealing/countdown/revealing/playing/result
   @type({ map: Player }) players = new MapSchema<Player>();
+
+  // ゲーム開始演出用
+  @type("number") dealingRound: number = 0; // カード配布ラウンド（0-7: 0=配布前, 1-7=各ラウンド）
+  @type("number") countdown: number = 0; // カウントダウン（3, 2, 1, 0）
+  @type(Card) firstCard: Card | null = null; // 最初の場札（revealingフェーズで公開）
 
   // ゲーム進行
   @type("number") deckCount: number = 0; // 山札の枚数（全員に見える）

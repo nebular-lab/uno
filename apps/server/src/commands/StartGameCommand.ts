@@ -1,7 +1,9 @@
 import { Command } from "@colyseus/command";
 import type { GameRoom } from "../rooms/GameRoom";
+import { createDeck, shuffleDeck } from "../utils/deck";
 
 interface Payload {
+  sessionId: string;
   startPlayerId?: string;
   rateMultiplier?: number;
 }
@@ -11,8 +13,82 @@ interface Payload {
  * 山札生成、カード配布、最初のプレイヤー決定
  */
 export class StartGameCommand extends Command<GameRoom, Payload> {
-  execute() {
-    // TODO: 実装
-    console.log(`[StartGameCommand] Game started`);
+  validate(payload: Payload): boolean {
+    // waiting状態か
+    if (this.state.phase !== "waiting") return false;
+
+    // オーナーか
+    const player = this.state.players.get(payload.sessionId);
+    if (!player?.isOwner) return false;
+
+    // 3人以上か
+    if (this.state.players.size < 3) return false;
+
+    return true;
+  }
+
+  execute(payload: Payload) {
+    // 1. フェーズを "dealing" に変更
+    this.state.phase = "dealing";
+    this.state.dealingRound = 0;
+
+    // 2. 山札を生成・シャッフル
+    const deck = createDeck();
+    const shuffled = shuffleDeck(deck);
+    this.room.deck = shuffled;
+
+    // 3. 最初のプレイヤーを決定してハイライト
+    this.state.currentTurnPlayerId = this.determineFirstPlayer(
+      payload.startPlayerId,
+    );
+
+    // 4. 段階的なカード配布を開始
+    this.dealNextRound();
+  }
+
+  private determineFirstPlayer(startPlayerId?: string): string {
+    // nextGameStartPlayerIdが設定されていればそれを使う
+    if (startPlayerId && this.state.players.has(startPlayerId)) {
+      return startPlayerId;
+    }
+    // なければホスト（オーナー）から始める
+    for (const player of this.state.players.values()) {
+      if (player.isOwner) {
+        return player.sessionId;
+      }
+    }
+    // フォールバック（通常は到達しない）
+    return this.state.players.keys().next().value ?? "";
+  }
+
+  private dealNextRound() {
+    this.state.dealingRound++;
+
+    for (const player of this.state.players.values()) {
+      const card = this.room.deck.pop();
+      if (card) {
+        player.myHand.push(card);
+        player.handCount++;
+      }
+    }
+    this.state.deckCount = this.room.deck.length;
+
+    if (this.state.dealingRound < 7) {
+      this.room.clock.setTimeout(() => this.dealNextRound(), 300);
+    } else {
+      // 最初の場札を決定
+      const firstCard = this.room.deck.pop();
+      if (firstCard) {
+        this.state.firstCard = firstCard;
+      }
+      this.state.deckCount = this.room.deck.length;
+
+      // カウントダウンフェーズへ移行（Step 4で実装）
+      this.room.clock.setTimeout(() => {
+        this.state.phase = "countdown";
+        // TODO: CountdownCommandを実装後に置き換え
+        // this.room.dispatcher.dispatch(new CountdownCommand());
+      }, 500);
+    }
   }
 }

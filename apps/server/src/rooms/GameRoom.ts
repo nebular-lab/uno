@@ -1,5 +1,6 @@
 import { Dispatcher } from "@colyseus/command";
 import {
+  type Card,
   type CreateRoomOptions,
   GameState,
   Player,
@@ -14,10 +15,14 @@ import { DrawStackCommand } from "../commands/DrawStackCommand";
 import { PassCommand } from "../commands/PassCommand";
 // Commands
 import { PlayCardCommand } from "../commands/PlayCardCommand";
+import { StartGameCommand } from "../commands/StartGameCommand";
 
 export class GameRoom extends Room<GameState, RoomMetadata> {
   dispatcher = new Dispatcher(this);
   maxClients = 6;
+
+  // 山札（サーバー側のみ保持、クライアントには同期しない）
+  deck: Card[] = [];
 
   onCreate(_options: CreateRoomOptions) {
     this.state = new GameState();
@@ -93,6 +98,15 @@ export class GameRoom extends Room<GameState, RoomMetadata> {
     // 退席
     this.onMessage("leaveRoom", (client) => {
       client.leave();
+    });
+
+    // ゲーム開始
+    this.onMessage("startGame", (client) => {
+      this.dispatcher.dispatch(new StartGameCommand(), {
+        sessionId: client.sessionId,
+        startPlayerId: this.state.nextGameStartPlayerId || undefined,
+        rateMultiplier: this.state.rateMultiplier,
+      });
     });
   }
 
