@@ -1,5 +1,6 @@
 import { Command } from "@colyseus/command";
 import type { Card } from "@dobon-uno/shared";
+import { TIMING } from "../config/timing";
 import type { GameRoom } from "../rooms/GameRoom";
 import { BeginPlayCommand } from "./BeginPlayCommand";
 
@@ -21,10 +22,10 @@ export class RevealCardCommand extends Command<GameRoom> {
       this.handleFirstCardEffect(firstCard);
     }
 
-    // 1秒後にplayingフェーズへ移行
+    // playingフェーズへ移行
     this.room.clock.setTimeout(() => {
       this.room.dispatcher.dispatch(new BeginPlayCommand());
-    }, 1000);
+    }, TIMING.REVEAL_DELAY);
   }
 
   /**

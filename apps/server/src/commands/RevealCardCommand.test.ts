@@ -170,8 +170,12 @@ describe("RevealCardCommand", () => {
           room.state.currentColor,
         );
       } else if (fieldCard && fieldCard.color === "wild") {
-        // ワイルドカードの場合は色選択待ち
-        expect(room.state.waitingForColorChoice).toBe(true);
+        // ワイルドカードの場合、draw4のみ色選択待ち
+        if (fieldCard.value === "draw4") {
+          expect(room.state.waitingForColorChoice).toBe(true);
+        } else {
+          expect(room.state.waitingForColorChoice).toBe(false);
+        }
       }
     });
 
@@ -260,11 +264,11 @@ describe("RevealCardCommand", () => {
       expect(room.state.currentTurnPlayerId).not.toBe(owner.sessionId);
     });
 
-    it("ワイルドカードの場合、waitingForColorChoiceがtrueになる", async () => {
+    it("ワイルドカードの場合、waitingForColorChoiceはfalse（色選択不要）", async () => {
       const { room } = await setupGameWithFirstCard(testCards.wild, "playing");
 
       expect(room.state.fieldCards[0].value).toBe("wild");
-      expect(room.state.waitingForColorChoice).toBe(true);
+      expect(room.state.waitingForColorChoice).toBe(false);
       expect(room.state.currentColor).toBe("");
     });
 

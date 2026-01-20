@@ -8,7 +8,10 @@ export default defineConfig({
     setupFiles: ["src/test/setup.ts"],
     // Colyseusサーバーのポート競合を防ぐためシーケンシャル実行
     fileParallelism: false,
-    // ゲーム進行のテストに時間がかかるためタイムアウトを延長
+    // テスト環境を設定（タイミング高速化のため）
+    env: {
+      NODE_ENV: "test",
+    },
     testTimeout: 15000,
   },
 });

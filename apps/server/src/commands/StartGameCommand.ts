@@ -1,4 +1,5 @@
 import { Command } from "@colyseus/command";
+import { TIMING } from "../config/timing";
 import type { GameRoom } from "../rooms/GameRoom";
 import { CountdownCommand } from "./CountdownCommand";
 
@@ -72,7 +73,10 @@ export class StartGameCommand extends Command<GameRoom, Payload> {
     this.state.deckCount = this.room.deck.length;
 
     if (this.state.dealingRound < 7) {
-      this.room.clock.setTimeout(() => this.dealNextRound(), 300);
+      this.room.clock.setTimeout(
+        () => this.dealNextRound(),
+        TIMING.DEAL_INTERVAL,
+      );
     } else {
       // 最初の場札を決定
       const firstCard = this.room.deck.pop();
@@ -84,7 +88,7 @@ export class StartGameCommand extends Command<GameRoom, Payload> {
       // カウントダウンフェーズへ移行
       this.room.clock.setTimeout(() => {
         this.room.dispatcher.dispatch(new CountdownCommand());
-      }, 500);
+      }, TIMING.DEAL_COMPLETE_DELAY);
     }
   }
 }

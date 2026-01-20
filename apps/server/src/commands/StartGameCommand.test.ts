@@ -73,7 +73,7 @@ describe("StartGameCommand", () => {
       expect(room.state.phase).toBe("dealing");
     });
 
-    it("dealingRoundが1から始まり段階的に増える", async () => {
+    it("dealingRoundが段階的に増えて7に達する", async () => {
       const room = await colyseus.createRoom("game", {});
       const owner = await colyseus.connectTo(room, { playerName: "Owner" });
       await colyseus.connectTo(room, { playerName: "Player2" });
@@ -82,9 +82,10 @@ describe("StartGameCommand", () => {
       owner.send("startGame");
       await room.waitForNextPatch();
 
+      // dealingRoundが1以上から始まる
       expect(room.state.dealingRound).toBeGreaterThanOrEqual(1);
 
-      // dealingRoundが増えていくことを確認
+      // dealingRoundが増えていくことを確認（高速化により一部のラウンドを取りこぼす可能性がある）
       const rounds: number[] = [room.state.dealingRound];
       while (room.state.dealingRound < 7 && room.state.phase === "dealing") {
         await room.waitForNextPatch();
@@ -93,8 +94,12 @@ describe("StartGameCommand", () => {
         }
       }
 
-      expect(rounds).toContain(1);
+      // 最終的に7に達することを確認
       expect(rounds[rounds.length - 1]).toBe(7);
+      // ラウンドは増加していく（取りこぼしがあっても順序は正しい）
+      for (let i = 1; i < rounds.length; i++) {
+        expect(rounds[i]).toBeGreaterThan(rounds[i - 1]);
+      }
     });
 
     it("各プレイヤーに7枚ずつ配られる", async () => {

@@ -1,4 +1,5 @@
 import { Command } from "@colyseus/command";
+import { TIMING } from "../config/timing";
 import type { GameRoom } from "../rooms/GameRoom";
 import { RevealCardCommand } from "./RevealCardCommand";
 
@@ -16,11 +17,11 @@ export class CountdownCommand extends Command<GameRoom> {
 
   private tick() {
     if (this.state.countdown > 0) {
-      // 1秒後に次のカウント
+      // 次のカウント
       this.room.clock.setTimeout(() => {
         this.state.countdown--;
         this.tick();
-      }, 1000);
+      }, TIMING.COUNTDOWN_INTERVAL);
     } else {
       // カウントダウン完了、場札公開フェーズへ
       this.room.dispatcher.dispatch(new RevealCardCommand());
