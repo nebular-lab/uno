@@ -1,6 +1,6 @@
 import { Dispatcher } from "@colyseus/command";
 import {
-  type Card,
+  Card,
   type CreateRoomOptions,
   GameState,
   Player,
@@ -16,6 +16,20 @@ import { PassCommand } from "../commands/PassCommand";
 // Commands
 import { PlayCardCommand } from "../commands/PlayCardCommand";
 import { StartGameCommand } from "../commands/StartGameCommand";
+import { createDeck, shuffleDeck } from "../utils/deck";
+
+/**
+ * 山札を生成する関数の型
+ * テスト時にモックを注入するために使用
+ */
+export type DeckProvider = () => Card[];
+
+/**
+ * デフォルトのDeckProvider（本番用）
+ * 山札を生成してシャッフルする
+ */
+export const defaultDeckProvider: DeckProvider = () =>
+  shuffleDeck(createDeck());
 
 export class GameRoom extends Room<GameState, RoomMetadata> {
   dispatcher = new Dispatcher(this);
@@ -23,6 +37,9 @@ export class GameRoom extends Room<GameState, RoomMetadata> {
 
   // 山札（サーバー側のみ保持、クライアントには同期しない）
   deck: Card[] = [];
+
+  // 山札生成関数（DI可能）
+  private deckProvider: DeckProvider = defaultDeckProvider;
 
   onCreate(_options: CreateRoomOptions) {
     this.state = new GameState();
@@ -108,6 +125,34 @@ export class GameRoom extends Room<GameState, RoomMetadata> {
         rateMultiplier: this.state.rateMultiplier,
       });
     });
+
+    // テスト用: 山札を設定（カードデータの配列を受け取る）
+    this.onMessage(
+      "__setDeck",
+      (
+        _client,
+        cards: { id: string; color: string; value: string; points: number }[],
+      ) => {
+        const deck = cards.map(
+          (c) => new Card(c.id, c.color, c.value, c.points),
+        );
+        this.setDeckProvider(() => deck);
+      },
+    );
+  }
+
+  /**
+   * 山札を生成する（DeckProviderを使用）
+   */
+  createDeck(): Card[] {
+    return this.deckProvider();
+  }
+
+  /**
+   * DeckProviderを設定する（テスト用）
+   */
+  setDeckProvider(provider: DeckProvider) {
+    this.deckProvider = provider;
   }
 
   // 席の配置優先順（1, 3, 5, 2, 4, 6 の順）

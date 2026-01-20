@@ -1,6 +1,5 @@
 import { Command } from "@colyseus/command";
 import type { GameRoom } from "../rooms/GameRoom";
-import { createDeck, shuffleDeck } from "../utils/deck";
 import { CountdownCommand } from "./CountdownCommand";
 
 interface Payload {
@@ -33,10 +32,8 @@ export class StartGameCommand extends Command<GameRoom, Payload> {
     this.state.phase = "dealing";
     this.state.dealingRound = 0;
 
-    // 2. 山札を生成・シャッフル
-    const deck = createDeck();
-    const shuffled = shuffleDeck(deck);
-    this.room.deck = shuffled;
+    // 2. 山札を生成（DeckProvider経由）
+    this.room.deck = this.room.createDeck();
 
     // 3. 最初のプレイヤーを決定してハイライト
     this.state.currentTurnPlayerId = this.determineFirstPlayer(
