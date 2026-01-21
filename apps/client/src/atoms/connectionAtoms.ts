@@ -55,6 +55,7 @@ const convertPlayer = (serverPlayer: ServerPlayer): ClientPlayer => ({
   cardCount: serverPlayer.handCount,
   isHost: serverPlayer.isOwner,
   isReady: serverPlayer.isReady,
+  isSpectator: serverPlayer.isSpectator,
 });
 
 // 6人分の席配列を作成

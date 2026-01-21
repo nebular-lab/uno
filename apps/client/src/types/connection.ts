@@ -36,6 +36,7 @@ export type ClientPlayer = {
   cardCount: number;
   isHost: boolean;
   isReady: boolean;
+  isSpectator: boolean;
 };
 
 // ゲームプレイ状態（Room.stateをReact用に変換した状態）

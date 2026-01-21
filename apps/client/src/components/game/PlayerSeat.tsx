@@ -75,28 +75,40 @@ const PlayerStatusBadge = ({
   isReady,
   isHost,
   isPlaying,
+  isSpectator,
   cardCount,
   size = 70,
 }: {
   isReady?: boolean;
   isHost?: boolean;
   isPlaying?: boolean;
+  isSpectator?: boolean;
   cardCount: number;
   size?: number;
 }) => {
   return (
     <div className="relative" style={{ width: size, height: size }}>
       {isPlaying ? (
-        // ゲーム中: カード枚数を表示（残り1枚は赤、それ以外はグレー）
-        <div
-          className={cn(
-            "flex items-center justify-center rounded-full font-bold text-white",
-            cardCount === 1 ? "bg-red-500" : "bg-zinc-600",
-          )}
-          style={{ width: size, height: size }}
-        >
-          <span className="text-2xl">{cardCount}</span>
-        </div>
+        isSpectator ? (
+          // ゲーム中の観戦者: 「待機中」を表示
+          <div
+            className="flex items-center justify-center rounded-full bg-slate-500 text-white text-xs font-medium"
+            style={{ width: size, height: size }}
+          >
+            待機中
+          </div>
+        ) : (
+          // ゲーム中: カード枚数を表示（残り1枚は赤、それ以外はグレー）
+          <div
+            className={cn(
+              "flex items-center justify-center rounded-full font-bold text-white",
+              cardCount === 1 ? "bg-red-500" : "bg-zinc-600",
+            )}
+            style={{ width: size, height: size }}
+          >
+            <span className="text-2xl">{cardCount}</span>
+          </div>
+        )
       ) : (
         // 待機中: Ready/Wait を表示
         <div
@@ -170,6 +182,7 @@ export const PlayerSeat = ({
           isHost={player.isHost}
           isPlaying={isPlaying}
           isReady={player.isReady}
+          isSpectator={player.isSpectator}
           size={70}
         />
       </div>

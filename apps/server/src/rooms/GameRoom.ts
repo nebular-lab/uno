@@ -185,11 +185,15 @@ export class GameRoom extends Room<GameState, RoomMetadata> {
     player.sessionId = client.sessionId;
     player.name = options.playerName;
     player.seatId = this.getNextAvailableSeat();
-    player.isConnected = true;
 
     // 最初のプレイヤーをオーナーに設定
     if (this.state.players.size === 0) {
       player.isOwner = true;
+    }
+
+    // ゲーム中に参加した場合は観戦者として設定
+    if (this.state.phase !== "waiting") {
+      player.isSpectator = true;
     }
 
     // プレイヤーを追加
@@ -220,25 +224,19 @@ export class GameRoom extends Room<GameState, RoomMetadata> {
     const player = this.state.players.get(client.sessionId);
     if (!player) return;
 
-    // 待機中の場合はプレイヤーを削除
-    if (this.state.phase === "waiting") {
-      const wasOwner = player.isOwner;
-      this.state.players.delete(client.sessionId);
+    const wasOwner = player.isOwner;
+    this.state.players.delete(client.sessionId);
 
-      // オーナーが退出した場合、次のプレイヤーをオーナーに
-      if (wasOwner && this.state.players.size > 0) {
-        const nextOwner = this.state.players.values().next().value;
-        if (nextOwner) {
-          nextOwner.isOwner = true;
-        }
+    // オーナーが退出した場合、次のプレイヤーをオーナーに
+    if (wasOwner && this.state.players.size > 0) {
+      const nextOwner = this.state.players.values().next().value;
+      if (nextOwner) {
+        nextOwner.isOwner = true;
       }
-
-      // メタデータを更新
-      this.updateMetadata();
-    } else {
-      // ゲーム中の場合は接続状態のみ更新
-      player.isConnected = false;
     }
+
+    // メタデータを更新
+    this.updateMetadata();
   }
 
   onDispose() {
