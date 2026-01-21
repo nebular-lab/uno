@@ -1,5 +1,7 @@
 import { Command } from "@colyseus/command";
 import type { Card, Player } from "@dobon-uno/shared";
+import type { CardEffectContext } from "../effects";
+import { CardEffectRegistry } from "../effects";
 import type { GameRoom } from "../rooms/GameRoom";
 
 /**
@@ -10,15 +12,58 @@ export class BeginPlayCommand extends Command<GameRoom> {
   execute() {
     this.state.phase = "playing";
 
-    // 最初のカードがドロー4の場合のみ、色選択状態にする
-    // ワイルドの場合は色選択不要（手番プレイヤーが最初にカードを出すときに色が決まる）
+    // 最初のカードの効果を適用（ドロー4の場合は色選択状態にする等）
     const firstCard = this.state.fieldCards[this.state.fieldCards.length - 1];
-    if (firstCard && firstCard.value === "draw4") {
-      this.state.waitingForColorChoice = true;
+    if (firstCard) {
+      this.applyBeginPlayEffect(firstCard);
     }
 
     // 各プレイヤーのアクション可否を更新
     this.updatePlayerActions();
+  }
+
+  /**
+   * プレイフェーズ開始時のカード効果を適用（ストラテジーパターン）
+   */
+  private applyBeginPlayEffect(card: Card): void {
+    const effect = CardEffectRegistry.getEffectForCard(card);
+    const context = this.createEffectContext(card);
+    effect.applyOnBeginPlay(context);
+  }
+
+  /**
+   * 効果コンテキストを作成する
+   */
+  private createEffectContext(card: Card): CardEffectContext {
+    return {
+      state: this.state,
+      card,
+      getPlayersSortedBySeat: () => this.getPlayersSortedBySeat(),
+      advanceToNextPlayer: () => this.advanceToNextPlayer(),
+    };
+  }
+
+  /**
+   * プレイヤーを座席順でソートして取得
+   */
+  private getPlayersSortedBySeat() {
+    return Array.from(this.state.players.values()).sort(
+      (a, b) => a.seatId - b.seatId,
+    );
+  }
+
+  /**
+   * 次のプレイヤーに手番を進める
+   */
+  private advanceToNextPlayer() {
+    const sortedBySeat = this.getPlayersSortedBySeat();
+    const currentIndex = sortedBySeat.findIndex(
+      (p) => p.sessionId === this.state.currentTurnPlayerId,
+    );
+    const direction = this.state.turnDirection;
+    const nextIndex =
+      (currentIndex + direction + sortedBySeat.length) % sortedBySeat.length;
+    this.state.currentTurnPlayerId = sortedBySeat[nextIndex].sessionId;
   }
 
   /**
@@ -40,7 +85,7 @@ export class BeginPlayCommand extends Command<GameRoom> {
         player.canDobonReturn = false;
 
         // 出せるカードを計算
-        this.calculatePlayableCards(player, true);
+        this.calculatePlayableCards(player, fieldCard, true);
 
         // ドボン判定（手番プレイヤーもドボン可能）
         player.canDobon = this.canDobon(player, fieldCard);
@@ -53,7 +98,7 @@ export class BeginPlayCommand extends Command<GameRoom> {
         player.canDobonReturn = false;
 
         // カットイン用の出せるカードを計算
-        this.calculatePlayableCards(player, false);
+        this.calculatePlayableCards(player, fieldCard, false);
 
         // ドボン判定
         player.canDobon = this.canDobon(player, fieldCard);
@@ -62,31 +107,36 @@ export class BeginPlayCommand extends Command<GameRoom> {
   }
 
   /**
-   * プレイヤーが出せるカードを計算する
+   * プレイヤーが出せるカードを計算する（ストラテジーパターン使用）
    * @param player プレイヤー
+   * @param fieldCard 場のカード
    * @param isCurrentTurn 手番プレイヤーかどうか
    */
-  private calculatePlayableCards(player: Player, isCurrentTurn: boolean) {
+  private calculatePlayableCards(
+    player: Player,
+    fieldCard: Card | null,
+    isCurrentTurn: boolean,
+  ) {
     player.playableCards.clear();
 
-    // 色選択待ちの場合
-    // ただし、ドロー累積中はドローカードを重ねられる
+    // 色選択待ちの場合（ただしドロー累積中はドローカードを重ねられる）
     if (this.state.waitingForColorChoice && this.state.drawStack === 0) {
       return;
     }
 
-    const fieldCard = this.state.fieldCards[this.state.fieldCards.length - 1];
     if (!fieldCard) return;
 
     for (const card of player.myHand) {
+      const effect = CardEffectRegistry.getEffectForCard(card);
+
       if (isCurrentTurn) {
         // 手番プレイヤーの判定
-        if (this.canPlayCard(card, fieldCard)) {
+        if (this.canPlayCard(card, fieldCard, effect)) {
           player.playableCards.set(card.id, true);
         }
       } else {
-        // 手番でないプレイヤーはカットインのみ（同じカードのみ出せる）
-        if (this.canCutIn(card, fieldCard)) {
+        // 手番でないプレイヤーはカットインのみ
+        if (effect.canCutIn(card, fieldCard)) {
           player.playableCards.set(card.id, true);
         }
       }
@@ -94,73 +144,20 @@ export class BeginPlayCommand extends Command<GameRoom> {
   }
 
   /**
-   * 手番プレイヤーがカードを出せるかどうかを判定する
+   * 手番プレイヤーがカードを出せるかどうかを判定する（ストラテジーパターン使用）
    */
   private canPlayCard(
-    card: { color: string; value: string },
-    fieldCard: { color: string; value: string },
+    card: Card,
+    fieldCard: Card,
+    effect: ReturnType<typeof CardEffectRegistry.getEffectForCard>,
   ): boolean {
-    // ドロー累積中の場合、出せるカードが制限される
+    // ドロー累積中の場合
     if (this.state.drawStack > 0) {
-      return this.canPlayCardOnDrawStack(card, fieldCard);
+      return effect.canPlayOnDrawStack(card, fieldCard);
     }
 
-    // ワイルドカードは常に出せる
-    if (card.color === "wild") return true;
-
-    // 強制色変えカードは常に出せる
-    if (card.value === "force-change") return true;
-
-    // 色が一致
-    if (card.color === this.state.currentColor) return true;
-
-    // 数字/記号が一致
-    if (card.value === fieldCard.value) return true;
-
-    return false;
-  }
-
-  /**
-   * ドロー累積中に出せるカードかどうかを判定する
-   */
-  private canPlayCardOnDrawStack(
-    card: { color: string; value: string },
-    fieldCard: { color: string; value: string },
-  ): boolean {
-    // draw4にはdraw4のみ重ねられる
-    if (fieldCard.value === "draw4") {
-      return card.value === "draw4";
-    }
-
-    // draw2にはdraw2またはdraw4を重ねられる
-    if (fieldCard.value === "draw2") {
-      return card.value === "draw2" || card.value === "draw4";
-    }
-
-    return false;
-  }
-
-  /**
-   * カットインできるかどうかを判定する
-   * 同じカード（色と数字/記号が完全一致、またはワイルド同士・ドロー4同士・強制色変え同士）のみ
-   */
-  private canCutIn(
-    card: { color: string; value: string },
-    fieldCard: { color: string; value: string },
-  ): boolean {
-    // ワイルド同士
-    if (card.color === "wild" && fieldCard.color === "wild") {
-      // ワイルド同士、ドロー4同士は同じvalueでカットイン可能
-      return card.value === fieldCard.value;
-    }
-
-    // 強制色変え同士
-    if (card.value === "force-change" && fieldCard.value === "force-change") {
-      return true;
-    }
-
-    // 色と数字/記号が完全一致
-    return card.color === fieldCard.color && card.value === fieldCard.value;
+    // 通常時
+    return effect.canPlay(card, fieldCard, this.state.currentColor);
   }
 
   /**
