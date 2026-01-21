@@ -880,7 +880,7 @@ describe("BeginPlayCommand", () => {
   });
 
   describe("playingフェーズ前の操作制限", () => {
-    it("dealingフェーズ中にカードを出そうとしても無視される", async () => {
+    it("ゲーム開始直後にカードを出そうとしても無視される", async () => {
       const room = await colyseus.createRoom("game", {});
       const owner = await colyseus.connectTo(room, { playerName: "Owner" });
       await colyseus.connectTo(room, { playerName: "Player2" });
@@ -889,8 +889,8 @@ describe("BeginPlayCommand", () => {
       owner.send("startGame");
       await room.waitForNextPatch();
 
-      // dealingフェーズ中
-      expect(room.state.phase).toBe("dealing");
+      // ゲーム開始直後（dealingまたはcountdown）
+      expect(["dealing", "countdown"]).toContain(room.state.phase);
 
       // カードを出そうとする
       owner.send("playCard", { cardIds: ["dummy-card-id"] });

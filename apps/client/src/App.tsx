@@ -1,5 +1,10 @@
 import { useAtomValue, useSetAtom } from "jotai";
-import { navigateToTitleAtom, screenAtom } from "./atoms/appAtoms";
+import { useEffect } from "react";
+import {
+  navigateToGameAtom,
+  navigateToTitleAtom,
+  screenAtom,
+} from "./atoms/appAtoms";
 import {
   gameStateAtom,
   lobbyStateAtom,
@@ -17,6 +22,7 @@ import {
 } from "./components/ui/dialog";
 import { useBeforeUnload } from "./hooks/useBeforeUnload";
 import { CreateRoomScreen } from "./screens/CreateRoomScreen";
+import { GameScreen } from "./screens/GameScreen";
 import { LobbyScreen } from "./screens/LobbyScreen";
 import { TitleScreen } from "./screens/TitleScreen";
 import { WaitingRoomScreen } from "./screens/WaitingRoomScreen";
@@ -26,6 +32,7 @@ function App() {
   const lobbyState = useAtomValue(lobbyStateAtom);
   const gameState = useAtomValue(gameStateAtom);
   const navigateToTitle = useSetAtom(navigateToTitleAtom);
+  const navigateToGame = useSetAtom(navigateToGameAtom);
   const resetDisconnected = useSetAtom(resetDisconnectedAtom);
 
   // ブラウザ離脱防止（タイトル画面以外でリロード・タブ閉じ・戻るボタン時に確認表示）
@@ -33,6 +40,29 @@ function App() {
     currentScreen: screen.screen,
     onNavigateAway: navigateToTitle,
   });
+
+  // phase変更に応じた画面遷移（waitingでなくなったらゲーム画面へ）
+  useEffect(() => {
+    if (gameState.status !== "connected") return;
+
+    const room = gameState.room;
+    const handleStateChange = () => {
+      const phase = room.state.phase;
+      if (phase !== "waiting" && screen.screen === "waitingRoom") {
+        navigateToGame(room.roomId);
+      }
+    };
+
+    // 初期状態をチェック
+    handleStateChange();
+
+    // 状態変更を購読
+    room.onStateChange(handleStateChange);
+
+    return () => {
+      room.onStateChange.remove(handleStateChange);
+    };
+  }, [gameState, screen.screen, navigateToGame]);
 
   // 異常切断状態の判定
   const isDisconnected =
@@ -55,7 +85,7 @@ function App() {
       case "waitingRoom":
         return <WaitingRoomScreen roomId={screen.roomId} />;
       case "game":
-        return <div>Game Screen (TODO)</div>;
+        return <GameScreen roomId={screen.roomId} />;
       default:
         return <TitleScreen />;
     }

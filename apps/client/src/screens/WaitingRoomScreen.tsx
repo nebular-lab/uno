@@ -69,6 +69,7 @@ export const WaitingRoomScreen = ({ roomId }: Props) => {
     readyCount,
     toggleReady,
     leaveRoom,
+    startGame,
   } = useGameRoom();
 
   // ゲーム開始可能かどうか（準備完了が3人以上）
@@ -138,9 +139,7 @@ export const WaitingRoomScreen = ({ roomId }: Props) => {
             <Button
               className="h-20 px-8"
               disabled={!canStartGame}
-              onClick={() => {
-                // TODO: ゲーム開始イベントをサーバーに送る
-              }}
+              onClick={startGame}
             >
               ゲーム開始
             </Button>

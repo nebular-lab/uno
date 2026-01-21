@@ -31,7 +31,6 @@ export class StartGameCommand extends Command<GameRoom, Payload> {
   execute(payload: Payload) {
     // 1. フェーズを "dealing" に変更
     this.state.phase = "dealing";
-    this.state.dealingRound = 0;
 
     // 2. 山札を生成（DeckProvider経由）
     this.room.deck = this.room.createDeck();
@@ -41,8 +40,21 @@ export class StartGameCommand extends Command<GameRoom, Payload> {
       payload.startPlayerId,
     );
 
-    // 4. 段階的なカード配布を開始
-    this.dealNextRound();
+    // 4. 全プレイヤーに7枚ずつ一気に配布
+    this.dealAllCards();
+
+    // 5. 最初の場札を決定
+    const firstCard = this.room.deck.pop();
+    if (firstCard) {
+      this.state.firstCard = firstCard;
+    }
+    this.state.deckCount = this.room.deck.length;
+    this.state.dealingRound = 7; // 配布完了を示す
+
+    // 6. カウントダウンフェーズへ移行
+    this.room.clock.setTimeout(() => {
+      this.room.dispatcher.dispatch(new CountdownCommand());
+    }, TIMING.DEAL_COMPLETE_DELAY);
   }
 
   private determineFirstPlayer(startPlayerId?: string): string {
@@ -60,35 +72,17 @@ export class StartGameCommand extends Command<GameRoom, Payload> {
     return this.state.players.keys().next().value ?? "";
   }
 
-  private dealNextRound() {
-    this.state.dealingRound++;
-
-    for (const player of this.state.players.values()) {
-      const card = this.room.deck.pop();
-      if (card) {
-        player.myHand.push(card);
-        player.handCount++;
+  private dealAllCards() {
+    // 各プレイヤーに7枚ずつ配布
+    for (let i = 0; i < 7; i++) {
+      for (const player of this.state.players.values()) {
+        const card = this.room.deck.pop();
+        if (card) {
+          player.myHand.push(card);
+          player.handCount++;
+        }
       }
     }
     this.state.deckCount = this.room.deck.length;
-
-    if (this.state.dealingRound < 7) {
-      this.room.clock.setTimeout(
-        () => this.dealNextRound(),
-        TIMING.DEAL_INTERVAL,
-      );
-    } else {
-      // 最初の場札を決定
-      const firstCard = this.room.deck.pop();
-      if (firstCard) {
-        this.state.firstCard = firstCard;
-      }
-      this.state.deckCount = this.room.deck.length;
-
-      // カウントダウンフェーズへ移行
-      this.room.clock.setTimeout(() => {
-        this.room.dispatcher.dispatch(new CountdownCommand());
-      }, TIMING.DEAL_COMPLETE_DELAY);
-    }
   }
 }

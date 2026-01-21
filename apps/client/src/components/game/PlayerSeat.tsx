@@ -1,17 +1,11 @@
 import { cn } from "@/lib/utils";
-
-export type Player = {
-  seatIndex: number;
-  name: string;
-  cardCount: number;
-  isHost?: boolean;
-  isReady?: boolean;
-};
+import type { ClientPlayer } from "@/types/connection";
 
 type Props = {
-  player: Player;
+  player: ClientPlayer;
   isCurrentPlayer?: boolean;
   displayIndex?: number; // 表示位置（回転後の位置）
+  isPlaying?: boolean; // ゲーム中かどうか（trueの場合はカード枚数を表示）
 };
 
 // 6人の位置定義（0:上中央 → 時計回り）
@@ -76,28 +70,45 @@ export const EmptySeat = ({
   );
 };
 
-// プレイヤーステータスバッジ（Ready/Wait + HOST表示）
+// プレイヤーステータスバッジ（Ready/Wait または カード枚数 + HOST表示）
 const PlayerStatusBadge = ({
   isReady,
   isHost,
+  isPlaying,
+  cardCount,
   size = 70,
 }: {
   isReady?: boolean;
   isHost?: boolean;
+  isPlaying?: boolean;
+  cardCount: number;
   size?: number;
 }) => {
   return (
     <div className="relative" style={{ width: size, height: size }}>
-      {/* Ready/Wait 丸 */}
-      <div
-        className={cn(
-          "flex items-center justify-center rounded-full text-white text-xs font-medium",
-          isReady ? "bg-green-600" : "bg-avatar-fallback-background",
-        )}
-        style={{ width: size, height: size }}
-      >
-        {isReady ? "準備完了" : "準備中"}
-      </div>
+      {isPlaying ? (
+        // ゲーム中: カード枚数を表示（残り1枚は赤、それ以外はグレー）
+        <div
+          className={cn(
+            "flex items-center justify-center rounded-full font-bold text-white",
+            cardCount === 1 ? "bg-red-500" : "bg-zinc-600",
+          )}
+          style={{ width: size, height: size }}
+        >
+          <span className="text-2xl">{cardCount}</span>
+        </div>
+      ) : (
+        // 待機中: Ready/Wait を表示
+        <div
+          className={cn(
+            "flex items-center justify-center rounded-full text-white text-xs font-medium",
+            isReady ? "bg-green-600" : "bg-avatar-fallback-background",
+          )}
+          style={{ width: size, height: size }}
+        >
+          {isReady ? "準備完了" : "準備中"}
+        </div>
+      )}
       {/* HOSTバッジ（上に重ねて表示） */}
       {isHost && (
         <div className="absolute -top-2 left-1/2 -translate-x-1/2 rounded bg-amber-500 px-1.5 py-0.5 text-xs font-bold text-black shadow">
@@ -139,6 +150,7 @@ export const PlayerSeat = ({
   player,
   isCurrentPlayer,
   displayIndex,
+  isPlaying,
 }: Props) => {
   const posIndex = displayIndex ?? player.seatIndex;
   const seatPos = seatPositions[posIndex] ?? seatPositions[0];
@@ -154,7 +166,9 @@ export const PlayerSeat = ({
       />
       <div className={cn(avatarPos)}>
         <PlayerStatusBadge
+          cardCount={player.cardCount}
           isHost={player.isHost}
+          isPlaying={isPlaying}
           isReady={player.isReady}
           size={70}
         />

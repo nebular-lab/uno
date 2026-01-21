@@ -61,7 +61,7 @@ describe("StartGameCommand", () => {
   });
 
   describe("カード配布（dealingフェーズ）", () => {
-    it("3人でゲーム開始するとdealingフェーズになる", async () => {
+    it("3人でゲーム開始するとゲームが開始される", async () => {
       const room = await colyseus.createRoom("game", {});
       const owner = await colyseus.connectTo(room, { playerName: "Owner" });
       await colyseus.connectTo(room, { playerName: "Player2" });
@@ -70,10 +70,11 @@ describe("StartGameCommand", () => {
       owner.send("startGame");
       await room.waitForNextPatch();
 
-      expect(room.state.phase).toBe("dealing");
+      // 一気に配布されるため、dealingまたはcountdownフェーズに移行
+      expect(["dealing", "countdown"]).toContain(room.state.phase);
     });
 
-    it("dealingRoundが段階的に増えて7に達する", async () => {
+    it("dealingRoundが7になる（一気に配布）", async () => {
       const room = await colyseus.createRoom("game", {});
       const owner = await colyseus.connectTo(room, { playerName: "Owner" });
       await colyseus.connectTo(room, { playerName: "Player2" });
@@ -82,24 +83,8 @@ describe("StartGameCommand", () => {
       owner.send("startGame");
       await room.waitForNextPatch();
 
-      // dealingRoundが1以上から始まる
-      expect(room.state.dealingRound).toBeGreaterThanOrEqual(1);
-
-      // dealingRoundが増えていくことを確認（高速化により一部のラウンドを取りこぼす可能性がある）
-      const rounds: number[] = [room.state.dealingRound];
-      while (room.state.dealingRound < 7 && room.state.phase === "dealing") {
-        await room.waitForNextPatch();
-        if (!rounds.includes(room.state.dealingRound)) {
-          rounds.push(room.state.dealingRound);
-        }
-      }
-
-      // 最終的に7に達することを確認
-      expect(rounds[rounds.length - 1]).toBe(7);
-      // ラウンドは増加していく（取りこぼしがあっても順序は正しい）
-      for (let i = 1; i < rounds.length; i++) {
-        expect(rounds[i]).toBeGreaterThan(rounds[i - 1]);
-      }
+      // 一気に配布されるためdealingRoundは7
+      expect(room.state.dealingRound).toBe(7);
     });
 
     it("各プレイヤーに7枚ずつ配られる", async () => {
@@ -109,11 +94,9 @@ describe("StartGameCommand", () => {
       await colyseus.connectTo(room, { playerName: "Player3" });
 
       owner.send("startGame");
+      await room.waitForNextPatch();
 
-      while (room.state.dealingRound < 7) {
-        await room.waitForNextPatch();
-      }
-
+      // 一気に配布されるため、すぐに全員の手札が7枚
       for (const player of room.state.players.values()) {
         expect(player.handCount).toBe(7);
       }
