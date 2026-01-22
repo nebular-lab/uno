@@ -92,7 +92,7 @@ const PlayerStatusBadge = ({
         isSpectator ? (
           // ゲーム中の観戦者: 「待機中」を表示
           <div
-            className="flex items-center justify-center rounded-full bg-slate-500 text-white text-xs font-medium"
+            className="flex items-center justify-center rounded-full border border-zinc-600 bg-slate-500 text-white text-xs font-medium"
             style={{ width: size, height: size }}
           >
             待機中
@@ -101,7 +101,7 @@ const PlayerStatusBadge = ({
           // ゲーム中: カード枚数を表示（残り1枚は赤、それ以外はグレー）
           <div
             className={cn(
-              "flex items-center justify-center rounded-full font-bold text-white",
+              "flex items-center justify-center rounded-full border border-zinc-600 font-bold text-white",
               cardCount === 1 ? "bg-red-500" : "bg-zinc-600",
             )}
             style={{ width: size, height: size }}
@@ -113,7 +113,7 @@ const PlayerStatusBadge = ({
         // 待機中: Ready/Wait を表示
         <div
           className={cn(
-            "flex items-center justify-center rounded-full text-white text-xs font-medium",
+            "flex items-center justify-center rounded-full border border-zinc-600 text-white text-xs font-medium",
             isReady ? "bg-green-600" : "bg-avatar-fallback-background",
           )}
           style={{ width: size, height: size }}
@@ -145,8 +145,8 @@ const PlayerNamePlate = ({
     <div
       className={cn(
         namePos,
-        "relative z-10 flex h-[60px] w-[180px] items-center gap-2 rounded-full border bg-player-nameplate-background shadow-lg transition-colors",
-        isCurrentPlayer && "border-yellow-400",
+        "relative z-10 flex h-[60px] w-[180px] items-center gap-2 rounded-full border-2 bg-player-nameplate-background shadow-lg transition-colors",
+        isCurrentPlayer ? "border-yellow-400" : "border-zinc-600",
       )}
     >
       <div className="flex w-[130px] flex-col items-center justify-center">
