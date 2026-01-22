@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react-vite";
+import type { Meta, StoryContext, StoryObj } from "@storybook/react-vite";
 import { createStore, Provider } from "jotai";
 import { useHydrateAtoms } from "jotai/utils";
 import type { ReactNode } from "react";
@@ -119,6 +119,11 @@ const StoryProvider = ({ children, gamePlayState }: StoryProviderProps) => {
   );
 };
 
+// Storybook用のカスタムargs型
+type StoryArgs = {
+  gamePlayState?: GamePlayState;
+};
+
 const meta: Meta<typeof App> = {
   title: "Screens/App",
   component: App,
@@ -126,7 +131,7 @@ const meta: Meta<typeof App> = {
     layout: "fullscreen",
   },
   decorators: [
-    (Story, context) => (
+    (Story, context: StoryContext<StoryArgs>) => (
       <StoryProvider gamePlayState={context.args.gamePlayState}>
         <Story />
       </StoryProvider>
@@ -135,7 +140,7 @@ const meta: Meta<typeof App> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof meta>;
+type Story = StoryObj<typeof meta> & { args?: StoryArgs };
 
 // ゲーム開始時点の状態
 export const GameStart: Story = {
