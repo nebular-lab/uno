@@ -1,5 +1,6 @@
 import { atom } from "jotai";
 import type { ClientCard } from "../types/connection";
+import { sortCards } from "../utils/cardSort";
 import { gamePlayStateAtom } from "./connectionAtoms";
 
 // カードIDから順序インデックスへのマッピング
@@ -45,3 +46,16 @@ export const updateHandOrderAtom = atom(
     set(localHandOrderAtom, orderMap);
   },
 );
+
+// 手札をソートするアクション
+export const sortHandAtom = atom(null, (get, set) => {
+  const { myHand } = get(gamePlayStateAtom);
+  if (myHand.length === 0) return;
+
+  const sortedCards = sortCards(myHand);
+  const orderMap = new Map<string, number>();
+  sortedCards.forEach((card, index) => {
+    orderMap.set(card.id, index);
+  });
+  set(localHandOrderAtom, orderMap);
+});
