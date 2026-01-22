@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 type Props = {
   card: ClientCard;
   disabled?: boolean;
+  draggable?: boolean;
   onClick?: () => void;
 };
 
@@ -43,7 +44,7 @@ const getDisplayValue = (value: string): string => {
   }
 };
 
-export const Card = ({ card, disabled, onClick }: Props) => {
+export const Card = ({ card, disabled, draggable, onClick }: Props) => {
   const isDraw4 = card.value === "draw4";
   const isWild = card.value === "wild";
   const isForceChange = card.value === "force-change";
@@ -66,12 +67,15 @@ export const Card = ({ card, disabled, onClick }: Props) => {
   return (
     <button
       className={cn(
-        "relative flex h-20 w-14 items-center justify-center rounded-lg border-2 text-lg font-bold shadow-lg transition-transform",
+        "relative flex h-20 w-14 select-none items-center justify-center rounded-lg border-2 text-lg font-bold shadow-lg transition-transform",
         getBgClass(),
         getTextClass(),
         disabled
           ? "cursor-not-allowed opacity-70"
-          : "cursor-pointer hover:-translate-y-2 hover:shadow-xl",
+          : draggable
+            ? "cursor-grab active:cursor-grabbing"
+            : "cursor-pointer hover:-translate-y-2 hover:shadow-xl",
+        draggable && "pointer-events-none",
       )}
       disabled={disabled}
       onClick={onClick}

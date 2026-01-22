@@ -17,7 +17,6 @@ export const GameScreen = ({ roomId }: Props) => {
     phase,
     countdown,
     fieldCards,
-    myHand,
     deckCount,
     currentColor,
   } = useGameRoom();
@@ -78,9 +77,7 @@ export const GameScreen = ({ roomId }: Props) => {
       )}
 
       {/* 自分の手札 */}
-      {phase !== "waiting" && (
-        <MyHand cards={myHand} disabled={phase !== "playing"} />
-      )}
+      {phase !== "waiting" && <MyHand disabled={phase !== "playing"} />}
 
       {/* デバッグ情報 */}
       <div className="absolute left-4 top-4 rounded bg-slate-800/80 px-3 py-1 text-sm text-white">

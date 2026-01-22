@@ -53,12 +53,15 @@ export const ScalableContainer: React.FC<ScalableContainerProps> = ({
         >
           <div
             className="relative overflow-auto"
-            style={{
-              width: BASE_WIDTH,
-              height: BASE_HEIGHT,
-              transform: `scale(${scale})`,
-              transformOrigin: "top left",
-            }}
+            style={
+              {
+                width: BASE_WIDTH,
+                height: BASE_HEIGHT,
+                transform: `scale(${scale})`,
+                transformOrigin: "top left",
+                "--container-scale": scale,
+              } as React.CSSProperties
+            }
           >
             {children}
           </div>
