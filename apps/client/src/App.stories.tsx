@@ -1,7 +1,7 @@
 import type { Meta, StoryContext, StoryObj } from "@storybook/react-vite";
 import { createStore, Provider } from "jotai";
-import { useHydrateAtoms } from "jotai/utils";
 import type { ReactNode } from "react";
+import { useMemo } from "react";
 import App from "./App";
 import { playerAtom, screenAtom } from "./atoms/appAtoms";
 import {
@@ -82,41 +82,27 @@ const mockGamePlayState: GamePlayState = {
   deckCount: 45,
 };
 
-// Jotai atoms を初期化するプロバイダー
-type HydrateAtomsProps = {
-  children: ReactNode;
-  gamePlayState?: GamePlayState;
-};
-
-const HydrateAtoms = ({
-  children,
-  gamePlayState = mockGamePlayState,
-}: HydrateAtomsProps) => {
-  useHydrateAtoms([
-    [screenAtom, { screen: "game", roomId: "test-room-123" }],
-    [playerAtom, { name: "自分" }],
-    [lobbyStateAtom, { status: "idle" }],
-    // gameStateAtomはRoom依存のため、idle状態にしておく
-    // （実際のRoom操作はモックしない）
-    [gameStateAtom, { status: "idle" }],
-    [gamePlayStateAtom, gamePlayState],
-  ]);
-  return children;
-};
-
 // Storybook用のプロバイダーラッパー
 type StoryProviderProps = {
   children: ReactNode;
   gamePlayState?: GamePlayState;
 };
 
-const StoryProvider = ({ children, gamePlayState }: StoryProviderProps) => {
-  const store = createStore();
-  return (
-    <Provider store={store}>
-      <HydrateAtoms gamePlayState={gamePlayState}>{children}</HydrateAtoms>
-    </Provider>
-  );
+const StoryProvider = ({
+  children,
+  gamePlayState = mockGamePlayState,
+}: StoryProviderProps) => {
+  const store = useMemo(() => {
+    const s = createStore();
+    s.set(screenAtom, { screen: "game", roomId: "test-room-123" });
+    s.set(playerAtom, { name: "自分" });
+    s.set(lobbyStateAtom, { status: "idle" });
+    s.set(gameStateAtom, { status: "idle" });
+    s.set(gamePlayStateAtom, gamePlayState);
+    return s;
+  }, [gamePlayState]);
+
+  return <Provider store={store}>{children}</Provider>;
 };
 
 // Storybook用のカスタムargs型
