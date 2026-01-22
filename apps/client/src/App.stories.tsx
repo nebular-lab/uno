@@ -43,16 +43,29 @@ const createMockCard = (
   points,
 });
 
-// ゲーム開始時点の手札
-const mockMyHand: ClientCard[] = [
-  createMockCard("card-1", "red", "3", 3),
-  createMockCard("card-2", "blue", "7", 7),
-  createMockCard("card-3", "green", "5", 5),
-  createMockCard("card-4", "yellow", "2", 2),
-  createMockCard("card-5", "red", "skip", 20),
-  createMockCard("card-6", "blue", "9", 9),
-  createMockCard("card-7", "green", "1", 1),
+// ゲーム開始時点の手札（30枚）
+const colors = ["red", "blue", "green", "yellow"];
+const values = [
+  "0",
+  "1",
+  "2",
+  "3",
+  "4",
+  "5",
+  "6",
+  "7",
+  "8",
+  "9",
+  "skip",
+  "reverse",
+  "draw2",
 ];
+const mockMyHand: ClientCard[] = Array.from({ length: 30 }, (_, i) => {
+  const color = colors[i % colors.length];
+  const value = values[i % values.length];
+  const points = Number.isNaN(Number(value)) ? 20 : Number(value);
+  return createMockCard(`card-${i + 1}`, color, value, points);
+});
 
 // ゲーム開始時点の場札
 const mockFieldCards: ClientCard[] = [createMockCard("field-1", "red", "5", 5)];

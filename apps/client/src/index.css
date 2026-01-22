@@ -107,3 +107,8 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* スクロールバー非表示ユーティリティ */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
