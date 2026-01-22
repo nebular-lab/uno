@@ -39,16 +39,24 @@ export const MyHand = ({ disabled }: Props) => {
     return () => window.removeEventListener("resize", updateScale);
   }, []);
 
+  const totalPoints = cards.reduce((sum, card) => sum + card.points, 0);
+
   return (
     <div className="absolute bottom-4 left-1/2 max-w-[90%] -translate-x-1/2">
-      <Button
-        className="absolute -top-24 left-4 size-[78px] bg-black/50 text-white hover:bg-black/70"
-        disabled={disabled || cards.length === 0}
-        onClick={() => sortHand()}
-        variant="ghost"
-      >
-        <ArrowUpDown className="size-5" />
-      </Button>
+      <div className="absolute -top-24 left-4 flex gap-2">
+        <Button
+          className="size-[78px] bg-black/50 text-white hover:bg-black/70"
+          disabled={disabled || cards.length === 0}
+          onClick={() => sortHand()}
+          variant="ghost"
+        >
+          <ArrowUpDown className="size-5" />
+        </Button>
+        <div className="flex size-[78px] flex-col items-center justify-center rounded-md bg-black/50 text-white">
+          <span className="text-xs text-zinc-400">合計</span>
+          <span className="text-2xl font-bold">{totalPoints}</span>
+        </div>
+      </div>
       <div
         className="scrollbar-hide overflow-x-auto px-4"
         style={{
