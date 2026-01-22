@@ -67,7 +67,7 @@ export const Card = ({ card, disabled, draggable, onClick }: Props) => {
   return (
     <button
       className={cn(
-        "relative flex h-20 w-14 select-none items-center justify-center rounded-lg border-2 text-lg font-bold shadow-lg transition-transform",
+        "relative flex h-[110px] w-[78px] select-none items-center justify-center rounded-lg border-2 text-lg font-bold shadow-lg transition-transform",
         getBgClass(),
         getTextClass(),
         disabled

@@ -42,7 +42,7 @@ export const MyHand = ({ disabled }: Props) => {
     >
       <Reorder.Group
         axis="x"
-        className="flex gap-2"
+        className="flex gap-0.5"
         onReorder={updateHandOrder}
         ref={groupRef}
         values={cards}
