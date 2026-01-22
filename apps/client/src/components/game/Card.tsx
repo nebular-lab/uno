@@ -82,7 +82,7 @@ export const Card = ({ card, disabled, draggable, onClick }: Props) => {
       type="button"
     >
       {/* 中央の値 */}
-      <span className="text-2xl">{displayValue}</span>
+      <span className="text-5xl">{displayValue}</span>
     </button>
   );
 };
