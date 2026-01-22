@@ -58,6 +58,7 @@ export const MyHand = ({ disabled }: Props) => {
               style={{
                 x: 0,
                 y: 0,
+                touchAction: "none",
               }}
               transformTemplate={(_, generated) => {
                 // スケールされた親内でのドラッグ座標を補正 + 縦方向の移動を無効化
