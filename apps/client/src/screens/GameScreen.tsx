@@ -19,6 +19,7 @@ export const GameScreen = ({ roomId }: Props) => {
     fieldCards,
     myHand,
     deckCount,
+    currentColor,
   } = useGameRoom();
 
   // 自分が下中央（position 3）に来るように回転
@@ -66,7 +67,9 @@ export const GameScreen = ({ roomId }: Props) => {
 
         {/* 場のカード */}
         {(phase === "revealing" || phase === "playing") &&
-          fieldCards.length > 0 && <FieldCard card={fieldCards[0]} />}
+          fieldCards.length > 0 && (
+            <FieldCard card={fieldCards[0]} currentColor={currentColor} />
+          )}
       </div>
 
       {/* カウントダウン表示 */}

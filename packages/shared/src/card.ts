@@ -78,3 +78,69 @@ export const CARD_DECK_CONFIG = {
 // ワイルド: wild-{index} 例: "wild-1", "wild-2"
 // ドロー4: draw4-{index} 例: "draw4-1", "draw4-2"
 // 強制色変え: force-{color} 例: "force-red", "force-blue"
+
+/**
+ * カードソート用の色優先度
+ * 仕様: 赤 → 緑 → 青 → 黄 → ワイルド
+ */
+const COLOR_ORDER: Record<string, number> = {
+  red: 0,
+  green: 1,
+  blue: 2,
+  yellow: 3,
+  wild: 4,
+};
+
+/**
+ * カードソート用の値優先度
+ * 仕様: 数字 → 記号カード(skip, reverse) → ドローカード(draw2) → force-change
+ * ワイルド系: wild → draw4
+ */
+const VALUE_ORDER: Record<string, number> = {
+  "0": 0,
+  "1": 1,
+  "2": 2,
+  "3": 3,
+  "4": 4,
+  "5": 5,
+  "6": 6,
+  "7": 7,
+  "8": 8,
+  "9": 9,
+  skip: 10,
+  reverse: 11,
+  draw2: 12,
+  "force-change": 13,
+  wild: 14,
+  draw4: 15,
+};
+
+/**
+ * カードをソートするための比較関数
+ * 色順（赤 → 緑 → 青 → 黄 → ワイルド）、同色内は数字 → 記号カード → ドローカードの順
+ */
+export function compareCards(
+  a: { color: string; value: string },
+  b: { color: string; value: string },
+): number {
+  // 色で比較
+  const colorA = COLOR_ORDER[a.color] ?? 999;
+  const colorB = COLOR_ORDER[b.color] ?? 999;
+  if (colorA !== colorB) {
+    return colorA - colorB;
+  }
+
+  // 同色内は値で比較
+  const valueA = VALUE_ORDER[a.value] ?? 999;
+  const valueB = VALUE_ORDER[b.value] ?? 999;
+  return valueA - valueB;
+}
+
+/**
+ * カード配列をソートする（破壊的）
+ */
+export function sortCards<T extends { color: string; value: string }>(
+  cards: T[],
+): T[] {
+  return cards.sort(compareCards);
+}

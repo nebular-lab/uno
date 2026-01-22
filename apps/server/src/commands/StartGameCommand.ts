@@ -1,4 +1,5 @@
 import { Command } from "@colyseus/command";
+import { compareCards, type Player } from "@dobon-uno/shared";
 import { TIMING } from "../config/timing";
 import type { GameRoom } from "../rooms/GameRoom";
 import { CountdownCommand } from "./CountdownCommand";
@@ -84,5 +85,28 @@ export class StartGameCommand extends Command<GameRoom, Payload> {
       }
     }
     this.state.deckCount = this.room.deck.length;
+
+    // 各プレイヤーの手札をソート（色順 → 数字順）
+    for (const player of this.state.players.values()) {
+      this.sortPlayerHand(player);
+    }
+  }
+
+  /**
+   * プレイヤーの手札をソートする
+   * ArraySchemaを直接ソートできないため、一旦配列化してソート後に再設定
+   */
+  private sortPlayerHand(player: Player) {
+    // ArraySchemaを配列に変換
+    const cards = [...player.myHand];
+
+    // ソート
+    cards.sort(compareCards);
+
+    // ArraySchemaをクリアして再設定
+    player.myHand.splice(0, player.myHand.length);
+    for (const card of cards) {
+      player.myHand.push(card);
+    }
   }
 }
