@@ -1,6 +1,7 @@
 import { boot, type ColyseusTestServer } from "@colyseus/testing";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import appConfig from "../app.config";
+import { TIMING } from "../config/timing";
 
 // テスト用カードデータ
 const testCards = {
@@ -922,6 +923,148 @@ describe("BeginPlayCommand", () => {
 
       // fieldCardsが0枚のまま（まだ場札は公開されていない）
       expect(room.state.fieldCards.length).toBe(0);
+    });
+  });
+
+  describe("ターンタイマー", () => {
+    it("playingフェーズ開始時に手番プレイヤーのtimeRemainingが設定される", async () => {
+      const room = await colyseus.createRoom("game", {});
+      const owner = await colyseus.connectTo(room, { playerName: "Owner" });
+      await colyseus.connectTo(room, { playerName: "Player2" });
+      await colyseus.connectTo(room, { playerName: "Player3" });
+
+      // テスト用デッキを設定
+      const testDeck = createTestDeck(testCards.number, 3);
+      owner.send("__setDeck", testDeck);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      owner.send("startGame");
+
+      const timeout = Date.now() + 15000;
+      while (room.state.phase !== "playing" && Date.now() < timeout) {
+        await room.waitForNextPatch();
+      }
+
+      const currentPlayer = room.state.players.get(
+        room.state.currentTurnPlayerId,
+      );
+
+      // timeRemainingが設定されている（秒単位）
+      expect(currentPlayer?.timeRemaining).toBeGreaterThan(0);
+      expect(currentPlayer?.timeRemaining).toBe(
+        Math.ceil(TIMING.TURN_TIMEOUT / 1000),
+      );
+    });
+
+    it("手番でないプレイヤーのtimeRemainingは0", async () => {
+      const room = await colyseus.createRoom("game", {});
+      const owner = await colyseus.connectTo(room, { playerName: "Owner" });
+      await colyseus.connectTo(room, { playerName: "Player2" });
+      await colyseus.connectTo(room, { playerName: "Player3" });
+
+      // テスト用デッキを設定
+      const testDeck = createTestDeck(testCards.number, 3);
+      owner.send("__setDeck", testDeck);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      owner.send("startGame");
+
+      const timeout = Date.now() + 15000;
+      while (room.state.phase !== "playing" && Date.now() < timeout) {
+        await room.waitForNextPatch();
+      }
+
+      for (const [sessionId, player] of room.state.players.entries()) {
+        if (sessionId !== room.state.currentTurnPlayerId) {
+          expect(player.timeRemaining).toBe(0);
+        }
+      }
+    });
+
+    it("タイムアウト後に手番プレイヤーのtimeRemainingが0になる", async () => {
+      const room = await colyseus.createRoom("game", {});
+      const owner = await colyseus.connectTo(room, { playerName: "Owner" });
+      await colyseus.connectTo(room, { playerName: "Player2" });
+      await colyseus.connectTo(room, { playerName: "Player3" });
+
+      // テスト用デッキを設定
+      const testDeck = createTestDeck(testCards.number, 3);
+      owner.send("__setDeck", testDeck);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      owner.send("startGame");
+
+      let timeout = Date.now() + 15000;
+      while (room.state.phase !== "playing" && Date.now() < timeout) {
+        await room.waitForNextPatch();
+      }
+
+      const currentPlayerId = room.state.currentTurnPlayerId;
+      const currentPlayer = room.state.players.get(currentPlayerId);
+      expect(currentPlayer?.timeRemaining).toBeGreaterThan(0);
+
+      // タイムアウトを待つ（テスト環境では100ms + 余裕）
+      await new Promise((resolve) =>
+        setTimeout(resolve, TIMING.TURN_TIMEOUT + 50),
+      );
+
+      // 状態更新を待つ
+      timeout = Date.now() + 1000;
+      while (
+        room.state.players.get(currentPlayerId)?.timeRemaining !== 0 &&
+        Date.now() < timeout
+      ) {
+        await room.waitForNextPatch();
+      }
+
+      // timeRemainingが0になっている
+      expect(room.state.players.get(currentPlayerId)?.timeRemaining).toBe(0);
+    });
+
+    it("色選択待ち時にタイムアウトするとtimeRemainingが0になる", async () => {
+      // 注: ChooseColorCommandは現在スタブ実装のため、
+      // タイムアウト時にコマンドはdispatchされるが状態は変化しない。
+      // コマンド実装後は色が自動選択されるようになる。
+      const room = await colyseus.createRoom("game", {});
+      const owner = await colyseus.connectTo(room, { playerName: "Owner" });
+      await colyseus.connectTo(room, { playerName: "Player2" });
+      await colyseus.connectTo(room, { playerName: "Player3" });
+
+      // ドロー4を場札にして色選択待ち状態にする
+      const testDeck = createTestDeck(testCards.draw4, 3);
+      owner.send("__setDeck", testDeck);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      owner.send("startGame");
+
+      let timeout = Date.now() + 15000;
+      while (room.state.phase !== "playing" && Date.now() < timeout) {
+        await room.waitForNextPatch();
+      }
+
+      // 色選択待ち状態であることを確認
+      expect(room.state.waitingForColorChoice).toBe(true);
+
+      const currentPlayerId = room.state.currentTurnPlayerId;
+      const currentPlayer = room.state.players.get(currentPlayerId);
+      expect(currentPlayer?.timeRemaining).toBeGreaterThan(0);
+
+      // タイムアウトを待つ
+      await new Promise((resolve) =>
+        setTimeout(resolve, TIMING.TURN_TIMEOUT + 50),
+      );
+
+      // 状態更新を待つ
+      timeout = Date.now() + 1000;
+      while (
+        room.state.players.get(currentPlayerId)?.timeRemaining !== 0 &&
+        Date.now() < timeout
+      ) {
+        await room.waitForNextPatch();
+      }
+
+      // タイムアウトによりtimeRemainingが0になっている
+      expect(room.state.players.get(currentPlayerId)?.timeRemaining).toBe(0);
     });
   });
 });
