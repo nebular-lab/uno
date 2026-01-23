@@ -12,7 +12,8 @@ import { TIMING } from "../config/timing";
  * タイムアウト時の処理はコールバックとして受け取る（単一責任）
  */
 export class TurnTimerService {
-  private timers: Map<string, NodeJS.Timeout> = new Map();
+  private timeoutTimers: Map<string, NodeJS.Timeout> = new Map();
+  private intervalTimers: Map<string, NodeJS.Timeout> = new Map();
   private state: GameState;
 
   constructor(state: GameState) {
@@ -33,13 +34,21 @@ export class TurnTimerService {
     // 残り秒数を設定
     player.timeRemaining = Math.ceil(TIMING.TURN_TIMEOUT / 1000);
 
-    const timer = setTimeout(() => {
-      this.timers.delete(playerId);
+    // 1秒ごとにカウントダウン
+    const interval = setInterval(() => {
+      if (player.timeRemaining > 0) {
+        player.timeRemaining--;
+      }
+    }, 1000);
+    this.intervalTimers.set(playerId, interval);
+
+    // タイムアウト時の処理
+    const timeout = setTimeout(() => {
+      this.clearTimers(playerId);
       player.timeRemaining = 0;
       onTimeout(); // コールバックを実行
     }, TIMING.TURN_TIMEOUT);
-
-    this.timers.set(playerId, timer);
+    this.timeoutTimers.set(playerId, timeout);
   }
 
   /**
@@ -47,11 +56,7 @@ export class TurnTimerService {
    * @param playerId 対象プレイヤーのID
    */
   stopTimer(playerId: string): void {
-    const timer = this.timers.get(playerId);
-    if (timer) {
-      clearTimeout(timer);
-      this.timers.delete(playerId);
-    }
+    this.clearTimers(playerId);
 
     const player = this.state.players.get(playerId);
     if (player) {
@@ -60,10 +65,27 @@ export class TurnTimerService {
   }
 
   /**
+   * タイマーをクリアする（内部用）
+   */
+  private clearTimers(playerId: string): void {
+    const timeout = this.timeoutTimers.get(playerId);
+    if (timeout) {
+      clearTimeout(timeout);
+      this.timeoutTimers.delete(playerId);
+    }
+
+    const interval = this.intervalTimers.get(playerId);
+    if (interval) {
+      clearInterval(interval);
+      this.intervalTimers.delete(playerId);
+    }
+  }
+
+  /**
    * 全タイマーを停止（ゲーム終了時など）
    */
   stopAllTimers(): void {
-    for (const [playerId] of this.timers) {
+    for (const [playerId] of this.timeoutTimers) {
       this.stopTimer(playerId);
     }
   }
@@ -73,13 +95,13 @@ export class TurnTimerService {
    * @param playerId 対象プレイヤーのID
    */
   isTimerActive(playerId: string): boolean {
-    return this.timers.has(playerId);
+    return this.timeoutTimers.has(playerId);
   }
 
   /**
    * アクティブなタイマーの数を取得（テスト用）
    */
   getActiveTimerCount(): number {
-    return this.timers.size;
+    return this.timeoutTimers.size;
   }
 }
