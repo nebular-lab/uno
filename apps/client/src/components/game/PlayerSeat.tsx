@@ -121,8 +121,8 @@ const PlayerStatusBadge = ({
           {isReady ? "準備完了" : "準備中"}
         </div>
       )}
-      {/* HOSTバッジ（上に重ねて表示） */}
-      {isHost && (
+      {/* HOSTバッジ（待機室のみ表示） */}
+      {isHost && !isPlaying && (
         <div className="absolute -top-2 left-1/2 -translate-x-1/2 rounded bg-amber-500 px-1.5 py-0.5 text-xs font-bold text-black shadow">
           HOST
         </div>
