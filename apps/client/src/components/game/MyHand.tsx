@@ -14,6 +14,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { useAtomValue, useSetAtom } from "jotai";
 import { ArrowUpDown } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import {
   orderedMyHandAtom,
   sortHandAtom,
@@ -26,9 +27,10 @@ import { Card } from "./Card";
 type SortableCardProps = {
   card: ClientCard;
   disabled: boolean;
+  scale: number;
 };
 
-const SortableCard = ({ card, disabled }: SortableCardProps) => {
+const SortableCard = ({ card, disabled, scale }: SortableCardProps) => {
   const {
     attributes,
     listeners,
@@ -40,7 +42,7 @@ const SortableCard = ({ card, disabled }: SortableCardProps) => {
 
   const style = {
     transform: transform
-      ? CSS.Transform.toString({ ...transform, y: 0 })
+      ? CSS.Transform.toString({ ...transform, x: transform.x / scale, y: 0 })
       : undefined,
     transition,
     zIndex: isDragging ? 10 : 0,
@@ -61,6 +63,25 @@ export const MyHand = ({ disabled }: Props) => {
   const cards = useAtomValue(orderedMyHandAtom);
   const sortHand = useSetAtom(sortHandAtom);
   const updateHandOrder = useSetAtom(updateHandOrderAtom);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const updateScale = () => {
+      if (containerRef.current) {
+        const scaleValue = getComputedStyle(
+          containerRef.current,
+        ).getPropertyValue("--container-scale");
+        if (scaleValue) {
+          setScale(Number.parseFloat(scaleValue));
+        }
+      }
+    };
+
+    updateScale();
+    window.addEventListener("resize", updateScale);
+    return () => window.removeEventListener("resize", updateScale);
+  }, []);
 
   const totalPoints = cards.reduce((sum, card) => sum + card.points, 0);
 
@@ -89,7 +110,10 @@ export const MyHand = ({ disabled }: Props) => {
   };
 
   return (
-    <div className="absolute bottom-4 left-1/2 max-w-[90%] -translate-x-1/2">
+    <div
+      className="absolute bottom-4 left-1/2 max-w-[90%] -translate-x-1/2"
+      ref={containerRef}
+    >
       <div className="absolute -top-24 left-4 flex gap-2">
         <Button
           className="size-[78px] bg-black/50 text-white hover:bg-black/70"
@@ -122,7 +146,12 @@ export const MyHand = ({ disabled }: Props) => {
           >
             <div className="flex gap-0.5">
               {cards.map((card) => (
-                <SortableCard card={card} disabled={disabled} key={card.id} />
+                <SortableCard
+                  card={card}
+                  disabled={disabled}
+                  key={card.id}
+                  scale={scale}
+                />
               ))}
             </div>
           </SortableContext>
