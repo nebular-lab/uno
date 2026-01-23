@@ -129,7 +129,7 @@ export const MyHand = ({ disabled }: Props) => {
         </div>
       </div>
       <div
-        className="scrollbar-hide overflow-x-auto px-4"
+        className="scrollbar-hide overflow-x-auto px-4 pt-3"
         style={{
           scrollbarWidth: "none",
           msOverflowStyle: "none",
