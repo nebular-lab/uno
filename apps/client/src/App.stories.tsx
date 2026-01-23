@@ -22,12 +22,14 @@ const createMockPlayer = (
   cardCount: number,
   isHost = false,
 ): ClientPlayer => ({
+  sessionId: `session-${seatIndex}`,
   seatIndex,
   name,
   cardCount,
   isHost,
   isReady: true,
   isSpectator: false,
+  timeRemaining: 0,
 });
 
 // モック用のカードデータ
