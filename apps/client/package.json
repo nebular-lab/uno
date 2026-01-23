@@ -12,6 +12,9 @@
     "chromatic": "chromatic --project-token=chpt_c0abec719ed2459"
   },
   "dependencies": {
+    "@dnd-kit/core": "6.3.1",
+    "@dnd-kit/sortable": "10.0.0",
+    "@dnd-kit/utilities": "3.2.2",
     "@dobon-uno/shared": "workspace:*",
     "@radix-ui/react-dialog": "1.1.15",
     "@radix-ui/react-slot": "1.2.4",
