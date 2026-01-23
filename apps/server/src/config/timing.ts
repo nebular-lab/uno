@@ -14,4 +14,6 @@ export const TIMING = {
   COUNTDOWN_INTERVAL: Math.max(1, 1000 * SPEED_MULTIPLIER),
   /** 場札公開後の待機 (ms) */
   REVEAL_DELAY: Math.max(1, 1000 * SPEED_MULTIPLIER),
+  /** ターンタイムアウト (ms) - 10秒 */
+  TURN_TIMEOUT: Math.max(1, 10000 * SPEED_MULTIPLIER),
 };
