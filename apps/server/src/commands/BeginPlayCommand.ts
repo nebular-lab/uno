@@ -3,6 +3,10 @@ import type { Card, Player } from "@dobon-uno/shared";
 import type { CardEffectContext } from "../effects";
 import { CardEffectRegistry } from "../effects";
 import type { GameRoom } from "../rooms/GameRoom";
+import { ChooseColorCommand } from "./ChooseColorCommand";
+import { DrawCardCommand } from "./DrawCardCommand";
+import { DrawStackCommand } from "./DrawStackCommand";
+import { PassCommand } from "./PassCommand";
 
 /**
  * プレイフェーズを開始するCommand
@@ -20,6 +24,51 @@ export class BeginPlayCommand extends Command<GameRoom> {
 
     // 各プレイヤーのアクション可否を更新
     this.updatePlayerActions();
+
+    // タイマー開始
+    this.startCurrentPlayerTimer();
+  }
+
+  /**
+   * 現在の手番プレイヤーのタイマーを開始する
+   */
+  private startCurrentPlayerTimer(): void {
+    const currentPlayerId = this.state.currentTurnPlayerId;
+
+    this.room.turnTimerService.startTimer(currentPlayerId, () => {
+      this.handleTimeout(currentPlayerId);
+    });
+  }
+
+  /**
+   * タイムアウト時の自動処理
+   */
+  private handleTimeout(playerId: string): void {
+    // 状態に応じた自動処理をdispatch
+    if (this.state.waitingForColorChoice) {
+      // ランダムに色を選択
+      const colors = ["red", "blue", "green", "yellow"] as const;
+      const randomColor = colors[Math.floor(Math.random() * colors.length)];
+      this.room.dispatcher.dispatch(new ChooseColorCommand(), {
+        sessionId: playerId,
+        color: randomColor,
+      });
+    } else if (this.state.drawStack > 0) {
+      // 累積分を引く
+      this.room.dispatcher.dispatch(new DrawStackCommand(), {
+        sessionId: playerId,
+      });
+    } else if (this.state.hasDrawnThisTurn) {
+      // パス
+      this.room.dispatcher.dispatch(new PassCommand(), {
+        sessionId: playerId,
+      });
+    } else {
+      // 1枚引いてパス
+      this.room.dispatcher.dispatch(new DrawCardCommand(), {
+        sessionId: playerId,
+      });
+    }
   }
 
   /**

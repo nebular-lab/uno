@@ -16,6 +16,7 @@ import { PassCommand } from "../commands/PassCommand";
 // Commands
 import { PlayCardCommand } from "../commands/PlayCardCommand";
 import { StartGameCommand } from "../commands/StartGameCommand";
+import { TurnTimerService } from "../services/TurnTimerService";
 import { createDeck, shuffleDeck } from "../utils/deck";
 
 /**
@@ -41,9 +42,15 @@ export class GameRoom extends Room<GameState, RoomMetadata> {
   // 山札生成関数（DI可能）
   private deckProvider: DeckProvider = defaultDeckProvider;
 
+  // ターンタイマーサービス
+  turnTimerService!: TurnTimerService;
+
   onCreate(_options: CreateRoomOptions) {
     this.state = new GameState();
     this.state.roomId = this.roomId;
+
+    // ターンタイマーサービスを初期化
+    this.turnTimerService = new TurnTimerService(this.state);
 
     // クライアント → サーバー: メッセージハンドラー登録
     this.registerMessageHandlers();
@@ -221,6 +228,9 @@ export class GameRoom extends Room<GameState, RoomMetadata> {
   onLeave(client: Client) {
     console.log(`${client.sessionId} left`);
 
+    // 退出プレイヤーのタイマーを停止
+    this.turnTimerService.stopTimer(client.sessionId);
+
     const player = this.state.players.get(client.sessionId);
     if (!player) return;
 
@@ -240,6 +250,9 @@ export class GameRoom extends Room<GameState, RoomMetadata> {
   }
 
   onDispose() {
+    // 全タイマーを停止
+    this.turnTimerService.stopAllTimers();
+
     // Dispatcherの停止
     this.dispatcher.stop();
   }
