@@ -19,6 +19,7 @@ export const GameScreen = ({ roomId }: Props) => {
     fieldCards,
     deckCount,
     currentColor,
+    currentTurnPlayerId,
   } = useGameRoom();
 
   // 自分が下中央（position 3）に来るように回転
@@ -38,8 +39,8 @@ export const GameScreen = ({ roomId }: Props) => {
       {[0, 1, 2, 3, 4, 5].map((displayIndex) => {
         const actualIndex = getActualIndex(displayIndex);
         const player = players[actualIndex];
-        // TODO: 手番ハイライトの判定を改善（sessionIdが必要）
-        const isCurrentTurn = false;
+        const isCurrentTurn =
+          player !== null && player.sessionId === currentTurnPlayerId;
         return player ? (
           <PlayerSeat
             displayIndex={displayIndex}

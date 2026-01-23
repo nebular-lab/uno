@@ -131,15 +131,38 @@ const PlayerStatusBadge = ({
   );
 };
 
+// タイマー表示
+const TurnTimer = ({ timeRemaining }: { timeRemaining: number }) => {
+  if (timeRemaining <= 0) return null;
+
+  // 残り3秒以下は赤、それ以外は黄色
+  const isUrgent = timeRemaining <= 3;
+
+  return (
+    <div
+      className={cn(
+        "absolute -bottom-5 left-1/2 -translate-x-1/2 rounded-full px-2 py-0.5 text-xs font-bold shadow",
+        isUrgent
+          ? "bg-red-500 text-white animate-pulse"
+          : "bg-yellow-400 text-black",
+      )}
+    >
+      {timeRemaining}s
+    </div>
+  );
+};
+
 // プレイヤー名プレート
 const PlayerNamePlate = ({
   name,
   namePos,
   isCurrentPlayer,
+  timeRemaining,
 }: {
   name: string;
   namePos: string;
   isCurrentPlayer?: boolean;
+  timeRemaining?: number;
 }) => {
   return (
     <div
@@ -154,6 +177,9 @@ const PlayerNamePlate = ({
           {name}
         </span>
       </div>
+      {isCurrentPlayer && timeRemaining !== undefined && (
+        <TurnTimer timeRemaining={timeRemaining} />
+      )}
     </div>
   );
 };
@@ -175,6 +201,7 @@ export const PlayerSeat = ({
         isCurrentPlayer={isCurrentPlayer}
         name={player.name}
         namePos={namePos}
+        timeRemaining={player.timeRemaining}
       />
       <div className={cn(avatarPos)}>
         <PlayerStatusBadge

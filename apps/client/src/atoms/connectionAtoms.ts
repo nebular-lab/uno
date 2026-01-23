@@ -50,12 +50,14 @@ const convertCard = (serverCard: ServerCard): ClientCard => ({
 
 // サーバーのPlayerをクライアント用に変換
 const convertPlayer = (serverPlayer: ServerPlayer): ClientPlayer => ({
+  sessionId: serverPlayer.sessionId,
   seatIndex: serverPlayer.seatId - 1,
   name: serverPlayer.name,
   cardCount: serverPlayer.handCount,
   isHost: serverPlayer.isOwner,
   isReady: serverPlayer.isReady,
   isSpectator: serverPlayer.isSpectator,
+  timeRemaining: serverPlayer.timeRemaining,
 });
 
 // 6人分の席配列を作成

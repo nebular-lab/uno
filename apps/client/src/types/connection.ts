@@ -31,12 +31,14 @@ export type ClientCard = {
 
 // クライアント用のプレイヤー型
 export type ClientPlayer = {
+  sessionId: string;
   seatIndex: number;
   name: string;
   cardCount: number;
   isHost: boolean;
   isReady: boolean;
   isSpectator: boolean;
+  timeRemaining: number; // タイマー残り秒数（0なら非アクティブ）
 };
 
 // ゲームプレイ状態（Room.stateをReact用に変換した状態）
