@@ -38,7 +38,7 @@ const getDisplayValue = (value: string): string => {
     case "draw4":
       return "+4";
     case "force-change":
-      return "";
+      return "W";
     default:
       return value;
   }
@@ -47,18 +47,16 @@ const getDisplayValue = (value: string): string => {
 export const Card = ({ card, disabled, draggable, onClick }: Props) => {
   const isDraw4 = card.value === "draw4";
   const isWild = card.value === "wild";
-  const isForceChange = card.value === "force-change";
 
   // 背景クラスの決定
   const getBgClass = () => {
     if (isWild || isDraw4) return "bg-gray-500 border-gray-600";
-    if (isForceChange) return "bg-gray-400 border-gray-500";
     return bgColorClasses[card.color] ?? "bg-gray-500 border-gray-600";
   };
 
   // テキスト色の決定
   const getTextClass = () => {
-    if (isWild || isDraw4 || isForceChange) return "text-white";
+    if (isWild || isDraw4) return "text-white";
     return textColorClasses[card.color] ?? "text-white";
   };
 
