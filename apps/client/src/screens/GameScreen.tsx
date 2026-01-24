@@ -59,7 +59,7 @@ export const GameScreen = ({ roomId }: Props) => {
       })}
 
       {/* 山札と場札 */}
-      <div className="absolute left-1/2 top-[42%] z-10 flex -translate-x-1/2 -translate-y-1/2 items-center gap-4">
+      <div className="absolute left-1/2 top-[38%] z-10 flex -translate-x-1/2 -translate-y-1/2 items-center gap-4">
         {/* 山札 */}
         <div className="flex h-20 w-14 items-center justify-center rounded-lg bg-zinc-600 shadow-lg">
           <span className="font-bold text-white text-xl">{deckCount}</span>
