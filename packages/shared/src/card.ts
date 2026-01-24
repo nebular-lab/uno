@@ -116,14 +116,31 @@ const VALUE_ORDER: Record<string, number> = {
 };
 
 /**
+ * カードのカテゴリを取得
+ * 0=数字, 1=記号, 2=特殊（force-change, wild, draw4）
+ */
+function getCategory(value: string): number {
+  if (/^[0-9]$/.test(value)) return 0; // 数字
+  if (value === "skip" || value === "reverse" || value === "draw2") return 1; // 記号
+  return 2; // 特殊（force-change, wild, draw4）
+}
+
+/**
  * カードをソートするための比較関数
- * 色順（赤 → 緑 → 青 → 黄 → ワイルド）、同色内は数字 → 記号カード → ドローカードの順
+ * カテゴリ優先（数字→記号→特殊）→ 同カテゴリ内で色順 → 同色内で値順
  */
 export function compareCards(
   a: { color: string; value: string },
   b: { color: string; value: string },
 ): number {
-  // 色で比較
+  // カテゴリで比較（数字→記号→特殊）
+  const catA = getCategory(a.value);
+  const catB = getCategory(b.value);
+  if (catA !== catB) {
+    return catA - catB;
+  }
+
+  // 同カテゴリ内で色順
   const colorA = COLOR_ORDER[a.color] ?? 999;
   const colorB = COLOR_ORDER[b.color] ?? 999;
   if (colorA !== colorB) {
