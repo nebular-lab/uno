@@ -76,6 +76,7 @@ const PlayerStatusBadge = ({
   isHost,
   isPlaying,
   isSpectator,
+  isCurrentPlayer,
   cardCount,
   size = 70,
 }: {
@@ -83,16 +84,24 @@ const PlayerStatusBadge = ({
   isHost?: boolean;
   isPlaying?: boolean;
   isSpectator?: boolean;
+  isCurrentPlayer?: boolean;
   cardCount: number;
   size?: number;
 }) => {
+  const borderClass = isCurrentPlayer
+    ? "border-2 border-yellow-400"
+    : "border border-zinc-600";
+
   return (
     <div className="relative" style={{ width: size, height: size }}>
       {isPlaying ? (
         isSpectator ? (
           // ゲーム中の観戦者: 「待機中」を表示
           <div
-            className="flex items-center justify-center rounded-full border border-zinc-600 bg-slate-500 text-white text-xs font-medium"
+            className={cn(
+              "flex items-center justify-center rounded-full bg-slate-500 text-white text-xs font-medium",
+              borderClass,
+            )}
             style={{ width: size, height: size }}
           >
             待機中
@@ -101,7 +110,8 @@ const PlayerStatusBadge = ({
           // ゲーム中: カード枚数を表示（残り1枚は赤、それ以外はグレー）
           <div
             className={cn(
-              "flex items-center justify-center rounded-full border border-zinc-600 font-bold text-white",
+              "flex items-center justify-center rounded-full font-bold text-white",
+              borderClass,
               cardCount === 1 ? "bg-red-500" : "bg-zinc-600",
             )}
             style={{ width: size, height: size }}
@@ -113,7 +123,8 @@ const PlayerStatusBadge = ({
         // 待機中: Ready/Wait を表示
         <div
           className={cn(
-            "flex items-center justify-center rounded-full border border-zinc-600 text-white text-xs font-medium",
+            "flex items-center justify-center rounded-full text-white text-xs font-medium",
+            borderClass,
             isReady ? "bg-green-600" : "bg-avatar-fallback-background",
           )}
           style={{ width: size, height: size }}
@@ -206,6 +217,7 @@ export const PlayerSeat = ({
       <div className={cn(avatarPos)}>
         <PlayerStatusBadge
           cardCount={player.cardCount}
+          isCurrentPlayer={isCurrentPlayer}
           isHost={player.isHost}
           isPlaying={isPlaying}
           isReady={player.isReady}
