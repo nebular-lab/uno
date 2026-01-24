@@ -110,11 +110,8 @@ export const MyHand = ({ disabled }: Props) => {
   };
 
   return (
-    <div
-      className="absolute bottom-4 left-1/2 max-w-[90%] -translate-x-1/2"
-      ref={containerRef}
-    >
-      <div className="absolute -top-24 left-4 flex gap-2">
+    <>
+      <div className="fixed bottom-[150px] left-4 flex gap-2">
         <Button
           className="size-[78px] bg-black/50 text-white hover:bg-black/70"
           disabled={disabled || cards.length === 0}
@@ -129,34 +126,39 @@ export const MyHand = ({ disabled }: Props) => {
         </div>
       </div>
       <div
-        className="scrollbar-hide overflow-x-auto px-4 pt-3"
-        style={{
-          scrollbarWidth: "none",
-          msOverflowStyle: "none",
-        }}
+        className="absolute bottom-4 left-1/2 max-w-[90%] -translate-x-1/2"
+        ref={containerRef}
       >
-        <DndContext
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-          sensors={sensors}
+        <div
+          className="scrollbar-hide overflow-x-auto px-4 pt-3"
+          style={{
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+          }}
         >
-          <SortableContext
-            items={cards.map((card) => card.id)}
-            strategy={horizontalListSortingStrategy}
+          <DndContext
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+            sensors={sensors}
           >
-            <div className="flex gap-0.5">
-              {cards.map((card) => (
-                <SortableCard
-                  card={card}
-                  disabled={disabled}
-                  key={card.id}
-                  scale={scale}
-                />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
+            <SortableContext
+              items={cards.map((card) => card.id)}
+              strategy={horizontalListSortingStrategy}
+            >
+              <div className="flex gap-0.5">
+                {cards.map((card) => (
+                  <SortableCard
+                    card={card}
+                    disabled={disabled}
+                    key={card.id}
+                    scale={scale}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
