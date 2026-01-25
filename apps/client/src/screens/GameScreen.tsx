@@ -1,3 +1,4 @@
+import { ActionButtons } from "@/components/game/ActionButtons";
 import { CountdownOverlay } from "@/components/game/CountdownOverlay";
 import { FieldCard } from "@/components/game/FieldCard";
 import { MyHand } from "@/components/game/MyHand";
@@ -20,6 +21,7 @@ export const GameScreen = ({ roomId }: Props) => {
     deckCount,
     currentColor,
     currentTurnPlayerId,
+    myHand,
   } = useGameRoom();
 
   // 自分が下中央（position 3）に来るように回転
@@ -79,6 +81,9 @@ export const GameScreen = ({ roomId }: Props) => {
 
       {/* 自分の手札 */}
       {phase !== "waiting" && <MyHand disabled={phase !== "playing"} />}
+
+      {/* アクションボタン */}
+      {phase === "playing" && <ActionButtons myHand={myHand} />}
 
       {/* デバッグ情報 */}
       <div className="absolute left-4 top-4 rounded bg-slate-800/80 px-3 py-1 text-sm text-white">

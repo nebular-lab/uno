@@ -39,6 +39,14 @@ export type ClientPlayer = {
   isReady: boolean;
   isSpectator: boolean;
   timeRemaining: number; // タイマー残り秒数（0なら非アクティブ）
+  // アクションフラグ
+  canPass: boolean;
+  canDraw: boolean;
+  canChooseColor: boolean;
+  canDobon: boolean;
+  canDobonReturn: boolean;
+  canDrawStack: boolean;
+  playableCards: Record<string, boolean>; // cardId -> 出せるか
 };
 
 // ゲームプレイ状態（Room.stateをReact用に変換した状態）

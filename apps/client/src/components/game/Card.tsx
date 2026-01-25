@@ -5,6 +5,8 @@ type Props = {
   card: ClientCard;
   disabled?: boolean;
   draggable?: boolean;
+  playable?: boolean;
+  selected?: boolean;
   onClick?: () => void;
 };
 
@@ -44,7 +46,14 @@ const getDisplayValue = (value: string): string => {
   }
 };
 
-export const Card = ({ card, disabled, draggable, onClick }: Props) => {
+export const Card = ({
+  card,
+  disabled,
+  draggable,
+  playable = true,
+  selected,
+  onClick,
+}: Props) => {
   const isDraw4 = card.value === "draw4";
   const isWild = card.value === "wild";
 
@@ -62,20 +71,26 @@ export const Card = ({ card, disabled, draggable, onClick }: Props) => {
 
   const displayValue = getDisplayValue(card.value);
 
+  // 出せないカードかどうか
+  const isUnplayable = !disabled && !playable;
+
   return (
     <button
       className={cn(
-        "relative flex h-[110px] w-[78px] select-none items-center justify-center rounded-lg border-2 text-lg font-bold shadow-lg transition-transform",
+        "relative flex h-[110px] w-[78px] select-none items-center justify-center rounded-lg text-lg font-bold shadow-lg transition-transform",
         getBgClass(),
         getTextClass(),
         disabled
-          ? "cursor-not-allowed opacity-70"
-          : draggable
-            ? "cursor-grab active:cursor-grabbing"
-            : "cursor-pointer hover:-translate-y-2 hover:shadow-xl",
+          ? "cursor-not-allowed border-2 opacity-70"
+          : isUnplayable
+            ? "cursor-not-allowed border-2 opacity-30"
+            : draggable
+              ? "cursor-grab border-2 active:cursor-grabbing"
+              : "cursor-pointer border-2 hover:border-4 hover:border-white",
         draggable && "pointer-events-none",
+        selected && "border-4 border-white",
       )}
-      disabled={disabled}
+      disabled={disabled || isUnplayable}
       onClick={onClick}
       type="button"
     >

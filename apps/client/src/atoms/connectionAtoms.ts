@@ -49,16 +49,34 @@ const convertCard = (serverCard: ServerCard): ClientCard => ({
 });
 
 // サーバーのPlayerをクライアント用に変換
-const convertPlayer = (serverPlayer: ServerPlayer): ClientPlayer => ({
-  sessionId: serverPlayer.sessionId,
-  seatIndex: serverPlayer.seatId - 1,
-  name: serverPlayer.name,
-  cardCount: serverPlayer.handCount,
-  isHost: serverPlayer.isOwner,
-  isReady: serverPlayer.isReady,
-  isSpectator: serverPlayer.isSpectator,
-  timeRemaining: serverPlayer.timeRemaining,
-});
+const convertPlayer = (serverPlayer: ServerPlayer): ClientPlayer => {
+  // playableCardsをRecord<string, boolean>に変換
+  const playableCards: Record<string, boolean> = {};
+  if (serverPlayer.playableCards) {
+    serverPlayer.playableCards.forEach((value, key) => {
+      playableCards[key] = value;
+    });
+  }
+
+  return {
+    sessionId: serverPlayer.sessionId,
+    seatIndex: serverPlayer.seatId - 1,
+    name: serverPlayer.name,
+    cardCount: serverPlayer.handCount,
+    isHost: serverPlayer.isOwner,
+    isReady: serverPlayer.isReady,
+    isSpectator: serverPlayer.isSpectator,
+    timeRemaining: serverPlayer.timeRemaining,
+    // アクションフラグ
+    canPass: serverPlayer.canPass,
+    canDraw: serverPlayer.canDraw,
+    canChooseColor: serverPlayer.canChooseColor,
+    canDobon: serverPlayer.canDobon,
+    canDobonReturn: serverPlayer.canDobonReturn,
+    canDrawStack: serverPlayer.canDrawStack,
+    playableCards,
+  };
+};
 
 // 6人分の席配列を作成
 const createSeatsArray = (

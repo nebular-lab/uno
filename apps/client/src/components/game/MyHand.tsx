@@ -12,7 +12,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useAtomValue, useSetAtom } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { ArrowUpDown } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -20,17 +20,32 @@ import {
   sortHandAtom,
   updateHandOrderAtom,
 } from "@/atoms/handOrderAtom";
+import {
+  selectedCardIdAtom,
+  selectedStackCountAtom,
+} from "@/atoms/selectedCardAtom";
 import { Button } from "@/components/ui/button";
+import { useGameRoom } from "@/hooks/useGameRoom";
 import type { ClientCard } from "@/types/connection";
 import { Card } from "./Card";
 
 type SortableCardProps = {
   card: ClientCard;
   disabled: boolean;
+  playable: boolean;
   scale: number;
+  selected: boolean;
+  onCardClick: () => void;
 };
 
-const SortableCard = ({ card, disabled, scale }: SortableCardProps) => {
+const SortableCard = ({
+  card,
+  disabled,
+  playable,
+  scale,
+  selected,
+  onCardClick,
+}: SortableCardProps) => {
   const {
     attributes,
     listeners,
@@ -50,7 +65,14 @@ const SortableCard = ({ card, disabled, scale }: SortableCardProps) => {
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <Card card={card} disabled={disabled} draggable={isDragging} />
+      <Card
+        card={card}
+        disabled={disabled}
+        draggable={isDragging}
+        onClick={onCardClick}
+        playable={playable}
+        selected={selected}
+      />
     </div>
   );
 };
@@ -63,8 +85,44 @@ export const MyHand = ({ disabled }: Props) => {
   const cards = useAtomValue(orderedMyHandAtom);
   const sortHand = useSetAtom(sortHandAtom);
   const updateHandOrder = useSetAtom(updateHandOrderAtom);
+  const [selectedCardId, setSelectedCardId] = useAtom(selectedCardIdAtom);
+  const setSelectedStackCount = useSetAtom(selectedStackCountAtom);
+  const { playCard, playableCards } = useGameRoom();
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+
+  // 同じカード（同色・同数字）が何枚あるか計算
+  const getSameCardCount = (card: ClientCard): number => {
+    return cards.filter((c) => c.color === card.color && c.value === card.value)
+      .length;
+  };
+
+  // カードが出せるかチェック
+  const isPlayable = (cardId: string): boolean => {
+    return playableCards[cardId] ?? false;
+  };
+
+  // カードクリック時の処理
+  const handleCardClick = (cardId: string) => {
+    if (disabled) return;
+    if (!isPlayable(cardId)) return; // 出せないカードは無視
+
+    const clickedCard = cards.find((c) => c.id === cardId);
+    if (!clickedCard) return;
+
+    const sameCardCount = getSameCardCount(clickedCard);
+
+    if (sameCardCount === 1) {
+      // 同じカードが1枚だけなら直接出す
+      playCard(cardId, 1);
+      setSelectedCardId(null);
+      setSelectedStackCount(1);
+    } else {
+      // 複数枚ある場合は枚数選択状態にする
+      setSelectedCardId(cardId);
+      setSelectedStackCount(1);
+    }
+  };
 
   useEffect(() => {
     const updateScale = () => {
@@ -130,7 +188,7 @@ export const MyHand = ({ disabled }: Props) => {
         ref={containerRef}
       >
         <div
-          className="scrollbar-hide overflow-x-auto px-4 pt-3"
+          className="scrollbar-hide overflow-x-auto px-4 py-2"
           style={{
             scrollbarWidth: "none",
             msOverflowStyle: "none",
@@ -145,13 +203,16 @@ export const MyHand = ({ disabled }: Props) => {
               items={cards.map((card) => card.id)}
               strategy={horizontalListSortingStrategy}
             >
-              <div className="flex gap-0.5">
+              <div className="flex gap-0.5 px-1">
                 {cards.map((card) => (
                   <SortableCard
                     card={card}
                     disabled={disabled}
                     key={card.id}
+                    onCardClick={() => handleCardClick(card.id)}
+                    playable={isPlayable(card.id)}
                     scale={scale}
+                    selected={selectedCardId === card.id}
                   />
                 ))}
               </div>

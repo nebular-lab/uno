@@ -1,3 +1,4 @@
+import type { CardColor } from "@dobon-uno/shared";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useCallback } from "react";
 import { navigateToLobbyAtom, playerAtom } from "../atoms/appAtoms";
@@ -44,6 +45,47 @@ export const useGameRoom = () => {
   // 準備完了しているプレイヤー数
   const readyCount = gamePlayState.players.filter((p) => p?.isReady).length;
 
+  // 自分のプレイヤー情報を取得
+  const myPlayerInfo =
+    mySeatIndex >= 0 ? gamePlayState.players[mySeatIndex] : null;
+
+  // アクション関数
+  const drawCard = useCallback(() => {
+    if (gameRoomState.status !== "connected") return;
+    gameRoomState.room.send("drawCard");
+  }, [gameRoomState]);
+
+  const drawStack = useCallback(() => {
+    if (gameRoomState.status !== "connected") return;
+    gameRoomState.room.send("drawStack");
+  }, [gameRoomState]);
+
+  const dobon = useCallback(() => {
+    if (gameRoomState.status !== "connected") return;
+    gameRoomState.room.send("dobon");
+  }, [gameRoomState]);
+
+  const dobonReturn = useCallback(() => {
+    if (gameRoomState.status !== "connected") return;
+    gameRoomState.room.send("dobonReturn");
+  }, [gameRoomState]);
+
+  const chooseColor = useCallback(
+    (color: CardColor) => {
+      if (gameRoomState.status !== "connected") return;
+      gameRoomState.room.send("chooseColor", color);
+    },
+    [gameRoomState],
+  );
+
+  const playCard = useCallback(
+    (cardId: string, stackCount = 1) => {
+      if (gameRoomState.status !== "connected") return;
+      gameRoomState.room.send("playCard", { cardId, stackCount });
+    },
+    [gameRoomState],
+  );
+
   return {
     // 待機画面用
     players: gamePlayState.players,
@@ -65,5 +107,19 @@ export const useGameRoom = () => {
     currentTurnPlayerId: gamePlayState.currentTurnPlayerId,
     currentColor: gamePlayState.currentColor,
     deckCount: gamePlayState.deckCount,
+    // アクションフラグ
+    canDraw: myPlayerInfo?.canDraw ?? false,
+    canDrawStack: myPlayerInfo?.canDrawStack ?? false,
+    canChooseColor: myPlayerInfo?.canChooseColor ?? false,
+    canDobon: myPlayerInfo?.canDobon ?? false,
+    canDobonReturn: myPlayerInfo?.canDobonReturn ?? false,
+    playableCards: myPlayerInfo?.playableCards ?? {},
+    // アクション関数
+    drawCard,
+    drawStack,
+    dobon,
+    dobonReturn,
+    chooseColor,
+    playCard,
   };
 };
