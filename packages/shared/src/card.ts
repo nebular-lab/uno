@@ -154,10 +154,10 @@ export function compareCards(
 }
 
 /**
- * カード配列をソートする（破壊的）
+ * カード配列をソートする（非破壊的）
  */
 export function sortCards<T extends { color: string; value: string }>(
   cards: T[],
 ): T[] {
-  return cards.sort(compareCards);
+  return [...cards].sort(compareCards);
 }
