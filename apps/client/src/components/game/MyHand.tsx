@@ -20,10 +20,7 @@ import {
   sortHandAtom,
   updateHandOrderAtom,
 } from "@/atoms/handOrderAtom";
-import {
-  selectedCardIdAtom,
-  selectedStackCountAtom,
-} from "@/atoms/selectedCardAtom";
+import { selectedCardIdAtom } from "@/atoms/selectedCardAtom";
 import { Button } from "@/components/ui/button";
 import { useGameRoom } from "@/hooks/useGameRoom";
 import type { ClientCard } from "@/types/connection";
@@ -86,7 +83,6 @@ export const MyHand = ({ disabled }: Props) => {
   const sortHand = useSetAtom(sortHandAtom);
   const updateHandOrder = useSetAtom(updateHandOrderAtom);
   const [selectedCardId, setSelectedCardId] = useAtom(selectedCardIdAtom);
-  const setSelectedStackCount = useSetAtom(selectedStackCountAtom);
   const { playCard, playableCards } = useGameRoom();
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
@@ -116,11 +112,9 @@ export const MyHand = ({ disabled }: Props) => {
       // 同じカードが1枚だけなら直接出す
       playCard(cardId, 1);
       setSelectedCardId(null);
-      setSelectedStackCount(1);
     } else {
       // 複数枚ある場合は枚数選択状態にする
       setSelectedCardId(cardId);
-      setSelectedStackCount(1);
     }
   };
 
@@ -170,18 +164,18 @@ export const MyHand = ({ disabled }: Props) => {
   return (
     <>
       <div className="fixed bottom-[150px] left-4 flex gap-2">
+        <div className="flex size-[78px] flex-col items-center justify-center rounded-md bg-black/50 text-white">
+          <span className="text-xs text-zinc-400">合計</span>
+          <span className="text-2xl font-bold">{totalPoints}</span>
+        </div>
         <Button
-          className="size-[78px] bg-black/50 text-white hover:bg-black/70"
+          className="size-[78px] bg-slate-700 border-2 border-slate-500 text-white hover:bg-slate-600"
           disabled={disabled || cards.length === 0}
           onClick={() => sortHand()}
           variant="ghost"
         >
           <ArrowUpDown className="size-5" />
         </Button>
-        <div className="flex size-[78px] flex-col items-center justify-center rounded-md bg-black/50 text-white">
-          <span className="text-xs text-zinc-400">合計</span>
-          <span className="text-2xl font-bold">{totalPoints}</span>
-        </div>
       </div>
       <div
         className="absolute bottom-4 left-1/2 max-w-[90%] -translate-x-1/2"
