@@ -170,12 +170,8 @@ describe("RevealCardCommand", () => {
           room.state.currentColor,
         );
       } else if (fieldCard && fieldCard.color === "wild") {
-        // ワイルドカードの場合、draw4のみ色選択待ち
-        if (fieldCard.value === "draw4") {
-          expect(room.state.waitingForColorChoice).toBe(true);
-        } else {
-          expect(room.state.waitingForColorChoice).toBe(false);
-        }
+        // ワイルドカードの場合、最初のカードは色選択不要
+        expect(room.state.waitingForColorChoice).toBe(false);
       }
     });
 

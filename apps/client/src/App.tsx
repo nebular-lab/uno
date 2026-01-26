@@ -85,7 +85,7 @@ function App() {
       case "waitingRoom":
         return <WaitingRoomScreen roomId={screen.roomId} />;
       case "game":
-        return <GameScreen roomId={screen.roomId} />;
+        return <GameScreen />;
       default:
         return <TitleScreen />;
     }

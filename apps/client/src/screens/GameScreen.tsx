@@ -1,4 +1,5 @@
 import { useAtom } from "jotai";
+import { useState } from "react";
 import { selectedCardIdAtom } from "@/atoms/selectedCardAtom";
 import { ActionButtons } from "@/components/game/ActionButtons";
 import { CountdownOverlay } from "@/components/game/CountdownOverlay";
@@ -8,13 +9,17 @@ import { EmptySeat, PlayerSeat } from "@/components/game/PlayerSeat";
 import { Table } from "@/components/game/Table";
 import { TableContainer } from "@/components/game/TableContainer";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useGameRoom } from "@/hooks/useGameRoom";
 
-type Props = {
-  roomId: string;
-};
-
-export const GameScreen = ({ roomId }: Props) => {
+export const GameScreen = () => {
   const {
     players,
     mySeatIndex,
@@ -26,7 +31,10 @@ export const GameScreen = ({ roomId }: Props) => {
     currentTurnPlayerId,
     myHand,
     playCard,
+    leaveRoom,
   } = useGameRoom();
+
+  const [showLeaveDialog, setShowLeaveDialog] = useState(false);
 
   const [selectedCardId, setSelectedCardId] = useAtom(selectedCardIdAtom);
 
@@ -136,11 +144,44 @@ export const GameScreen = ({ roomId }: Props) => {
       {/* アクションボタン */}
       {phase === "playing" && <ActionButtons />}
 
-      {/* デバッグ情報 */}
-      <div className="absolute left-4 top-4 rounded bg-slate-800/80 px-3 py-1 text-sm text-white">
-        Room: {roomId} | Phase: {phase}
-        {phase === "countdown" && ` | ${countdown}`}
-      </div>
+      {/* 退席ボタン */}
+      <Button
+        className="absolute left-4 top-4 bg-slate-700 text-white hover:bg-slate-600"
+        onClick={() => setShowLeaveDialog(true)}
+        variant="ghost"
+      >
+        退席
+      </Button>
+
+      {/* 退席確認ダイアログ */}
+      <Dialog onOpenChange={setShowLeaveDialog} open={showLeaveDialog}>
+        <DialogContent className="bg-slate-800 border-slate-700">
+          <DialogHeader>
+            <DialogTitle className="text-white">退席確認</DialogTitle>
+            <DialogDescription className="text-slate-300">
+              ゲームから退席しますか？
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              className="border-slate-600 text-slate-300 hover:bg-slate-700"
+              onClick={() => setShowLeaveDialog(false)}
+              variant="outline"
+            >
+              キャンセル
+            </Button>
+            <Button
+              className="bg-red-600 text-white hover:bg-red-700"
+              onClick={() => {
+                leaveRoom();
+                setShowLeaveDialog(false);
+              }}
+            >
+              OK
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </TableContainer>
   );
 };
