@@ -111,10 +111,10 @@ export class GameRoom extends Room<GameState, RoomMetadata> {
       });
     });
 
-    // Ready状態を切り替え
+    // Ready状態を切り替え（ホストは常に準備完了なので切り替え不可）
     this.onMessage("toggleReady", (client) => {
       const player = this.state.players.get(client.sessionId);
-      if (player) {
+      if (player && !player.isOwner) {
         player.isReady = !player.isReady;
       }
     });
@@ -193,9 +193,10 @@ export class GameRoom extends Room<GameState, RoomMetadata> {
     player.name = options.playerName;
     player.seatId = this.getNextAvailableSeat();
 
-    // 最初のプレイヤーをオーナーに設定
+    // 最初のプレイヤーをオーナーに設定（ホストは最初から準備完了）
     if (this.state.players.size === 0) {
       player.isOwner = true;
+      player.isReady = true;
     }
 
     // ゲーム中に参加した場合は観戦者として設定
@@ -237,11 +238,12 @@ export class GameRoom extends Room<GameState, RoomMetadata> {
     const wasOwner = player.isOwner;
     this.state.players.delete(client.sessionId);
 
-    // オーナーが退出した場合、次のプレイヤーをオーナーに
+    // オーナーが退出した場合、次のプレイヤーをオーナーに（ホストは最初から準備完了）
     if (wasOwner && this.state.players.size > 0) {
       const nextOwner = this.state.players.values().next().value;
       if (nextOwner) {
         nextOwner.isOwner = true;
+        nextOwner.isReady = true;
       }
     }
 

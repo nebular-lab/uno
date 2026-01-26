@@ -151,7 +151,7 @@ export const WaitingRoomScreen = ({ roomId }: Props) => {
             </span>
           )
         )}
-        <ReadyToggle isReady={isReady} onToggle={toggleReady} />
+        {!isHost && <ReadyToggle isReady={isReady} onToggle={toggleReady} />}
       </div>
     </TableContainer>
   );
