@@ -77,10 +77,8 @@ export class Draw4Effect extends BaseCardEffect {
     context.state.drawStack = 4;
   }
 
-  applyOnBeginPlay(context: CardEffectContext): void {
-    // ドロー4が最初の場札の場合、色選択状態にする
-    context.state.waitingForColorChoice = true;
-  }
+  // applyOnBeginPlay は実装しない
+  // 最初の場札がドロー4の場合、色選択ではなくドロー4を重ねて出せる
 
   canPlay(_card: Card, _fieldCard: Card, _currentColor: string): boolean {
     // ドロー4は常に出せる

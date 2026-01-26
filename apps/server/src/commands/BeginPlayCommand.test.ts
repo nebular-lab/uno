@@ -282,15 +282,22 @@ describe("BeginPlayCommand", () => {
       expect(currentPlayer?.canChooseColor).toBe(false);
     });
 
-    it("ドロー4の場合、waitingForColorChoiceがtrue", async () => {
-      const { room } = await setupGameWithFirstCard(testCards.draw4);
+    it("ドロー4の場合、色選択ではなくドロー4を出せる", async () => {
+      // プレイヤー1にdraw4を持たせる
+      const { room } = await setupGameWithFirstCard(testCards.draw4, [
+        testCards.draw4_2,
+      ]);
 
-      expect(room.state.waitingForColorChoice).toBe(true);
+      // 色選択待ちではない
+      expect(room.state.waitingForColorChoice).toBe(false);
 
       const currentPlayer = room.state.players.get(
         room.state.currentTurnPlayerId,
       );
-      expect(currentPlayer?.canChooseColor).toBe(true);
+      expect(currentPlayer?.canChooseColor).toBe(false);
+      // ドロー累積中なのでドロー4を出せる
+      expect(room.state.drawStack).toBe(4);
+      expect(currentPlayer?.canDrawStack).toBe(true);
     });
   });
 
@@ -1021,16 +1028,13 @@ describe("BeginPlayCommand", () => {
       expect(room.state.players.get(currentPlayerId)?.timeRemaining).toBe(0);
     });
 
-    it("色選択待ち時にタイムアウトするとtimeRemainingが0になる", async () => {
-      // 注: ChooseColorCommandは現在スタブ実装のため、
-      // タイムアウト時にコマンドはdispatchされるが状態は変化しない。
-      // コマンド実装後は色が自動選択されるようになる。
+    it("ドロー累積中にタイムアウトするとtimeRemainingが0になる", async () => {
       const room = await colyseus.createRoom("game", {});
       const owner = await colyseus.connectTo(room, { playerName: "Owner" });
       await colyseus.connectTo(room, { playerName: "Player2" });
       await colyseus.connectTo(room, { playerName: "Player3" });
 
-      // ドロー4を場札にして色選択待ち状態にする
+      // ドロー4を場札にしてドロー累積状態にする
       const testDeck = createTestDeck(testCards.draw4, 3);
       owner.send("__setDeck", testDeck);
       await new Promise((resolve) => setTimeout(resolve, 50));
@@ -1042,8 +1046,8 @@ describe("BeginPlayCommand", () => {
         await room.waitForNextPatch();
       }
 
-      // 色選択待ち状態であることを確認
-      expect(room.state.waitingForColorChoice).toBe(true);
+      // ドロー累積状態であることを確認
+      expect(room.state.drawStack).toBe(4);
 
       const currentPlayerId = room.state.currentTurnPlayerId;
       const currentPlayer = room.state.players.get(currentPlayerId);

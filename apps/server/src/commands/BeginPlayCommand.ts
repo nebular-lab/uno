@@ -175,12 +175,19 @@ export class BeginPlayCommand extends Command<GameRoom> {
 
     if (!fieldCard) return;
 
+    // 最初のカードがワイルドの場合、すべてのカードを出せる
+    const isFirstCardWild =
+      this.state.fieldCards.length === 1 && fieldCard.value === "wild";
+
     for (const card of player.myHand) {
       const effect = CardEffectRegistry.getEffectForCard(card);
 
       if (isCurrentTurn) {
         // 手番プレイヤーの判定
-        if (this.canPlayCard(card, fieldCard, effect)) {
+        if (isFirstCardWild) {
+          // 最初のカードがワイルドなら全カード出せる
+          player.playableCards.set(card.id, true);
+        } else if (this.canPlayCard(card, fieldCard, effect)) {
           player.playableCards.set(card.id, true);
         }
       } else {

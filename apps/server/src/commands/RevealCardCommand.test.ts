@@ -272,12 +272,13 @@ describe("RevealCardCommand", () => {
       expect(room.state.currentColor).toBe("");
     });
 
-    it("ドロー4カードの場合、drawStackが4でwaitingForColorChoiceがtrueになる", async () => {
+    it("ドロー4カードの場合、drawStackが4で色選択待ちにはならない", async () => {
       const { room } = await setupGameWithFirstCard(testCards.draw4, "playing");
 
       expect(room.state.fieldCards[0].value).toBe("draw4");
       expect(room.state.drawStack).toBe(4);
-      expect(room.state.waitingForColorChoice).toBe(true);
+      // 最初のカードがドロー4の場合、色選択ではなくドロー4を出せる
+      expect(room.state.waitingForColorChoice).toBe(false);
       expect(room.state.currentColor).toBe("");
     });
 
