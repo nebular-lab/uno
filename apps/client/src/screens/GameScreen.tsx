@@ -89,18 +89,19 @@ export const GameScreen = () => {
         );
       })}
 
-      {/* 山札と場札 */}
-      <div className="absolute left-1/2 top-[38%] z-10 flex -translate-x-1/2 -translate-y-1/2 items-center gap-4">
-        {/* 山札 */}
-        <div className="flex h-20 w-14 items-center justify-center rounded-lg bg-slate-700 border border-slate-600 shadow-lg">
+      {/* 場のカード（テーブル中央） */}
+      {(phase === "revealing" || phase === "playing") &&
+        fieldCards.length > 0 && (
+          <div className="absolute left-1/2 top-[38%] z-10 -translate-x-1/2 -translate-y-1/2">
+            <FieldCard card={fieldCards[0]} currentColor={currentColor} />
+          </div>
+        )}
+
+      {/* 山札の残り枚数（テーブル左寄り） */}
+      <div className="absolute left-[calc(50%-200px)] top-[38%] z-10 -translate-x-1/2 -translate-y-1/2">
+        <div className="flex size-16 items-center justify-center rounded-full bg-slate-700 border-2 border-slate-500 shadow-lg">
           <span className="font-bold text-white text-xl">{deckCount}</span>
         </div>
-
-        {/* 場のカード */}
-        {(phase === "revealing" || phase === "playing") &&
-          fieldCards.length > 0 && (
-            <FieldCard card={fieldCards[0]} currentColor={currentColor} />
-          )}
       </div>
 
       {/* カウントダウン表示 */}
