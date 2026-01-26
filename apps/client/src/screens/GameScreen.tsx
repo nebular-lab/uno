@@ -165,7 +165,7 @@ export const GameScreen = () => {
 
       {/* 退席ボタン */}
       <Button
-        className="absolute left-4 top-4 bg-slate-700 text-white hover:bg-slate-600"
+        className="absolute left-4 top-4 size-[78px] bg-slate-700 text-white hover:bg-slate-600"
         onClick={() => setShowLeaveDialog(true)}
         variant="ghost"
       >
