@@ -35,6 +35,7 @@ const initialGamePlayState: GamePlayState = {
   currentTurnPlayerId: "",
   currentColor: "",
   deckCount: 0,
+  drawStack: 0,
 };
 
 // ゲームプレイ状態（Room.stateから変換）
@@ -124,6 +125,7 @@ const setupRoomStateSync = (
       currentTurnPlayerId: state.currentTurnPlayerId ?? "",
       currentColor: state.currentColor ?? "",
       deckCount: state.deckCount ?? 0,
+      drawStack: state.drawStack ?? 0,
     });
   };
 

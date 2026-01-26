@@ -106,6 +106,7 @@ export const useGameRoom = () => {
     currentTurnPlayerId: gamePlayState.currentTurnPlayerId,
     currentColor: gamePlayState.currentColor,
     deckCount: gamePlayState.deckCount,
+    drawStackCount: gamePlayState.drawStack,
     // アクションフラグ
     canDraw: myPlayerInfo?.canDraw ?? false,
     canDrawStack: myPlayerInfo?.canDrawStack ?? false,

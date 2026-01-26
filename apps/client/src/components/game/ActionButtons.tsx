@@ -21,13 +21,14 @@ export const ActionButtons = () => {
     canDobonReturn,
     drawCard,
     drawStack,
+    drawStackCount,
     dobon,
     dobonReturn,
     chooseColor,
   } = useGameRoom();
 
   return (
-    <div className="fixed bottom-[150px] right-4 flex flex-col gap-2">
+    <div className="fixed bottom-[150px] right-4 flex gap-2">
       {/* 山札を引くボタン */}
       {canDraw && (
         <Button
@@ -46,8 +47,7 @@ export const ActionButtons = () => {
           onClick={drawStack}
           variant="ghost"
         >
-          <span className="text-sm font-bold">スタック</span>
-          <span className="text-xs">を引く</span>
+          <span className="text-sm font-bold">{drawStackCount || 4}枚引く</span>
         </Button>
       )}
 
@@ -85,8 +85,7 @@ export const ActionButtons = () => {
           onClick={dobonReturn}
           variant="ghost"
         >
-          <span className="text-sm font-bold">ドボン</span>
-          <span className="text-xs">返し</span>
+          <span className="text-sm font-bold">ドボン返し</span>
         </Button>
       )}
     </div>

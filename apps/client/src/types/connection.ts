@@ -65,4 +65,5 @@ export type GamePlayState = {
   currentTurnPlayerId: string;
   currentColor: string;
   deckCount: number;
+  drawStack: number; // ドロー累積枚数
 };
