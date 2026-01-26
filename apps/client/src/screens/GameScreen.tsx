@@ -98,7 +98,7 @@ export const GameScreen = () => {
         )}
 
       {/* 山札の残り枚数（テーブル左寄り） */}
-      <div className="absolute left-[calc(50%-200px)] top-[38%] z-10 -translate-x-1/2 -translate-y-1/2">
+      <div className="absolute left-[calc(50%-120px)] top-[38%] z-10 -translate-x-1/2 -translate-y-1/2">
         <div className="flex size-16 items-center justify-center rounded-full bg-slate-700 border-2 border-slate-500 shadow-lg">
           <span className="font-bold text-white text-xl">{deckCount}</span>
         </div>
