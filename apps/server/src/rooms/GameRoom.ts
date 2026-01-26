@@ -121,7 +121,7 @@ export class GameRoom extends Room<GameState, RoomMetadata> {
 
     // 退席
     this.onMessage("leaveRoom", (client) => {
-      client.leave();
+      client.leave(1000); // コード1000（正常終了）
     });
 
     // ゲーム開始
