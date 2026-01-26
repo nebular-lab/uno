@@ -1,7 +1,7 @@
 import type { CardColor } from "@dobon-uno/shared";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useCallback } from "react";
-import { navigateToLobbyAtom, playerAtom } from "../atoms/appAtoms";
+import { navigateToLobbyAtom } from "../atoms/appAtoms";
 import { gamePlayStateAtom, gameStateAtom } from "../atoms/connectionAtoms";
 
 // 型のre-export
@@ -10,7 +10,6 @@ export type { ClientCard, ClientPlayer } from "../types/connection";
 export const useGameRoom = () => {
   const gameRoomState = useAtomValue(gameStateAtom);
   const gamePlayState = useAtomValue(gamePlayStateAtom);
-  const myPlayer = useAtomValue(playerAtom);
   const navigateToLobby = useSetAtom(navigateToLobbyAtom);
 
   // Ready状態を切り替え
@@ -32,10 +31,10 @@ export const useGameRoom = () => {
     gameRoomState.room.send("startGame");
   }, [gameRoomState]);
 
-  // 自分の座席インデックスを取得
+  // 自分の座席インデックスを取得（sessionIdで識別）
   const mySeatIndex =
     gamePlayState.players.findIndex(
-      (p) => p !== null && myPlayer && p.name === myPlayer.name,
+      (p) => p !== null && p.sessionId === gamePlayState.mySessionId,
     ) ?? -1;
 
   // 自分がホストかどうか
