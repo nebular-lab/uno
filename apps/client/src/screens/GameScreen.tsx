@@ -147,10 +147,7 @@ export const GameScreen = () => {
               onClick={handlePlaySelected}
               variant="ghost"
             >
-              <div className="flex flex-col items-center">
-                <span className="text-lg font-bold">決定</span>
-                <span className="text-xs">({selectedCardIds.length}枚)</span>
-              </div>
+              <span className="text-lg font-bold">決定</span>
             </Button>
             <Button
               className="size-[78px] bg-gray-500/80 text-white hover:bg-gray-600"
