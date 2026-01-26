@@ -1,6 +1,6 @@
 import { useAtom } from "jotai";
 import { useState } from "react";
-import { selectedCardIdAtom } from "@/atoms/selectedCardAtom";
+import { selectedCardIdsAtom } from "@/atoms/selectedCardAtom";
 import { ActionButtons } from "@/components/game/ActionButtons";
 import { CountdownOverlay } from "@/components/game/CountdownOverlay";
 import { FieldCard } from "@/components/game/FieldCard";
@@ -36,21 +36,39 @@ export const GameScreen = () => {
 
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
 
-  const [selectedCardId, setSelectedCardId] = useAtom(selectedCardIdAtom);
+  const [selectedCardIds, setSelectedCardIds] = useAtom(selectedCardIdsAtom);
 
-  // 選択中のカード情報
-  const selectedCard = myHand.find((c) => c.id === selectedCardId) ?? null;
-  const sameCardCount = selectedCard
-    ? myHand.filter(
-        (c) => c.color === selectedCard.color && c.value === selectedCard.value,
-      ).length
+  // 選択中の最初のカード情報
+  const firstSelectedCard =
+    selectedCardIds.length > 0
+      ? myHand.find((c) => c.id === selectedCardIds[0])
+      : null;
+
+  // force-changeかどうか
+  const isForceChange = firstSelectedCard?.value === "force-change";
+
+  // 重ね出し可能なカードの枚数
+  const stackableCardCount = firstSelectedCard
+    ? isForceChange
+      ? myHand.filter((c) => c.value === "force-change").length
+      : myHand.filter(
+          (c) =>
+            c.color === firstSelectedCard.color &&
+            c.value === firstSelectedCard.value,
+        ).length
     : 0;
 
-  // 枚数を選択してカードを出す
-  const handlePlayWithCount = (count: number) => {
-    if (!selectedCardId) return;
-    playCard(selectedCardId, count);
-    setSelectedCardId(null);
+  // 決定ボタンで選択したカードを出す
+  const handlePlaySelected = () => {
+    if (selectedCardIds.length === 0) return;
+    // 最初のカードIDと選択枚数を送信
+    playCard(selectedCardIds[0], selectedCardIds.length);
+    setSelectedCardIds([]);
+  };
+
+  // キャンセル
+  const handleCancel = () => {
+    setSelectedCardIds([]);
   };
 
   // 自分が下中央（position 3）に来るように回転
@@ -112,28 +130,31 @@ export const GameScreen = () => {
       {/* 自分の手札 */}
       {phase !== "waiting" && <MyHand disabled={phase !== "playing"} />}
 
-      {/* 枚数選択ボタン（プレイヤーシートの右側） */}
-      {phase === "playing" && selectedCard && sameCardCount >= 2 && (
+      {/* 重ね出し選択UI（プレイヤーシートの右側） */}
+      {phase === "playing" && firstSelectedCard && stackableCardCount >= 2 && (
         <div className="absolute top-91 left-[calc(50%+100px)]">
-          <span className="absolute -top-8 left-0 text-white text-sm font-medium whitespace-nowrap">
-            重ねて出す枚数を選択してください
-          </span>
-          <div className="flex gap-1">
-            {Array.from({ length: sameCardCount }, (_, i) => i + 1).map(
-              (count) => (
-                <Button
-                  className="size-[78px] bg-blue-600 text-white hover:bg-blue-700"
-                  key={count}
-                  onClick={() => handlePlayWithCount(count)}
-                  variant="ghost"
-                >
-                  <span className="text-lg font-bold">{count}枚</span>
-                </Button>
-              ),
+          <div className="absolute -top-12 left-0 text-white text-sm font-medium whitespace-nowrap">
+            <div>重ねだしするカードを選択して、決定ボタンを押してください</div>
+            {isForceChange && (
+              <div className="text-yellow-300">
+                最初に選んだカードの色が適用されます
+              </div>
             )}
+          </div>
+          <div className="flex gap-1">
+            <Button
+              className="size-[78px] bg-blue-600 text-white hover:bg-blue-700"
+              onClick={handlePlaySelected}
+              variant="ghost"
+            >
+              <div className="flex flex-col items-center">
+                <span className="text-lg font-bold">決定</span>
+                <span className="text-xs">({selectedCardIds.length}枚)</span>
+              </div>
+            </Button>
             <Button
               className="size-[78px] bg-gray-500/80 text-white hover:bg-gray-600"
-              onClick={() => setSelectedCardId(null)}
+              onClick={handleCancel}
               variant="ghost"
             >
               <span className="text-sm font-bold">キャンセル</span>

@@ -7,6 +7,7 @@ type Props = {
   draggable?: boolean;
   playable?: boolean;
   selected?: boolean;
+  selectionOrder?: number; // 選択順番（1から始まる、force-change用）
   onClick?: () => void;
 };
 
@@ -52,6 +53,7 @@ export const Card = ({
   draggable,
   playable = true,
   selected,
+  selectionOrder,
   onClick,
 }: Props) => {
   const isDraw4 = card.value === "draw4";
@@ -96,6 +98,13 @@ export const Card = ({
     >
       {/* 中央の値 */}
       <span className="text-5xl">{displayValue}</span>
+
+      {/* 選択順番バッジ（force-change用） */}
+      {selectionOrder !== undefined && selectionOrder > 0 && (
+        <div className="absolute -top-2 -right-2 flex size-6 items-center justify-center rounded-full bg-white text-black text-sm font-bold shadow-md">
+          {selectionOrder}
+        </div>
+      )}
     </button>
   );
 };

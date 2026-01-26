@@ -20,7 +20,7 @@ import {
   sortHandAtom,
   updateHandOrderAtom,
 } from "@/atoms/handOrderAtom";
-import { selectedCardIdAtom } from "@/atoms/selectedCardAtom";
+import { selectedCardIdsAtom } from "@/atoms/selectedCardAtom";
 import { Button } from "@/components/ui/button";
 import { useGameRoom } from "@/hooks/useGameRoom";
 import type { ClientCard } from "@/types/connection";
@@ -32,6 +32,7 @@ type SortableCardProps = {
   playable: boolean;
   scale: number;
   selected: boolean;
+  selectionOrder?: number;
   onCardClick: () => void;
 };
 
@@ -41,6 +42,7 @@ const SortableCard = ({
   playable,
   scale,
   selected,
+  selectionOrder,
   onCardClick,
 }: SortableCardProps) => {
   const {
@@ -69,6 +71,7 @@ const SortableCard = ({
         onClick={onCardClick}
         playable={playable}
         selected={selected}
+        selectionOrder={selectionOrder}
       />
     </div>
   );
@@ -82,15 +85,22 @@ export const MyHand = ({ disabled }: Props) => {
   const cards = useAtomValue(orderedMyHandAtom);
   const sortHand = useSetAtom(sortHandAtom);
   const updateHandOrder = useSetAtom(updateHandOrderAtom);
-  const [selectedCardId, setSelectedCardId] = useAtom(selectedCardIdAtom);
+  const [selectedCardIds, setSelectedCardIds] = useAtom(selectedCardIdsAtom);
   const { playCard, playableCards } = useGameRoom();
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
 
-  // 同じカード（同色・同数字）が何枚あるか計算
-  const getSameCardCount = (card: ClientCard): number => {
-    return cards.filter((c) => c.color === card.color && c.value === card.value)
-      .length;
+  // 重ね出しできるカードを取得
+  // force-changeは色が違っても重ね出し可能
+  const getStackableCards = (card: ClientCard): ClientCard[] => {
+    if (card.value === "force-change") {
+      // force-changeは全ての force-change カードが重ね出し対象
+      return cards.filter((c) => c.value === "force-change");
+    }
+    // それ以外は同色・同数字のみ
+    return cards.filter(
+      (c) => c.color === card.color && c.value === card.value,
+    );
   };
 
   // カードが出せるかチェック
@@ -98,23 +108,59 @@ export const MyHand = ({ disabled }: Props) => {
     return playableCards[cardId] ?? false;
   };
 
+  // 選択中のカードの最初のカードを取得
+  const firstSelectedCard =
+    selectedCardIds.length > 0
+      ? cards.find((c) => c.id === selectedCardIds[0])
+      : null;
+
+  // カードが重ね出し選択可能かどうか
+  const isStackSelectable = (card: ClientCard): boolean => {
+    if (!firstSelectedCard) return false;
+    if (firstSelectedCard.value === "force-change") {
+      return card.value === "force-change";
+    }
+    return (
+      card.color === firstSelectedCard.color &&
+      card.value === firstSelectedCard.value
+    );
+  };
+
   // カードクリック時の処理
   const handleCardClick = (cardId: string) => {
     if (disabled) return;
-    if (!isPlayable(cardId)) return; // 出せないカードは無視
 
     const clickedCard = cards.find((c) => c.id === cardId);
     if (!clickedCard) return;
 
-    const sameCardCount = getSameCardCount(clickedCard);
+    // 選択モード中の場合
+    if (selectedCardIds.length > 0) {
+      // 重ね出し可能なカードかチェック
+      if (isStackSelectable(clickedCard)) {
+        // 既に選択されていれば解除、されていなければ追加
+        if (selectedCardIds.includes(cardId)) {
+          // 最初のカードは解除できない（キャンセルボタンを使う）
+          if (selectedCardIds[0] === cardId) return;
+          setSelectedCardIds(selectedCardIds.filter((id) => id !== cardId));
+        } else {
+          setSelectedCardIds([...selectedCardIds, cardId]);
+        }
+      }
+      return;
+    }
 
-    if (sameCardCount === 1) {
-      // 同じカードが1枚だけなら直接出す
+    // 出せないカードは無視
+    if (!isPlayable(cardId)) return;
+
+    const stackableCards = getStackableCards(clickedCard);
+
+    if (stackableCards.length === 1) {
+      // 重ね出しできるカードが1枚だけなら直接出す
       playCard(cardId, 1);
-      setSelectedCardId(null);
+      setSelectedCardIds([]);
     } else {
-      // 複数枚ある場合は枚数選択状態にする
-      setSelectedCardId(cardId);
+      // 複数枚ある場合は選択モードにする
+      setSelectedCardIds([cardId]);
     }
   };
 
@@ -198,17 +244,34 @@ export const MyHand = ({ disabled }: Props) => {
               strategy={horizontalListSortingStrategy}
             >
               <div className="flex gap-0.5 px-1">
-                {cards.map((card) => (
-                  <SortableCard
-                    card={card}
-                    disabled={disabled}
-                    key={card.id}
-                    onCardClick={() => handleCardClick(card.id)}
-                    playable={isPlayable(card.id)}
-                    scale={scale}
-                    selected={selectedCardId === card.id}
-                  />
-                ))}
+                {cards.map((card) => {
+                  const selectionIndex = selectedCardIds.indexOf(card.id);
+                  const isSelected = selectionIndex !== -1;
+                  // force-changeの場合のみ選択順番を表示
+                  const showOrder =
+                    isSelected &&
+                    firstSelectedCard?.value === "force-change" &&
+                    selectedCardIds.length > 1;
+
+                  return (
+                    <SortableCard
+                      card={card}
+                      disabled={disabled}
+                      key={card.id}
+                      onCardClick={() => handleCardClick(card.id)}
+                      playable={
+                        selectedCardIds.length > 0
+                          ? isStackSelectable(card)
+                          : isPlayable(card.id)
+                      }
+                      scale={scale}
+                      selected={isSelected}
+                      selectionOrder={
+                        showOrder ? selectionIndex + 1 : undefined
+                      }
+                    />
+                  );
+                })}
               </div>
             </SortableContext>
           </DndContext>
