@@ -20,10 +20,10 @@ const ReadyToggle = ({
   return (
     <button
       className={cn(
-        "flex h-20 w-64 items-center justify-center gap-3 rounded-full px-6 text-lg font-medium transition-all",
+        "flex h-18 w-64 items-center justify-center gap-3 rounded-lg px-6 text-lg font-bold transition-all shadow-lg",
         isReady
-          ? "bg-green-600 text-white"
-          : "bg-zinc-700 text-zinc-300 hover:bg-zinc-600",
+          ? "bg-green-600 hover:bg-green-500 text-white"
+          : "bg-blue-600 hover:bg-blue-500 text-white hover:scale-[1.02]",
       )}
       onClick={onToggle}
       type="button"
@@ -34,7 +34,7 @@ const ReadyToggle = ({
           "flex size-6 items-center justify-center rounded border-2 transition-colors",
           isReady
             ? "border-white bg-white text-green-600"
-            : "border-zinc-400 bg-transparent",
+            : "border-white/50 bg-transparent",
         )}
       >
         {isReady && (
@@ -117,7 +117,10 @@ export const WaitingRoomScreen = ({ roomId }: Props) => {
 
       {/* 退席ボタン（左下） */}
       <div className="absolute bottom-4 left-4">
-        <Button className="h-20 px-10" onClick={leaveRoom} variant="secondary">
+        <Button
+          className="h-18 px-8 text-lg bg-slate-700 hover:bg-slate-600 border-0 font-bold text-slate-300 shadow-lg transition-all"
+          onClick={leaveRoom}
+        >
           退席
         </Button>
       </div>
@@ -129,7 +132,7 @@ export const WaitingRoomScreen = ({ roomId }: Props) => {
             <span
               className={cn(
                 "text-sm",
-                canStartGame ? "text-green-400" : "text-zinc-400",
+                canStartGame ? "text-green-400" : "text-slate-400",
               )}
             >
               {canStartGame
@@ -137,7 +140,7 @@ export const WaitingRoomScreen = ({ roomId }: Props) => {
                 : `あと${3 - readyCount}人の準備が必要`}
             </span>
             <Button
-              className="h-20 px-8"
+              className="h-18 px-8 text-lg bg-blue-600 hover:bg-blue-500 border-0 font-bold text-white shadow-lg transition-all hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
               disabled={!canStartGame}
               onClick={startGame}
             >
@@ -146,7 +149,7 @@ export const WaitingRoomScreen = ({ roomId }: Props) => {
           </>
         ) : (
           isReady && (
-            <span className="text-sm text-zinc-400">
+            <span className="text-sm text-slate-400">
               ホストがゲームを開始するのをお待ちください
             </span>
           )

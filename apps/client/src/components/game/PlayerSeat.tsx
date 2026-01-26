@@ -90,7 +90,7 @@ const PlayerStatusBadge = ({
 }) => {
   const borderClass = isCurrentPlayer
     ? "border-2 border-yellow-400"
-    : "border border-zinc-600";
+    : "border border-slate-600";
 
   return (
     <div className="relative" style={{ width: size, height: size }}>
@@ -99,7 +99,7 @@ const PlayerStatusBadge = ({
           // ゲーム中の観戦者: 「待機中」を表示
           <div
             className={cn(
-              "flex items-center justify-center rounded-full bg-slate-500 text-white text-xs font-medium",
+              "flex items-center justify-center rounded-full bg-slate-600 text-white text-xs font-medium shadow-lg",
               borderClass,
             )}
             style={{ width: size, height: size }}
@@ -107,12 +107,12 @@ const PlayerStatusBadge = ({
             待機中
           </div>
         ) : (
-          // ゲーム中: カード枚数を表示（残り1枚は赤、それ以外はグレー）
+          // ゲーム中: カード枚数を表示（残り1枚は赤、それ以外はスレート）
           <div
             className={cn(
-              "flex items-center justify-center rounded-full font-bold text-white",
+              "flex items-center justify-center rounded-full font-bold text-white shadow-lg",
               borderClass,
-              cardCount === 1 ? "bg-red-500" : "bg-zinc-600",
+              cardCount === 1 ? "bg-red-500" : "bg-slate-700",
             )}
             style={{ width: size, height: size }}
           >
@@ -123,9 +123,9 @@ const PlayerStatusBadge = ({
         // 待機中: Ready/Wait を表示
         <div
           className={cn(
-            "flex items-center justify-center rounded-full text-white text-xs font-medium",
+            "flex items-center justify-center rounded-full text-white text-xs font-medium shadow-lg",
             borderClass,
-            isReady ? "bg-green-600" : "bg-avatar-fallback-background",
+            isReady ? "bg-green-600" : "bg-slate-700",
           )}
           style={{ width: size, height: size }}
         >
@@ -179,14 +179,12 @@ const PlayerNamePlate = ({
     <div
       className={cn(
         namePos,
-        "relative z-10 flex h-[60px] w-[180px] items-center gap-2 rounded-full border-2 bg-player-nameplate-background shadow-lg transition-colors",
-        isCurrentPlayer ? "border-yellow-400" : "border-zinc-600",
+        "relative z-10 flex h-[60px] w-[180px] items-center gap-2 rounded-full border-2 bg-slate-800/80 backdrop-blur-sm shadow-lg transition-colors",
+        isCurrentPlayer ? "border-yellow-400" : "border-slate-600",
       )}
     >
       <div className="flex w-[130px] flex-col items-center justify-center">
-        <span className="truncate text-player-nameplate-foreground text-sm">
-          {name}
-        </span>
+        <span className="truncate text-white text-sm font-medium">{name}</span>
       </div>
       {isCurrentPlayer && timeRemaining !== undefined && (
         <TurnTimer timeRemaining={timeRemaining} />

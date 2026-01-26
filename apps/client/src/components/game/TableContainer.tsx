@@ -5,5 +5,9 @@ type Props = {
 };
 
 export const TableContainer = ({ children }: Props) => {
-  return <div className="relative h-full w-full select-none">{children}</div>;
+  return (
+    <div className="relative h-full w-full select-none bg-gradient-to-b from-slate-900 to-slate-800 overflow-hidden">
+      {children}
+    </div>
+  );
 };
