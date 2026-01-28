@@ -43,3 +43,4 @@ temp/
 # Screenshots
 screenshots/*
 !screenshots/.gitkeep
+.playwright-mcp/
