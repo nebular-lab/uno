@@ -5,21 +5,60 @@ import { TIMING } from "../config/timing";
 
 // テスト用カードデータ
 const testCards = {
+  // 数字カード
   number: { id: "r5", color: "red", value: "5", points: 5 },
   number3: { id: "r3", color: "red", value: "3", points: 3 },
   number2: { id: "r2", color: "red", value: "2", points: 2 },
-  wild: { id: "wild-1", color: "wild", value: "wild", points: 50 },
-  wild2: { id: "wild-2", color: "wild", value: "wild", points: 50 },
-  draw4: { id: "draw4-1", color: "wild", value: "draw4", points: 50 },
-  draw4_2: { id: "draw4-2", color: "wild", value: "draw4", points: 50 },
+  red1: { id: "r1", color: "red", value: "1", points: 1 },
+  red6: { id: "r6", color: "red", value: "6", points: 6 },
+  blue2: { id: "b2", color: "blue", value: "2", points: 2 },
+  green3: { id: "g3", color: "green", value: "3", points: 3 },
+  yellow4: { id: "y4", color: "yellow", value: "4", points: 4 },
+  // スキップ・リバース
+  skip: { id: "r-skip", color: "red", value: "skip", points: 20 },
+  skip2: { id: "r-skip-2", color: "red", value: "skip", points: 20 },
+  reverse: { id: "r-reverse", color: "red", value: "reverse", points: 20 },
+  reverse2: {
+    id: "r-reverse-2",
+    color: "red",
+    value: "reverse",
+    points: 20,
+  },
+  // ドロー2
   draw2: { id: "g-draw2", color: "green", value: "draw2", points: 20 },
   draw2_2: { id: "g-draw2-2", color: "green", value: "draw2", points: 20 },
-  blue5: { id: "b5", color: "blue", value: "5", points: 5 },
-  green5: { id: "g5", color: "green", value: "5", points: 5 },
+  // ワイルド
+  wild: { id: "wild-1", color: "wild", value: "wild", points: 30 },
+  wild2: { id: "wild-2", color: "wild", value: "wild", points: 30 },
+  // ドロー4
+  draw4: { id: "draw4-1", color: "wild", value: "draw4", points: 50 },
+  draw4_2: { id: "draw4-2", color: "wild", value: "draw4", points: 50 },
+  draw4_3: { id: "draw4-3", color: "wild", value: "draw4", points: 50 },
+  // 強制色変え
+  forceChangeRed: {
+    id: "force-red",
+    color: "red",
+    value: "force-change",
+    points: 10,
+  },
+  forceChangeBlue: {
+    id: "force-blue",
+    color: "blue",
+    value: "force-change",
+    points: 10,
+  },
+  forceChangeGreen: {
+    id: "force-green",
+    color: "green",
+    value: "force-change",
+    points: 10,
+  },
 };
 
+type CardData = { id: string; color: string; value: string; points: number };
+
 // ダミーカードを生成
-function createDummyCard(index: number) {
+function createDummyCard(index: number): CardData {
   const colors = ["red", "blue", "green", "yellow"];
   const color = colors[index % 4];
   const value = String(index % 10);
@@ -31,57 +70,14 @@ function createDummyCard(index: number) {
   };
 }
 
-type CardData = { id: string; color: string; value: string; points: number };
+// 7枚のダミー手札を生成
+function dummyHand(startIndex: number): CardData[] {
+  return Array.from({ length: 7 }, (_, i) => createDummyCard(startIndex + i));
+}
 
-/**
- * テスト用デッキを生成する
- * firstCardを指定し、残りはダミーカードで埋める
- *
- * デッキ構造（popで取るので後ろから消費される）:
- * [残りカード... | firstCard | 手札用21枚]
- *
- * 配布順序（3人プレイヤーの場合）:
- * Round 1: pop() → P1-1, pop() → P2-1, pop() → P3-1
- * Round 2: pop() → P1-2, pop() → P2-2, pop() → P3-2
- * ...
- * Round 7: pop() → P1-7, pop() → P2-7, pop() → P3-7
- *
- * つまりデッキ末尾から: P1-1, P2-1, P3-1, P1-2, P2-2, P3-2, ...
- */
-function createTestDeck(
-  firstCard: CardData,
-  playerCount = 3,
-  handCards?: CardData[],
-) {
-  const deck: CardData[] = [];
-  const handCardsNeeded = playerCount * 7; // 3人 × 7枚 = 21枚
-
-  // 残りの山札（十分な枚数）
-  for (let i = 0; i < 80; i++) {
-    deck.push(createDummyCard(i));
-  }
-
-  // firstCard（手札配布後にpopされる）
-  deck.push(firstCard);
-
-  // 手札用カード
-  if (handCards && handCards.length > 0) {
-    // 指定された手札カードを使用（末尾からpopされるので逆順に追加）
-    for (let i = handCardsNeeded - 1; i >= 0; i--) {
-      if (i < handCards.length) {
-        deck.push(handCards[i]);
-      } else {
-        deck.push(createDummyCard(100 + i));
-      }
-    }
-  } else {
-    // デフォルトのダミーカード
-    for (let i = 0; i < handCardsNeeded; i++) {
-      deck.push(createDummyCard(100 + i));
-    }
-  }
-
-  return deck;
+// 0点カードを生成（ドボンテスト用）
+function zeroCard(index: number): CardData {
+  return { id: `zero-${index}`, color: "yellow", value: "0", points: 0 };
 }
 
 /**
@@ -90,28 +86,21 @@ function createTestDeck(
  */
 function createTestDeckWithPlayerHands(
   firstCard: CardData,
-  player1Hand: CardData[], // 7枚
-  player2Hand: CardData[], // 7枚
-  player3Hand: CardData[], // 7枚
+  player1Hand: CardData[],
+  player2Hand: CardData[],
+  player3Hand: CardData[],
 ) {
   const deck: CardData[] = [];
 
-  // 残りの山札（十分な枚数）
   for (let i = 0; i < 80; i++) {
     deck.push(createDummyCard(i));
   }
 
-  // firstCard（手札配布後にpopされる）
   deck.push(firstCard);
 
-  // 配布順序を考慮して手札カードを追加
-  // Round 1: P1[0], P2[0], P3[0]
-  // Round 2: P1[1], P2[1], P3[1]
-  // ...
-  // Round 7: P1[6], P2[6], P3[6]
   // デッキは末尾からpopされるので、逆順に追加する
+  // Round 7 → Round 1 の順で、各ラウンド P3, P2, P1 の順
   for (let round = 6; round >= 0; round--) {
-    // 各ラウンドでP3, P2, P1の順に追加（popで逆順になる）
     deck.push(player3Hand[round] || createDummyCard(300 + round));
     deck.push(player2Hand[round] || createDummyCard(200 + round));
     deck.push(player1Hand[round] || createDummyCard(100 + round));
@@ -135,40 +124,24 @@ describe("BeginPlayCommand", () => {
     await colyseus.cleanup();
   });
 
-  // ヘルパー関数: ゲームをplayingフェーズまで進める
-  async function setupGameUntilPlaying() {
-    const room = await colyseus.createRoom("game", {});
-    const owner = await colyseus.connectTo(room, { playerName: "Owner" });
-    const player2 = await colyseus.connectTo(room, { playerName: "Player2" });
-    const player3 = await colyseus.connectTo(room, { playerName: "Player3" });
-
-    owner.send("startGame");
-
-    const timeout = Date.now() + 15000;
-    while (room.state.phase !== "playing" && Date.now() < timeout) {
-      await room.waitForNextPatch();
-    }
-
-    return { room, owner, player2, player3 };
-  }
-
-  // ヘルパー関数: 特定のカードを最初の場札に設定してplayingフェーズまで進める
-  async function setupGameWithFirstCard(
-    cardData: {
-      id: string;
-      color: string;
-      value: string;
-      points: number;
-    },
-    handCards?: { id: string; color: string; value: string; points: number }[],
+  // ヘルパー: プレイヤーごとの手札を指定してplayingフェーズまで進める
+  async function setupWithHands(
+    firstCard: CardData,
+    p1Hand: CardData[],
+    p2Hand: CardData[],
+    p3Hand: CardData[],
   ) {
     const room = await colyseus.createRoom("game", {});
     const owner = await colyseus.connectTo(room, { playerName: "Owner" });
     const player2 = await colyseus.connectTo(room, { playerName: "Player2" });
     const player3 = await colyseus.connectTo(room, { playerName: "Player3" });
 
-    // テスト用デッキを設定
-    const testDeck = createTestDeck(cardData, 3, handCards);
+    const testDeck = createTestDeckWithPlayerHands(
+      firstCard,
+      p1Hand,
+      p2Hand,
+      p3Hand,
+    );
     owner.send("__setDeck", testDeck);
     await new Promise((resolve) => setTimeout(resolve, 50));
 
@@ -182,10 +155,22 @@ describe("BeginPlayCommand", () => {
     return { room, owner, player2, player3 };
   }
 
+  // ヘルパー: ダミー手札でplayingフェーズまで進める
+  async function setupWithFirstCard(firstCard: CardData) {
+    return setupWithHands(
+      firstCard,
+      dummyHand(100),
+      dummyHand(200),
+      dummyHand(300),
+    );
+  }
+
+  // -------------------------------------------------------
+  // フェーズ移行
+  // -------------------------------------------------------
   describe("フェーズ移行", () => {
     it("最終的にplayingフェーズになる", async () => {
-      const { room } = await setupGameUntilPlaying();
-
+      const { room } = await setupWithFirstCard(testCards.number);
       expect(room.state.phase).toBe("playing");
     });
 
@@ -197,7 +182,6 @@ describe("BeginPlayCommand", () => {
 
       owner.send("startGame");
 
-      // revealingフェーズを経由することを確認
       let sawRevealing = false;
       const timeout = Date.now() + 15000;
       while (room.state.phase !== "playing" && Date.now() < timeout) {
@@ -212,37 +196,22 @@ describe("BeginPlayCommand", () => {
     });
   });
 
-  describe("手番プレイヤーのアクション設定", () => {
-    it("手番プレイヤーのcanDrawがtrueになる（通常カードの場合）", async () => {
-      const { room } = await setupGameWithFirstCard(testCards.number);
+  // -------------------------------------------------------
+  // 最初のカードが数字カードの場合
+  // -------------------------------------------------------
+  describe("最初のカードが数字カードの場合", () => {
+    it("効果: 手番プレイヤーのcanDrawがtrue、canPassはfalse", async () => {
+      const { room } = await setupWithFirstCard(testCards.number);
 
       const currentPlayer = room.state.players.get(
         room.state.currentTurnPlayerId,
       );
       expect(currentPlayer?.canDraw).toBe(true);
-    });
-
-    it("手番でないプレイヤーのcanDrawはfalse", async () => {
-      const { room } = await setupGameUntilPlaying();
-
-      for (const [sessionId, player] of room.state.players.entries()) {
-        if (sessionId !== room.state.currentTurnPlayerId) {
-          expect(player.canDraw).toBe(false);
-        }
-      }
-    });
-
-    it("手番プレイヤーのcanPassはfalse（初期状態）", async () => {
-      const { room } = await setupGameUntilPlaying();
-
-      const currentPlayer = room.state.players.get(
-        room.state.currentTurnPlayerId,
-      );
       expect(currentPlayer?.canPass).toBe(false);
     });
 
-    it("手番でないプレイヤーの基本アクションがfalse", async () => {
-      const { room } = await setupGameUntilPlaying();
+    it("効果: 手番でないプレイヤーの基本アクションがすべてfalse", async () => {
+      const { room } = await setupWithFirstCard(testCards.number);
 
       for (const [sessionId, player] of room.state.players.entries()) {
         if (sessionId !== room.state.currentTurnPlayerId) {
@@ -254,395 +223,55 @@ describe("BeginPlayCommand", () => {
         }
       }
     });
-  });
 
-  describe("ワイルドカード時の動作", () => {
-    it("ワイルドカードの場合、waitingForColorChoiceはfalse", async () => {
-      const { room } = await setupGameWithFirstCard(testCards.wild);
-
-      // ワイルドカードが最初の場合は色選択不要
-      expect(room.state.waitingForColorChoice).toBe(false);
-    });
-
-    it("ワイルドカードの場合、canDrawはtrue", async () => {
-      const { room } = await setupGameWithFirstCard(testCards.wild);
+    it("出せるカード: 手番プレイヤーにplayableCardsが設定される", async () => {
+      const { room } = await setupWithFirstCard(testCards.number);
 
       const currentPlayer = room.state.players.get(
         room.state.currentTurnPlayerId,
       );
-      expect(currentPlayer?.canDraw).toBe(true);
+      expect(currentPlayer?.playableCards).toBeDefined();
     });
 
-    it("ワイルドカードの場合、canChooseColorはfalse", async () => {
-      const { room } = await setupGameWithFirstCard(testCards.wild);
-
-      const currentPlayer = room.state.players.get(
-        room.state.currentTurnPlayerId,
-      );
-      expect(currentPlayer?.canChooseColor).toBe(false);
-    });
-
-    it("ドロー4の場合、色選択ではなくドロー4を出せる", async () => {
-      // プレイヤー1にdraw4を持たせる
-      const { room } = await setupGameWithFirstCard(testCards.draw4, [
-        testCards.draw4_2,
-      ]);
-
-      // 色選択待ちではない
-      expect(room.state.waitingForColorChoice).toBe(false);
-
-      const currentPlayer = room.state.players.get(
-        room.state.currentTurnPlayerId,
-      );
-      expect(currentPlayer?.canChooseColor).toBe(false);
-      // ドロー累積中なのでドロー4を出せる
-      expect(room.state.drawStack).toBe(4);
-      expect(currentPlayer?.canDrawStack).toBe(true);
-    });
-  });
-
-  describe("ドロー累積時のアクション設定", () => {
-    it("ドロー2の場合、canDrawStackがtrue", async () => {
-      const { room } = await setupGameWithFirstCard(testCards.draw2);
-
-      const currentPlayer = room.state.players.get(
-        room.state.currentTurnPlayerId,
-      );
-      expect(currentPlayer?.canDrawStack).toBe(true);
-    });
-
-    it("ドロー2の場合、canDrawはfalse", async () => {
-      const { room } = await setupGameWithFirstCard(testCards.draw2);
-
-      const currentPlayer = room.state.players.get(
-        room.state.currentTurnPlayerId,
-      );
-      expect(currentPlayer?.canDraw).toBe(false);
-    });
-
-    it("ドロー4の場合、canDrawStackがtrue", async () => {
-      const { room } = await setupGameWithFirstCard(testCards.draw4);
-
-      const currentPlayer = room.state.players.get(
-        room.state.currentTurnPlayerId,
-      );
-      expect(currentPlayer?.canDrawStack).toBe(true);
-    });
-  });
-
-  describe("ドロー累積時の出せるカード判定", () => {
-    it("ドロー2の場合、draw2が出せる", async () => {
-      const room = await colyseus.createRoom("game", {});
-      const owner = await colyseus.connectTo(room, { playerName: "Owner" });
-      await colyseus.connectTo(room, { playerName: "Player2" });
-      await colyseus.connectTo(room, { playerName: "Player3" });
-
-      // プレイヤーごとの手札を指定
-      const player1Hand = [
-        testCards.draw2_2, // draw2を持っている
-        createDummyCard(101),
-        createDummyCard(102),
-        createDummyCard(103),
-        createDummyCard(104),
-        createDummyCard(105),
-        createDummyCard(106),
-      ];
-      const player2Hand = Array.from({ length: 7 }, (_, i) =>
-        createDummyCard(200 + i),
-      );
-      const player3Hand = Array.from({ length: 7 }, (_, i) =>
-        createDummyCard(300 + i),
+    it("カットイン: 同じカードを持つ非手番プレイヤーがカットインできる", async () => {
+      const { room } = await setupWithHands(
+        testCards.number, // 赤5
+        dummyHand(100),
+        [
+          testCards.number,
+          ...Array.from({ length: 6 }, (_, i) => createDummyCard(201 + i)),
+        ],
+        dummyHand(300),
       );
 
-      const testDeck = createTestDeckWithPlayerHands(
-        testCards.draw2,
-        player1Hand,
-        player2Hand,
-        player3Hand,
-      );
-      owner.send("__setDeck", testDeck);
-      await new Promise((resolve) => setTimeout(resolve, 50));
-
-      owner.send("startGame");
-
-      const timeout = Date.now() + 15000;
-      while (room.state.phase !== "playing" && Date.now() < timeout) {
-        await room.waitForNextPatch();
-      }
-
-      const currentPlayer = room.state.players.get(
-        room.state.currentTurnPlayerId,
-      );
-
-      // draw2が出せることを確認
-      const hasDraw2InPlayable = currentPlayer?.playableCards.has(
-        testCards.draw2_2.id,
-      );
-      expect(hasDraw2InPlayable).toBe(true);
-    });
-
-    it("ドロー2の場合、draw4が出せる", async () => {
-      const room = await colyseus.createRoom("game", {});
-      const owner = await colyseus.connectTo(room, { playerName: "Owner" });
-      await colyseus.connectTo(room, { playerName: "Player2" });
-      await colyseus.connectTo(room, { playerName: "Player3" });
-
-      // プレイヤーごとの手札を指定
-      const player1Hand = [
-        testCards.draw4_2, // draw4を持っている
-        createDummyCard(101),
-        createDummyCard(102),
-        createDummyCard(103),
-        createDummyCard(104),
-        createDummyCard(105),
-        createDummyCard(106),
-      ];
-      const player2Hand = Array.from({ length: 7 }, (_, i) =>
-        createDummyCard(200 + i),
-      );
-      const player3Hand = Array.from({ length: 7 }, (_, i) =>
-        createDummyCard(300 + i),
-      );
-
-      const testDeck = createTestDeckWithPlayerHands(
-        testCards.draw2,
-        player1Hand,
-        player2Hand,
-        player3Hand,
-      );
-      owner.send("__setDeck", testDeck);
-      await new Promise((resolve) => setTimeout(resolve, 50));
-
-      owner.send("startGame");
-
-      const timeout = Date.now() + 15000;
-      while (room.state.phase !== "playing" && Date.now() < timeout) {
-        await room.waitForNextPatch();
-      }
-
-      const currentPlayer = room.state.players.get(
-        room.state.currentTurnPlayerId,
-      );
-
-      // draw4が出せることを確認
-      const hasDraw4InPlayable = currentPlayer?.playableCards.has(
-        testCards.draw4_2.id,
-      );
-      expect(hasDraw4InPlayable).toBe(true);
-    });
-
-    it("ドロー2の場合、通常カードは出せない", async () => {
-      const room = await colyseus.createRoom("game", {});
-      const owner = await colyseus.connectTo(room, { playerName: "Owner" });
-      await colyseus.connectTo(room, { playerName: "Player2" });
-      await colyseus.connectTo(room, { playerName: "Player3" });
-
-      // プレイヤーごとの手札を指定
-      const player1Hand = [
-        testCards.number3, // 数字カード
-        createDummyCard(101),
-        createDummyCard(102),
-        createDummyCard(103),
-        createDummyCard(104),
-        createDummyCard(105),
-        createDummyCard(106),
-      ];
-      const player2Hand = Array.from({ length: 7 }, (_, i) =>
-        createDummyCard(200 + i),
-      );
-      const player3Hand = Array.from({ length: 7 }, (_, i) =>
-        createDummyCard(300 + i),
-      );
-
-      const testDeck = createTestDeckWithPlayerHands(
-        testCards.draw2,
-        player1Hand,
-        player2Hand,
-        player3Hand,
-      );
-      owner.send("__setDeck", testDeck);
-      await new Promise((resolve) => setTimeout(resolve, 50));
-
-      owner.send("startGame");
-
-      const timeout = Date.now() + 15000;
-      while (room.state.phase !== "playing" && Date.now() < timeout) {
-        await room.waitForNextPatch();
-      }
-
-      const currentPlayer = room.state.players.get(
-        room.state.currentTurnPlayerId,
-      );
-
-      // 数字カードは出せない
-      const hasNumberInPlayable = currentPlayer?.playableCards.has(
-        testCards.number3.id,
-      );
-      expect(hasNumberInPlayable).toBe(false);
-    });
-
-    it("ドロー4の場合、draw4のみ出せる", async () => {
-      const room = await colyseus.createRoom("game", {});
-      const owner = await colyseus.connectTo(room, { playerName: "Owner" });
-      await colyseus.connectTo(room, { playerName: "Player2" });
-      await colyseus.connectTo(room, { playerName: "Player3" });
-
-      // プレイヤーごとの手札を指定
-      const player1Hand = [
-        testCards.draw4_2, // draw4を持っている
-        testCards.draw2_2, // draw2も持っている（出せないはず）
-        createDummyCard(102),
-        createDummyCard(103),
-        createDummyCard(104),
-        createDummyCard(105),
-        createDummyCard(106),
-      ];
-      const player2Hand = Array.from({ length: 7 }, (_, i) =>
-        createDummyCard(200 + i),
-      );
-      const player3Hand = Array.from({ length: 7 }, (_, i) =>
-        createDummyCard(300 + i),
-      );
-
-      const testDeck = createTestDeckWithPlayerHands(
-        testCards.draw4,
-        player1Hand,
-        player2Hand,
-        player3Hand,
-      );
-      owner.send("__setDeck", testDeck);
-      await new Promise((resolve) => setTimeout(resolve, 50));
-
-      owner.send("startGame");
-
-      const timeout = Date.now() + 15000;
-      while (room.state.phase !== "playing" && Date.now() < timeout) {
-        await room.waitForNextPatch();
-      }
-
-      const currentPlayer = room.state.players.get(
-        room.state.currentTurnPlayerId,
-      );
-
-      // draw4は出せる
-      const hasDraw4InPlayable = currentPlayer?.playableCards.has(
-        testCards.draw4_2.id,
-      );
-      expect(hasDraw4InPlayable).toBe(true);
-
-      // draw2は出せない
-      const hasDraw2InPlayable = currentPlayer?.playableCards.has(
-        testCards.draw2_2.id,
-      );
-      expect(hasDraw2InPlayable).toBe(false);
-    });
-  });
-
-  describe("カットイン判定", () => {
-    it("手番でないプレイヤーも同じカードならplayableCardsに含まれる", async () => {
-      const room = await colyseus.createRoom("game", {});
-      const owner = await colyseus.connectTo(room, { playerName: "Owner" });
-      await colyseus.connectTo(room, { playerName: "Player2" });
-      await colyseus.connectTo(room, { playerName: "Player3" });
-
-      // Player2の手札に場札と同じr5を含める
-      const player1Hand = Array.from({ length: 7 }, (_, i) =>
-        createDummyCard(100 + i),
-      );
-      const player2Hand = [
-        testCards.number, // red 5（場札と同じ）
-        createDummyCard(201),
-        createDummyCard(202),
-        createDummyCard(203),
-        createDummyCard(204),
-        createDummyCard(205),
-        createDummyCard(206),
-      ];
-      const player3Hand = Array.from({ length: 7 }, (_, i) =>
-        createDummyCard(300 + i),
-      );
-
-      const testDeck = createTestDeckWithPlayerHands(
-        testCards.number,
-        player1Hand,
-        player2Hand,
-        player3Hand,
-      );
-      owner.send("__setDeck", testDeck);
-      await new Promise((resolve) => setTimeout(resolve, 50));
-
-      owner.send("startGame");
-
-      const timeout = Date.now() + 15000;
-      while (room.state.phase !== "playing" && Date.now() < timeout) {
-        await room.waitForNextPatch();
-      }
-
-      // 手番でないプレイヤーでカットインできるプレイヤーを探す
-      let foundCutInPlayer = false;
+      let foundCutIn = false;
       for (const [sessionId, player] of room.state.players.entries()) {
         if (sessionId !== room.state.currentTurnPlayerId) {
           for (const card of player.myHand) {
-            if (
-              card.color === testCards.number.color &&
-              card.value === testCards.number.value
-            ) {
-              expect(player.playableCards.size).toBeGreaterThan(0);
-              foundCutInPlayer = true;
-              break;
+            if (card.color === "red" && card.value === "5") {
+              expect(player.playableCards.has(card.id)).toBe(true);
+              foundCutIn = true;
             }
           }
         }
-        if (foundCutInPlayer) break;
       }
-
-      expect(foundCutInPlayer).toBe(true);
+      expect(foundCutIn).toBe(true);
     });
 
-    it("手番でないプレイヤーで同じカードを持っていない場合はplayableCardsが空", async () => {
-      const room = await colyseus.createRoom("game", {});
-      const owner = await colyseus.connectTo(room, { playerName: "Owner" });
-      await colyseus.connectTo(room, { playerName: "Player2" });
-      await colyseus.connectTo(room, { playerName: "Player3" });
-
-      // 全員異なるカードを持つ
-      const player1Hand = Array.from({ length: 7 }, (_, i) =>
-        createDummyCard(100 + i),
-      );
-      const player2Hand = Array.from({ length: 7 }, (_, i) =>
-        createDummyCard(200 + i),
-      );
-      const player3Hand = Array.from({ length: 7 }, (_, i) =>
-        createDummyCard(300 + i),
+    it("カットイン: 同じカードを持たない非手番プレイヤーはカットインできない", async () => {
+      const { room } = await setupWithHands(
+        testCards.number, // 赤5
+        dummyHand(100),
+        dummyHand(200),
+        dummyHand(300),
       );
 
-      const testDeck = createTestDeckWithPlayerHands(
-        testCards.number,
-        player1Hand,
-        player2Hand,
-        player3Hand,
-      );
-      owner.send("__setDeck", testDeck);
-      await new Promise((resolve) => setTimeout(resolve, 50));
-
-      owner.send("startGame");
-
-      const timeout = Date.now() + 15000;
-      while (room.state.phase !== "playing" && Date.now() < timeout) {
-        await room.waitForNextPatch();
-      }
-
-      // 手番でないプレイヤーで同じカードを持っていない場合
       for (const [sessionId, player] of room.state.players.entries()) {
         if (sessionId !== room.state.currentTurnPlayerId) {
           let hasSameCard = false;
           for (const card of player.myHand) {
-            if (
-              card.color === testCards.number.color &&
-              card.value === testCards.number.value
-            ) {
+            if (card.color === "red" && card.value === "5") {
               hasSameCard = true;
-              break;
             }
           }
           if (!hasSameCard) {
@@ -652,46 +281,389 @@ describe("BeginPlayCommand", () => {
       }
     });
 
-    it("ワイルド同士でカットインできる", async () => {
-      const room = await colyseus.createRoom("game", {});
-      const owner = await colyseus.connectTo(room, { playerName: "Owner" });
-      await colyseus.connectTo(room, { playerName: "Player2" });
-      await colyseus.connectTo(room, { playerName: "Player3" });
-
-      // Player2の手札にワイルドを含める
-      const player1Hand = Array.from({ length: 7 }, (_, i) =>
-        createDummyCard(100 + i),
-      );
-      const player2Hand = [
-        testCards.wild2, // 場札と同じワイルド
-        createDummyCard(201),
-        createDummyCard(202),
-        createDummyCard(203),
-        createDummyCard(204),
-        createDummyCard(205),
-        createDummyCard(206),
-      ];
-      const player3Hand = Array.from({ length: 7 }, (_, i) =>
-        createDummyCard(300 + i),
+    it("ドボン: 手札合計が場札の点数(5)と一致すればcanDobonがtrue", async () => {
+      // 場札: 赤5 (5点), P1手札: 3+2+0+0+0+0+0 = 5点
+      const { room } = await setupWithHands(
+        testCards.number,
+        [
+          testCards.number3,
+          testCards.number2,
+          zeroCard(1),
+          zeroCard(2),
+          zeroCard(3),
+          zeroCard(4),
+          zeroCard(5),
+        ],
+        dummyHand(200),
+        dummyHand(300),
       );
 
-      const testDeck = createTestDeckWithPlayerHands(
-        testCards.wild,
-        player1Hand,
-        player2Hand,
-        player3Hand,
+      const currentPlayer = room.state.players.get(
+        room.state.currentTurnPlayerId,
       );
-      owner.send("__setDeck", testDeck);
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(currentPlayer?.canDobon).toBe(true);
+    });
 
-      owner.send("startGame");
+    it("ドボン: 手札合計が不一致ならcanDobonがfalse", async () => {
+      // 場札: 赤5 (5点), P1手札: 3+3+0+0+0+0+0 = 6点
+      const { room } = await setupWithHands(
+        testCards.number,
+        [
+          testCards.number3,
+          { id: "r3-2", color: "red", value: "3", points: 3 },
+          zeroCard(1),
+          zeroCard(2),
+          zeroCard(3),
+          zeroCard(4),
+          zeroCard(5),
+        ],
+        dummyHand(200),
+        dummyHand(300),
+      );
 
-      const timeout = Date.now() + 15000;
-      while (room.state.phase !== "playing" && Date.now() < timeout) {
-        await room.waitForNextPatch();
+      const currentPlayer = room.state.players.get(
+        room.state.currentTurnPlayerId,
+      );
+      expect(currentPlayer?.canDobon).toBe(false);
+    });
+
+    it("ドボン: 手番でないプレイヤーもドボン可能", async () => {
+      // 場札: 赤5 (5点), P2手札: 3+2+0+0+0+0+0 = 5点
+      const { room } = await setupWithHands(
+        testCards.number,
+        [
+          { id: "y9", color: "yellow", value: "9", points: 9 },
+          ...Array.from({ length: 6 }, (_, i) => createDummyCard(101 + i)),
+        ],
+        [
+          testCards.number3,
+          testCards.number2,
+          zeroCard(1),
+          zeroCard(2),
+          zeroCard(3),
+          zeroCard(4),
+          zeroCard(5),
+        ],
+        dummyHand(300),
+      );
+
+      let foundDobon = false;
+      for (const [sessionId, player] of room.state.players.entries()) {
+        if (sessionId !== room.state.currentTurnPlayerId) {
+          let total = 0;
+          for (const card of player.myHand) total += card.points;
+          if (total === 5) {
+            expect(player.canDobon).toBe(true);
+            foundDobon = true;
+          }
+        }
       }
+      expect(foundDobon).toBe(true);
+    });
+  });
 
-      // 手番でないプレイヤーでワイルドを持っている人を探す
+  // -------------------------------------------------------
+  // 最初のカードがスキップの場合
+  // -------------------------------------------------------
+  describe("最初のカードがスキップの場合", () => {
+    it("効果: オーナーがスキップされ次のプレイヤーの手番になる", async () => {
+      const { room, owner } = await setupWithFirstCard(testCards.skip);
+
+      expect(room.state.currentTurnPlayerId).not.toBe(owner.sessionId);
+    });
+
+    it("カットイン: 同色スキップでカットインできる", async () => {
+      const { room } = await setupWithHands(
+        testCards.skip, // 赤スキップ
+        dummyHand(100),
+        [
+          testCards.skip2,
+          ...Array.from({ length: 6 }, (_, i) => createDummyCard(201 + i)),
+        ],
+        dummyHand(300),
+      );
+
+      for (const [sessionId, player] of room.state.players.entries()) {
+        if (sessionId !== room.state.currentTurnPlayerId) {
+          for (const card of player.myHand) {
+            if (card.color === "red" && card.value === "skip") {
+              expect(player.playableCards.has(card.id)).toBe(true);
+            }
+          }
+        }
+      }
+    });
+
+    it("ドボン: 手札合計が20点と一致すればドボン可能", async () => {
+      // 場札: 赤スキップ (20点)
+      // スキップでP1→P2に手番が移るため、P3（非手番）に20点の手札を配置
+      // P3手札: 9+8+3+0+0+0+0 = 20点
+      const { room } = await setupWithHands(
+        testCards.skip,
+        dummyHand(100),
+        dummyHand(200),
+        [
+          { id: "y9", color: "yellow", value: "9", points: 9 },
+          { id: "b8", color: "blue", value: "8", points: 8 },
+          { id: "g3", color: "green", value: "3", points: 3 },
+          zeroCard(1),
+          zeroCard(2),
+          zeroCard(3),
+          zeroCard(4),
+        ],
+      );
+
+      let foundDobon = false;
+      for (const [sessionId, player] of room.state.players.entries()) {
+        if (sessionId !== room.state.currentTurnPlayerId) {
+          let total = 0;
+          for (const card of player.myHand) total += card.points;
+          if (total === 20) {
+            expect(player.canDobon).toBe(true);
+            foundDobon = true;
+          }
+        }
+      }
+      expect(foundDobon).toBe(true);
+    });
+  });
+
+  // -------------------------------------------------------
+  // 最初のカードがリバースの場合
+  // -------------------------------------------------------
+  describe("最初のカードがリバースの場合", () => {
+    it("効果: 順番が逆方向になる", async () => {
+      const { room } = await setupWithFirstCard(testCards.reverse);
+
+      expect(room.state.turnDirection).toBe(-1);
+    });
+
+    it("カットイン: 同色リバースでカットインできる", async () => {
+      const { room } = await setupWithHands(
+        testCards.reverse, // 赤リバース
+        dummyHand(100),
+        [
+          testCards.reverse2,
+          ...Array.from({ length: 6 }, (_, i) => createDummyCard(201 + i)),
+        ],
+        dummyHand(300),
+      );
+
+      for (const [sessionId, player] of room.state.players.entries()) {
+        if (sessionId !== room.state.currentTurnPlayerId) {
+          for (const card of player.myHand) {
+            if (card.color === "red" && card.value === "reverse") {
+              expect(player.playableCards.has(card.id)).toBe(true);
+            }
+          }
+        }
+      }
+    });
+
+    it("ドボン: 手札合計が20点と一致すればドボン可能", async () => {
+      // 場札: 赤リバース (20点), P2手札: 9+8+3+0+0+0+0 = 20点
+      const { room } = await setupWithHands(
+        testCards.reverse,
+        dummyHand(100),
+        [
+          { id: "y9", color: "yellow", value: "9", points: 9 },
+          { id: "b8", color: "blue", value: "8", points: 8 },
+          { id: "g3-d", color: "green", value: "3", points: 3 },
+          zeroCard(1),
+          zeroCard(2),
+          zeroCard(3),
+          zeroCard(4),
+        ],
+        dummyHand(300),
+      );
+
+      let foundDobon = false;
+      for (const [sessionId, player] of room.state.players.entries()) {
+        if (sessionId !== room.state.currentTurnPlayerId) {
+          let total = 0;
+          for (const card of player.myHand) total += card.points;
+          if (total === 20) {
+            expect(player.canDobon).toBe(true);
+            foundDobon = true;
+          }
+        }
+      }
+      expect(foundDobon).toBe(true);
+    });
+  });
+
+  // -------------------------------------------------------
+  // 最初のカードがドロー2の場合
+  // -------------------------------------------------------
+  describe("最初のカードがドロー2の場合", () => {
+    it("効果: canDrawStackがtrue、canDrawはfalse", async () => {
+      const { room } = await setupWithFirstCard(testCards.draw2);
+
+      const currentPlayer = room.state.players.get(
+        room.state.currentTurnPlayerId,
+      );
+      expect(currentPlayer?.canDrawStack).toBe(true);
+      expect(currentPlayer?.canDraw).toBe(false);
+    });
+
+    it("出せるカード: draw2を重ねられる", async () => {
+      const { room } = await setupWithHands(
+        testCards.draw2,
+        [
+          testCards.draw2_2,
+          ...Array.from({ length: 6 }, (_, i) => createDummyCard(101 + i)),
+        ],
+        dummyHand(200),
+        dummyHand(300),
+      );
+
+      const currentPlayer = room.state.players.get(
+        room.state.currentTurnPlayerId,
+      );
+      expect(currentPlayer?.playableCards.has(testCards.draw2_2.id)).toBe(true);
+    });
+
+    it("出せるカード: draw4を重ねられる", async () => {
+      const { room } = await setupWithHands(
+        testCards.draw2,
+        [
+          testCards.draw4_2,
+          ...Array.from({ length: 6 }, (_, i) => createDummyCard(101 + i)),
+        ],
+        dummyHand(200),
+        dummyHand(300),
+      );
+
+      const currentPlayer = room.state.players.get(
+        room.state.currentTurnPlayerId,
+      );
+      expect(currentPlayer?.playableCards.has(testCards.draw4_2.id)).toBe(true);
+    });
+
+    it("出せるカード: 通常カードは出せない", async () => {
+      const { room } = await setupWithHands(
+        testCards.draw2,
+        [
+          testCards.number3,
+          ...Array.from({ length: 6 }, (_, i) => createDummyCard(101 + i)),
+        ],
+        dummyHand(200),
+        dummyHand(300),
+      );
+
+      const currentPlayer = room.state.players.get(
+        room.state.currentTurnPlayerId,
+      );
+      expect(currentPlayer?.playableCards.has(testCards.number3.id)).toBe(
+        false,
+      );
+    });
+
+    it("カットイン: 同色ドロー2でカットインできる", async () => {
+      const { room } = await setupWithHands(
+        testCards.draw2, // 緑ドロー2
+        dummyHand(100),
+        [
+          testCards.draw2_2,
+          ...Array.from({ length: 6 }, (_, i) => createDummyCard(201 + i)),
+        ],
+        dummyHand(300),
+      );
+
+      for (const [sessionId, player] of room.state.players.entries()) {
+        if (sessionId !== room.state.currentTurnPlayerId) {
+          for (const card of player.myHand) {
+            if (card.color === "green" && card.value === "draw2") {
+              expect(player.playableCards.has(card.id)).toBe(true);
+            }
+          }
+        }
+      }
+    });
+
+    it("ドボン: 手札合計が20点と一致すればドボン可能", async () => {
+      // 場札: 緑ドロー2 (20点), P2手札: 9+8+3+0+0+0+0 = 20点
+      const { room } = await setupWithHands(
+        testCards.draw2,
+        dummyHand(100),
+        [
+          { id: "y9-d", color: "yellow", value: "9", points: 9 },
+          { id: "b8-d", color: "blue", value: "8", points: 8 },
+          { id: "g3-d2", color: "green", value: "3", points: 3 },
+          zeroCard(1),
+          zeroCard(2),
+          zeroCard(3),
+          zeroCard(4),
+        ],
+        dummyHand(300),
+      );
+
+      let foundDobon = false;
+      for (const [sessionId, player] of room.state.players.entries()) {
+        if (sessionId !== room.state.currentTurnPlayerId) {
+          let total = 0;
+          for (const card of player.myHand) total += card.points;
+          if (total === 20) {
+            expect(player.canDobon).toBe(true);
+            foundDobon = true;
+          }
+        }
+      }
+      expect(foundDobon).toBe(true);
+    });
+  });
+
+  // -------------------------------------------------------
+  // 最初のカードがワイルドの場合
+  // -------------------------------------------------------
+  describe("最初のカードがワイルドの場合", () => {
+    it("効果: 色選択不要、canDrawがtrue、canChooseColorはfalse", async () => {
+      const { room } = await setupWithFirstCard(testCards.wild);
+
+      expect(room.state.waitingForColorChoice).toBe(false);
+
+      const currentPlayer = room.state.players.get(
+        room.state.currentTurnPlayerId,
+      );
+      expect(currentPlayer?.canDraw).toBe(true);
+      expect(currentPlayer?.canChooseColor).toBe(false);
+    });
+
+    it("出せるカード: 全カード出せる", async () => {
+      const { room } = await setupWithHands(
+        testCards.wild,
+        [
+          testCards.red1,
+          testCards.blue2,
+          testCards.green3,
+          testCards.yellow4,
+          testCards.skip2,
+          testCards.draw2_2,
+          testCards.forceChangeBlue,
+        ],
+        dummyHand(200),
+        dummyHand(300),
+      );
+
+      const currentPlayer = room.state.players.get(
+        room.state.currentTurnPlayerId,
+      );
+      expect(currentPlayer?.playableCards.size).toBe(
+        currentPlayer?.myHand.length,
+      );
+    });
+
+    it("カットイン: ワイルド同士でカットインできる", async () => {
+      const { room } = await setupWithHands(
+        testCards.wild,
+        dummyHand(100),
+        [
+          testCards.wild2,
+          ...Array.from({ length: 6 }, (_, i) => createDummyCard(201 + i)),
+        ],
+        dummyHand(300),
+      );
+
       for (const [sessionId, player] of room.state.players.entries()) {
         if (sessionId !== room.state.currentTurnPlayerId) {
           for (const card of player.myHand) {
@@ -702,191 +674,245 @@ describe("BeginPlayCommand", () => {
         }
       }
     });
-  });
 
-  describe("ドボン判定", () => {
-    it("場のカードの点数と手札の合計点数が一致すればcanDobonがtrue", async () => {
-      const room = await colyseus.createRoom("game", {});
-      const owner = await colyseus.connectTo(room, { playerName: "Owner" });
-      await colyseus.connectTo(room, { playerName: "Player2" });
-      await colyseus.connectTo(room, { playerName: "Player3" });
-
-      // 場札は5点、Player1の手札の合計も5点（3 + 2 = 5点）
-      const player1Hand = [
-        testCards.number3, // 3点
-        testCards.number2, // 2点
-        { id: "y0", color: "yellow", value: "0", points: 0 },
-        { id: "y0-2", color: "yellow", value: "0", points: 0 },
-        { id: "y0-3", color: "yellow", value: "0", points: 0 },
-        { id: "y0-4", color: "yellow", value: "0", points: 0 },
-        { id: "y0-5", color: "yellow", value: "0", points: 0 },
-      ];
-      const player2Hand = Array.from({ length: 7 }, (_, i) =>
-        createDummyCard(200 + i),
-      );
-      const player3Hand = Array.from({ length: 7 }, (_, i) =>
-        createDummyCard(300 + i),
+    it("ドボン: 手札合計が30点と一致すればドボン可能", async () => {
+      // 場札: ワイルド (30点), P2手札: 9+8+7+6+0+0+0 = 30点
+      const { room } = await setupWithHands(
+        testCards.wild,
+        dummyHand(100),
+        [
+          { id: "y9-w", color: "yellow", value: "9", points: 9 },
+          { id: "b8-w", color: "blue", value: "8", points: 8 },
+          { id: "g7-w", color: "green", value: "7", points: 7 },
+          { id: "r6-w", color: "red", value: "6", points: 6 },
+          zeroCard(1),
+          zeroCard(2),
+          zeroCard(3),
+        ],
+        dummyHand(300),
       );
 
-      const testDeck = createTestDeckWithPlayerHands(
-        testCards.number,
-        player1Hand,
-        player2Hand,
-        player3Hand,
-      );
-      owner.send("__setDeck", testDeck);
-      await new Promise((resolve) => setTimeout(resolve, 50));
-
-      owner.send("startGame");
-
-      const timeout = Date.now() + 15000;
-      while (room.state.phase !== "playing" && Date.now() < timeout) {
-        await room.waitForNextPatch();
-      }
-
-      const currentPlayer = room.state.players.get(
-        room.state.currentTurnPlayerId,
-      );
-
-      // 手札の合計が場のカードの点数（5点）と一致するのでドボン可能
-      expect(currentPlayer?.canDobon).toBe(true);
-    });
-
-    it("場のカードの点数と手札の合計点数が一致しなければcanDobonがfalse", async () => {
-      const room = await colyseus.createRoom("game", {});
-      const owner = await colyseus.connectTo(room, { playerName: "Owner" });
-      await colyseus.connectTo(room, { playerName: "Player2" });
-      await colyseus.connectTo(room, { playerName: "Player3" });
-
-      // 場札は5点、Player1の手札の合計は6点（3 + 3 = 6点）
-      const player1Hand = [
-        testCards.number3, // 3点
-        { id: "r3-2", color: "red", value: "3", points: 3 }, // 3点
-        { id: "y0", color: "yellow", value: "0", points: 0 },
-        { id: "y0-2", color: "yellow", value: "0", points: 0 },
-        { id: "y0-3", color: "yellow", value: "0", points: 0 },
-        { id: "y0-4", color: "yellow", value: "0", points: 0 },
-        { id: "y0-5", color: "yellow", value: "0", points: 0 },
-      ];
-      const player2Hand = Array.from({ length: 7 }, (_, i) =>
-        createDummyCard(200 + i),
-      );
-      const player3Hand = Array.from({ length: 7 }, (_, i) =>
-        createDummyCard(300 + i),
-      );
-
-      const testDeck = createTestDeckWithPlayerHands(
-        testCards.number,
-        player1Hand,
-        player2Hand,
-        player3Hand,
-      );
-      owner.send("__setDeck", testDeck);
-      await new Promise((resolve) => setTimeout(resolve, 50));
-
-      owner.send("startGame");
-
-      const timeout = Date.now() + 15000;
-      while (room.state.phase !== "playing" && Date.now() < timeout) {
-        await room.waitForNextPatch();
-      }
-
-      const currentPlayer = room.state.players.get(
-        room.state.currentTurnPlayerId,
-      );
-
-      // 手札の合計（6点）が場のカードの点数（5点）と一致しないのでドボン不可
-      expect(currentPlayer?.canDobon).toBe(false);
-    });
-
-    it("手番でないプレイヤーもドボン可能", async () => {
-      const room = await colyseus.createRoom("game", {});
-      const owner = await colyseus.connectTo(room, { playerName: "Owner" });
-      await colyseus.connectTo(room, { playerName: "Player2" });
-      await colyseus.connectTo(room, { playerName: "Player3" });
-
-      // 場札は5点、Player2の手札の合計が5点
-      const player1Hand = [
-        { id: "y9", color: "yellow", value: "9", points: 9 }, // 9点
-        createDummyCard(101),
-        createDummyCard(102),
-        createDummyCard(103),
-        createDummyCard(104),
-        createDummyCard(105),
-        createDummyCard(106),
-      ];
-      const player2Hand = [
-        testCards.number3, // 3点
-        testCards.number2, // 2点
-        { id: "y0", color: "yellow", value: "0", points: 0 },
-        { id: "y0-2", color: "yellow", value: "0", points: 0 },
-        { id: "y0-3", color: "yellow", value: "0", points: 0 },
-        { id: "y0-4", color: "yellow", value: "0", points: 0 },
-        { id: "y0-5", color: "yellow", value: "0", points: 0 },
-      ];
-      const player3Hand = Array.from({ length: 7 }, (_, i) =>
-        createDummyCard(300 + i),
-      );
-
-      const testDeck = createTestDeckWithPlayerHands(
-        testCards.number,
-        player1Hand,
-        player2Hand,
-        player3Hand,
-      );
-      owner.send("__setDeck", testDeck);
-      await new Promise((resolve) => setTimeout(resolve, 50));
-
-      owner.send("startGame");
-
-      const timeout = Date.now() + 15000;
-      while (room.state.phase !== "playing" && Date.now() < timeout) {
-        await room.waitForNextPatch();
-      }
-
-      // 手番でないプレイヤーでドボンできるプレイヤーを探す
-      let foundDobonPlayer = false;
+      let foundDobon = false;
       for (const [sessionId, player] of room.state.players.entries()) {
         if (sessionId !== room.state.currentTurnPlayerId) {
-          let handTotal = 0;
-          for (const card of player.myHand) {
-            handTotal += card.points;
-          }
-          if (handTotal === testCards.number.points) {
+          let total = 0;
+          for (const card of player.myHand) total += card.points;
+          if (total === 30) {
             expect(player.canDobon).toBe(true);
-            foundDobonPlayer = true;
+            foundDobon = true;
           }
         }
       }
-
-      expect(foundDobonPlayer).toBe(true);
+      expect(foundDobon).toBe(true);
     });
   });
 
-  describe("出せるカードの計算", () => {
-    it("手番プレイヤーに出せるカードが設定される", async () => {
-      const { room } = await setupGameWithFirstCard(testCards.number);
+  // -------------------------------------------------------
+  // 最初のカードがドロー4の場合
+  // -------------------------------------------------------
+  describe("最初のカードがドロー4の場合", () => {
+    it("効果: drawStackが4、色選択不要、canDrawStackがtrue", async () => {
+      const { room } = await setupWithFirstCard(testCards.draw4);
+
+      expect(room.state.drawStack).toBe(4);
+      expect(room.state.waitingForColorChoice).toBe(false);
 
       const currentPlayer = room.state.players.get(
         room.state.currentTurnPlayerId,
       );
-
-      // 色選択待ちでなければplayableCardsが設定される可能性がある
-      // （手札の内容によるが、少なくともエラーにならないことを確認）
-      expect(currentPlayer?.playableCards).toBeDefined();
+      expect(currentPlayer?.canDrawStack).toBe(true);
+      expect(currentPlayer?.canChooseColor).toBe(false);
     });
 
-    it("ドロー4で色選択待ちの場合、playableCardsは空", async () => {
-      const { room } = await setupGameWithFirstCard(testCards.draw4);
+    it("出せるカード: draw4のみ出せる（draw2は不可）", async () => {
+      const { room } = await setupWithHands(
+        testCards.draw4,
+        [
+          testCards.draw4_2,
+          testCards.draw2_2,
+          ...Array.from({ length: 5 }, (_, i) => createDummyCard(102 + i)),
+        ],
+        dummyHand(200),
+        dummyHand(300),
+      );
 
       const currentPlayer = room.state.players.get(
         room.state.currentTurnPlayerId,
       );
+      expect(currentPlayer?.playableCards.has(testCards.draw4_2.id)).toBe(true);
+      expect(currentPlayer?.playableCards.has(testCards.draw2_2.id)).toBe(
+        false,
+      );
+    });
 
+    it("出せるカード: draw4を持っていなければ出せるカードがない", async () => {
+      const { room } = await setupWithFirstCard(testCards.draw4);
+
+      const currentPlayer = room.state.players.get(
+        room.state.currentTurnPlayerId,
+      );
       expect(currentPlayer?.playableCards.size).toBe(0);
     });
+
+    it("カットイン: ドロー4同士でカットインできる", async () => {
+      const { room } = await setupWithHands(
+        testCards.draw4,
+        dummyHand(100),
+        [
+          testCards.draw4_3,
+          ...Array.from({ length: 6 }, (_, i) => createDummyCard(201 + i)),
+        ],
+        dummyHand(300),
+      );
+
+      for (const [sessionId, player] of room.state.players.entries()) {
+        if (sessionId !== room.state.currentTurnPlayerId) {
+          for (const card of player.myHand) {
+            if (card.value === "draw4" && card.color === "wild") {
+              expect(player.playableCards.has(card.id)).toBe(true);
+            }
+          }
+        }
+      }
+    });
+
+    it("ドボン: 手札合計が50点と一致すればドボン可能", async () => {
+      // 場札: ドロー4 (50点), P2手札: 9+9+8+8+7+5+4 = 50点
+      const { room } = await setupWithHands(
+        testCards.draw4,
+        dummyHand(100),
+        [
+          { id: "y9-d4", color: "yellow", value: "9", points: 9 },
+          { id: "b9-d4", color: "blue", value: "9", points: 9 },
+          { id: "g8-d4", color: "green", value: "8", points: 8 },
+          { id: "r8-d4", color: "red", value: "8", points: 8 },
+          { id: "y7-d4", color: "yellow", value: "7", points: 7 },
+          { id: "b5-d4", color: "blue", value: "5", points: 5 },
+          { id: "g4-d4", color: "green", value: "4", points: 4 },
+        ],
+        dummyHand(300),
+      );
+
+      let foundDobon = false;
+      for (const [sessionId, player] of room.state.players.entries()) {
+        if (sessionId !== room.state.currentTurnPlayerId) {
+          let total = 0;
+          for (const card of player.myHand) total += card.points;
+          if (total === 50) {
+            expect(player.canDobon).toBe(true);
+            foundDobon = true;
+          }
+        }
+      }
+      expect(foundDobon).toBe(true);
+    });
   });
 
+  // -------------------------------------------------------
+  // 最初のカードが強制色変えの場合
+  // -------------------------------------------------------
+  describe("最初のカードが強制色変えの場合", () => {
+    it("効果: currentColorがカードの色になる", async () => {
+      const { room } = await setupWithFirstCard(testCards.forceChangeRed);
+
+      expect(room.state.currentColor).toBe("red");
+      expect(room.state.waitingForColorChoice).toBe(false);
+    });
+
+    it("出せるカード: 同色・ワイルド・ドロー4は出せるが、他色は不可", async () => {
+      const { room } = await setupWithHands(
+        testCards.forceChangeRed, // 場の色: 赤
+        [
+          testCards.red1,
+          testCards.red6,
+          testCards.blue2,
+          testCards.green3,
+          testCards.yellow4,
+          testCards.wild2,
+          testCards.draw4_2,
+        ],
+        dummyHand(200),
+        dummyHand(300),
+      );
+
+      const currentPlayer = room.state.players.get(
+        room.state.currentTurnPlayerId,
+      );
+
+      // 赤カードは出せる
+      expect(currentPlayer?.playableCards.has(testCards.red1.id)).toBe(true);
+      expect(currentPlayer?.playableCards.has(testCards.red6.id)).toBe(true);
+      // 他色は出せない
+      expect(currentPlayer?.playableCards.has(testCards.blue2.id)).toBe(false);
+      expect(currentPlayer?.playableCards.has(testCards.green3.id)).toBe(false);
+      expect(currentPlayer?.playableCards.has(testCards.yellow4.id)).toBe(
+        false,
+      );
+      // ワイルド・ドロー4は出せる
+      expect(currentPlayer?.playableCards.has(testCards.wild2.id)).toBe(true);
+      expect(currentPlayer?.playableCards.has(testCards.draw4_2.id)).toBe(true);
+    });
+
+    it("カットイン: 色違いの強制色変えでもカットインできる", async () => {
+      const { room } = await setupWithHands(
+        testCards.forceChangeRed, // 赤の強制色変え
+        dummyHand(100),
+        [
+          testCards.forceChangeBlue,
+          ...Array.from({ length: 6 }, (_, i) => createDummyCard(201 + i)),
+        ],
+        [
+          testCards.forceChangeGreen,
+          ...Array.from({ length: 6 }, (_, i) => createDummyCard(301 + i)),
+        ],
+      );
+
+      for (const [sessionId, player] of room.state.players.entries()) {
+        if (sessionId !== room.state.currentTurnPlayerId) {
+          for (const card of player.myHand) {
+            if (card.value === "force-change") {
+              expect(player.playableCards.has(card.id)).toBe(true);
+            }
+          }
+        }
+      }
+    });
+
+    it("ドボン: 手札合計が10点と一致すればドボン可能", async () => {
+      // 場札: 赤強制色変え (10点), P2手札: 9+1+0+0+0+0+0 = 10点
+      const { room } = await setupWithHands(
+        testCards.forceChangeRed,
+        dummyHand(100),
+        [
+          { id: "y9-fc", color: "yellow", value: "9", points: 9 },
+          { id: "b1-fc", color: "blue", value: "1", points: 1 },
+          zeroCard(1),
+          zeroCard(2),
+          zeroCard(3),
+          zeroCard(4),
+          zeroCard(5),
+        ],
+        dummyHand(300),
+      );
+
+      let foundDobon = false;
+      for (const [sessionId, player] of room.state.players.entries()) {
+        if (sessionId !== room.state.currentTurnPlayerId) {
+          let total = 0;
+          for (const card of player.myHand) total += card.points;
+          if (total === 10) {
+            expect(player.canDobon).toBe(true);
+            foundDobon = true;
+          }
+        }
+      }
+      expect(foundDobon).toBe(true);
+    });
+  });
+
+  // -------------------------------------------------------
+  // playingフェーズ前の操作制限
+  // -------------------------------------------------------
   describe("playingフェーズ前の操作制限", () => {
     it("ゲーム開始直後にカードを出そうとしても無視される", async () => {
       const room = await colyseus.createRoom("game", {});
@@ -897,14 +923,11 @@ describe("BeginPlayCommand", () => {
       owner.send("startGame");
       await room.waitForNextPatch();
 
-      // ゲーム開始直後（dealingまたはcountdown）
       expect(["dealing", "countdown"]).toContain(room.state.phase);
 
-      // カードを出そうとする
       owner.send("playCard", { cardIds: ["dummy-card-id"] });
       await room.waitForNextPatch();
 
-      // フェーズが変わっていないか、fieldCardsが空のまま
       expect(room.state.fieldCards.length).toBe(0);
     });
 
@@ -916,7 +939,6 @@ describe("BeginPlayCommand", () => {
 
       owner.send("startGame");
 
-      // countdownフェーズまで待つ
       const timeout = Date.now() + 15000;
       while (room.state.phase !== "countdown" && Date.now() < timeout) {
         await room.waitForNextPatch();
@@ -924,39 +946,24 @@ describe("BeginPlayCommand", () => {
 
       expect(room.state.phase).toBe("countdown");
 
-      // カードを出そうとする
       owner.send("playCard", { cardIds: ["dummy-card-id"] });
       await room.waitForNextPatch();
 
-      // fieldCardsが0枚のまま（まだ場札は公開されていない）
       expect(room.state.fieldCards.length).toBe(0);
     });
   });
 
+  // -------------------------------------------------------
+  // ターンタイマー
+  // -------------------------------------------------------
   describe("ターンタイマー", () => {
     it("playingフェーズ開始時に手番プレイヤーのtimeRemainingが設定される", async () => {
-      const room = await colyseus.createRoom("game", {});
-      const owner = await colyseus.connectTo(room, { playerName: "Owner" });
-      await colyseus.connectTo(room, { playerName: "Player2" });
-      await colyseus.connectTo(room, { playerName: "Player3" });
-
-      // テスト用デッキを設定
-      const testDeck = createTestDeck(testCards.number, 3);
-      owner.send("__setDeck", testDeck);
-      await new Promise((resolve) => setTimeout(resolve, 50));
-
-      owner.send("startGame");
-
-      const timeout = Date.now() + 15000;
-      while (room.state.phase !== "playing" && Date.now() < timeout) {
-        await room.waitForNextPatch();
-      }
+      const { room } = await setupWithFirstCard(testCards.number);
 
       const currentPlayer = room.state.players.get(
         room.state.currentTurnPlayerId,
       );
 
-      // timeRemainingが設定されている（秒単位）
       expect(currentPlayer?.timeRemaining).toBeGreaterThan(0);
       expect(currentPlayer?.timeRemaining).toBe(
         Math.ceil(TIMING.TURN_TIMEOUT / 1000),
@@ -964,22 +971,7 @@ describe("BeginPlayCommand", () => {
     });
 
     it("手番でないプレイヤーのtimeRemainingは0", async () => {
-      const room = await colyseus.createRoom("game", {});
-      const owner = await colyseus.connectTo(room, { playerName: "Owner" });
-      await colyseus.connectTo(room, { playerName: "Player2" });
-      await colyseus.connectTo(room, { playerName: "Player3" });
-
-      // テスト用デッキを設定
-      const testDeck = createTestDeck(testCards.number, 3);
-      owner.send("__setDeck", testDeck);
-      await new Promise((resolve) => setTimeout(resolve, 50));
-
-      owner.send("startGame");
-
-      const timeout = Date.now() + 15000;
-      while (room.state.phase !== "playing" && Date.now() < timeout) {
-        await room.waitForNextPatch();
-      }
+      const { room } = await setupWithFirstCard(testCards.number);
 
       for (const [sessionId, player] of room.state.players.entries()) {
         if (sessionId !== room.state.currentTurnPlayerId) {
@@ -989,34 +981,17 @@ describe("BeginPlayCommand", () => {
     });
 
     it("タイムアウト後に手番プレイヤーのtimeRemainingが0になる", async () => {
-      const room = await colyseus.createRoom("game", {});
-      const owner = await colyseus.connectTo(room, { playerName: "Owner" });
-      await colyseus.connectTo(room, { playerName: "Player2" });
-      await colyseus.connectTo(room, { playerName: "Player3" });
-
-      // テスト用デッキを設定
-      const testDeck = createTestDeck(testCards.number, 3);
-      owner.send("__setDeck", testDeck);
-      await new Promise((resolve) => setTimeout(resolve, 50));
-
-      owner.send("startGame");
-
-      let timeout = Date.now() + 15000;
-      while (room.state.phase !== "playing" && Date.now() < timeout) {
-        await room.waitForNextPatch();
-      }
+      const { room } = await setupWithFirstCard(testCards.number);
 
       const currentPlayerId = room.state.currentTurnPlayerId;
       const currentPlayer = room.state.players.get(currentPlayerId);
       expect(currentPlayer?.timeRemaining).toBeGreaterThan(0);
 
-      // タイムアウトを待つ（テスト環境では100ms + 余裕）
       await new Promise((resolve) =>
         setTimeout(resolve, TIMING.TURN_TIMEOUT + 50),
       );
 
-      // 状態更新を待つ
-      timeout = Date.now() + 1000;
+      const timeout = Date.now() + 1000;
       while (
         room.state.players.get(currentPlayerId)?.timeRemaining !== 0 &&
         Date.now() < timeout
@@ -1024,42 +999,23 @@ describe("BeginPlayCommand", () => {
         await room.waitForNextPatch();
       }
 
-      // timeRemainingが0になっている
       expect(room.state.players.get(currentPlayerId)?.timeRemaining).toBe(0);
     });
 
     it("ドロー累積中にタイムアウトするとtimeRemainingが0になる", async () => {
-      const room = await colyseus.createRoom("game", {});
-      const owner = await colyseus.connectTo(room, { playerName: "Owner" });
-      await colyseus.connectTo(room, { playerName: "Player2" });
-      await colyseus.connectTo(room, { playerName: "Player3" });
+      const { room } = await setupWithFirstCard(testCards.draw4);
 
-      // ドロー4を場札にしてドロー累積状態にする
-      const testDeck = createTestDeck(testCards.draw4, 3);
-      owner.send("__setDeck", testDeck);
-      await new Promise((resolve) => setTimeout(resolve, 50));
-
-      owner.send("startGame");
-
-      let timeout = Date.now() + 15000;
-      while (room.state.phase !== "playing" && Date.now() < timeout) {
-        await room.waitForNextPatch();
-      }
-
-      // ドロー累積状態であることを確認
       expect(room.state.drawStack).toBe(4);
 
       const currentPlayerId = room.state.currentTurnPlayerId;
       const currentPlayer = room.state.players.get(currentPlayerId);
       expect(currentPlayer?.timeRemaining).toBeGreaterThan(0);
 
-      // タイムアウトを待つ
       await new Promise((resolve) =>
         setTimeout(resolve, TIMING.TURN_TIMEOUT + 50),
       );
 
-      // 状態更新を待つ
-      timeout = Date.now() + 1000;
+      const timeout = Date.now() + 1000;
       while (
         room.state.players.get(currentPlayerId)?.timeRemaining !== 0 &&
         Date.now() < timeout
@@ -1067,7 +1023,6 @@ describe("BeginPlayCommand", () => {
         await room.waitForNextPatch();
       }
 
-      // タイムアウトによりtimeRemainingが0になっている
       expect(room.state.players.get(currentPlayerId)?.timeRemaining).toBe(0);
     });
   });
