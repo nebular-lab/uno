@@ -27,7 +27,6 @@ export const GameScreen = () => {
     countdown,
     fieldCards,
     deckCount,
-    currentColor,
     currentTurnPlayerId,
     myHand,
     playCard,
@@ -111,7 +110,7 @@ export const GameScreen = () => {
       {(phase === "revealing" || phase === "playing") &&
         fieldCards.length > 0 && (
           <div className="absolute left-1/2 top-[38%] z-10 -translate-x-1/2 -translate-y-1/2">
-            <FieldCard card={fieldCards[0]} currentColor={currentColor} />
+            <FieldCard card={fieldCards[0]} />
           </div>
         )}
 
