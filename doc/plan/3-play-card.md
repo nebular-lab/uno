@@ -155,7 +155,7 @@ Step 3のテストがパスすることを確認。
 
 ---
 
-## Step 5: BeginPlayCommand のリファクタリング
+## Step 5: BeginPlayCommand のリファクタリング ✅
 
 **変更ファイル:** `apps/server/src/commands/BeginPlayCommand.ts`
 
