@@ -66,4 +66,5 @@ export type GamePlayState = {
   currentColor: string;
   deckCount: number;
   drawStack: number; // ドロー累積枚数
+  turnDirection: number; // 1=時計回り, -1=反時計回り
 };

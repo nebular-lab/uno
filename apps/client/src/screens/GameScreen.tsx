@@ -8,6 +8,7 @@ import { MyHand } from "@/components/game/MyHand";
 import { EmptySeat, PlayerSeat } from "@/components/game/PlayerSeat";
 import { Table } from "@/components/game/Table";
 import { TableContainer } from "@/components/game/TableContainer";
+import { TurnDirectionIndicator } from "@/components/game/TurnDirectionIndicator";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -29,6 +30,7 @@ export const GameScreen = () => {
     deckCount,
     currentTurnPlayerId,
     myHand,
+    turnDirection,
     playCard,
     leaveRoom,
   } = useGameRoom();
@@ -82,6 +84,13 @@ export const GameScreen = () => {
       <div className="absolute inset-x-0 top-12 mx-auto size-fit">
         <Table />
       </div>
+
+      {/* ターン方向表示 */}
+      {(phase === "revealing" || phase === "playing") && (
+        <div className="absolute inset-x-0 top-12 mx-auto h-[360px] w-[900px]">
+          <TurnDirectionIndicator direction={turnDirection} />
+        </div>
+      )}
 
       {/* プレイヤーシート */}
       {[0, 1, 2, 3, 4, 5].map((displayIndex) => {
