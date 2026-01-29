@@ -265,7 +265,10 @@ validate({ sessionId, cardIds }: Payload): boolean {
 }
 ```
 
-Step 7のバリデーションテストがパスすることを確認。
+**対応テスト:**
+- バリデーション: playing以外のフェーズは拒否
+- バリデーション: playableCardsに含まれていないカードは拒否
+- バリデーション: 重ね出しで記号カード上がりは拒否
 
 **→ コミットして作業を止める**
 
@@ -312,7 +315,7 @@ execute({ sessionId, cardIds }: Payload) {
 
   // 上がり判定
   if (player.handCount === 0) {
-    this.handleFinish(sessionId);
+    this.handleFinish(sessionId, playedCards);
     return;
   }
 
@@ -327,7 +330,12 @@ execute({ sessionId, cardIds }: Payload) {
 }
 ```
 
-Step 7の実行テストがパスすることを確認。
+**対応テスト:**
+- 実行: カードが手札から場に移動する
+- 実行: handCountが正しく更新される
+- 実行: 次のプレイヤーに手番が移る
+- カード種別ごと: 全種別のカード効果
+- 特殊ケース: カットイン、重ね出し
 
 **→ コミットして作業を止める**
 
@@ -364,11 +372,21 @@ private updatePlayerActions() {
       calculatePlayableCardsForCurrentTurn(
         this.state, player, fieldCard, { isFirstCardWild: false }
       );
+      player.canDraw = !this.state.waitingForColorChoice && this.state.drawStack === 0;
+      player.canDrawStack = this.state.drawStack > 0;
+      player.canChooseColor = this.state.waitingForColorChoice;
+      player.canPass = this.state.hasDrawnThisTurn;
     } else {
       calculatePlayableCardsForCutIn(player, fieldCard);
+      player.canDraw = false;
+      player.canDrawStack = false;
+      player.canChooseColor = false;
+      player.canPass = false;
     }
 
-    // canDraw, canDrawStack, canDobon等の設定...
+    // ドボン判定（全プレイヤー共通）
+    player.canDobon = canDobon(player, fieldCard);
+    player.canDobonReturn = false;
   }
 }
 
@@ -378,6 +396,7 @@ private applyCardEffect(card: Card, stackCount: number) {
 
   effect.applyOnReveal(context);
 
+  // 重ね出し時のドロー累積
   if (stackCount > 1) {
     if (card.value === "draw2") {
       this.state.drawStack = 2 * stackCount;
@@ -386,6 +405,7 @@ private applyCardEffect(card: Card, stackCount: number) {
     }
   }
 
+  // 色の更新
   if (card.color !== "wild") {
     this.state.currentColor = card.color;
     this.state.waitingForColorChoice = false;
@@ -393,9 +413,57 @@ private applyCardEffect(card: Card, stackCount: number) {
     this.state.waitingForColorChoice = true;
   }
 }
+
+/**
+ * 上がり処理
+ * - 他プレイヤーのcanDobonを更新（上がりカードの点数に対して）
+ * - playableCardsをクリア（上がりカードにはカットインできない）
+ * - ドボン可能なプレイヤーがいなければNormalFinishCommandを実行
+ */
+private handleFinish(finishingPlayerId: string, playedCards: Card[]) {
+  // 出したカードの合計点数を計算
+  const totalPoints = playedCards.reduce((sum, card) => sum + card.points, 0);
+
+  // 全プレイヤーのアクションをリセット
+  let anyoneCanDobon = false;
+  for (const [sessionId, player] of this.state.players.entries()) {
+    // playableCardsをクリア（カットイン不可）
+    player.playableCards.clear();
+
+    // 上がったプレイヤー以外のドボン判定
+    if (sessionId !== finishingPlayerId) {
+      const handTotal = player.myHand.reduce((sum, card) => sum + card.points, 0);
+      player.canDobon = handTotal === totalPoints;
+      if (player.canDobon) anyoneCanDobon = true;
+    } else {
+      player.canDobon = false;
+    }
+
+    // その他のアクションを無効化
+    player.canDraw = false;
+    player.canDrawStack = false;
+    player.canChooseColor = false;
+    player.canPass = false;
+    player.canDobonReturn = false;
+  }
+
+  // 誰もドボンできない場合は即座に上がり確定
+  if (!anyoneCanDobon) {
+    this.room.dispatcher.dispatch(new NormalFinishCommand(), {
+      sessionId: finishingPlayerId,
+    });
+  }
+  // ドボン可能なプレイヤーがいる場合はタイマーで待機（別途実装）
+}
 ```
 
-Step 7の全テストがパスすることを確認。
+**対応テスト:**
+- 上がり: 数字カードで上がり、重ね出しで上がり
+- 上がり: 上がり時に他のプレイヤーがドボン可能になる
+- 上がり: 上がり時にドボン不可能なプレイヤーはcanDobon=false
+- ドボン判定: カードを出した後のcanDobon更新
+- ドボン判定: 重ね出しの場合は合計点数でドボン判定
+- カットイン制限: 上がりカードにはカットインできない
 
 **→ コミットして作業を止める（実装完了）**
 
