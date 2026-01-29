@@ -209,7 +209,7 @@ if (stackableCards.length === 1) {
 
 ---
 
-## Step 7: PlayCardCommand のテスト作成
+## Step 7: PlayCardCommand のテスト作成 ✅
 
 **新規ファイル:** `apps/server/src/commands/PlayCardCommand.test.ts`
 
