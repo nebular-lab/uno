@@ -74,7 +74,7 @@ Step 1のテストがパスすることを確認。
 
 ---
 
-## Step 3: 共通ユーティリティのテスト作成（playableCards）
+## Step 3: 共通ユーティリティのテスト作成（playableCards） ✅
 
 **新規ファイル:** `apps/server/src/utils/playableCards.test.ts`
 
@@ -84,7 +84,7 @@ Step 1のテストがパスすることを確認。
 
 ---
 
-## Step 4: 共通ユーティリティの実装（playableCards）
+## Step 4: 共通ユーティリティの実装（playableCards） ✅
 
 **新規ファイル:** `apps/server/src/utils/playableCards.ts`
 
