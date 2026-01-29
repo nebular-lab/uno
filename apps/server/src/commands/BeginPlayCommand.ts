@@ -1,8 +1,17 @@
 import { Command } from "@colyseus/command";
-import type { Card, Player } from "@dobon-uno/shared";
+import type { Card } from "@dobon-uno/shared";
 import type { CardEffectContext } from "../effects";
 import { CardEffectRegistry } from "../effects";
 import type { GameRoom } from "../rooms/GameRoom";
+import {
+  calculatePlayableCardsForCurrentTurn,
+  calculatePlayableCardsForCutIn,
+} from "../utils/playableCards";
+import {
+  advanceToNextPlayer,
+  canDobon,
+  getPlayersSortedBySeat,
+} from "../utils/playerActions";
 import { ChooseColorCommand } from "./ChooseColorCommand";
 import { DrawCardCommand } from "./DrawCardCommand";
 import { DrawStackCommand } from "./DrawStackCommand";
@@ -87,32 +96,9 @@ export class BeginPlayCommand extends Command<GameRoom> {
     return {
       state: this.state,
       card,
-      getPlayersSortedBySeat: () => this.getPlayersSortedBySeat(),
-      advanceToNextPlayer: () => this.advanceToNextPlayer(),
+      getPlayersSortedBySeat: () => getPlayersSortedBySeat(this.state),
+      advanceToNextPlayer: () => advanceToNextPlayer(this.state),
     };
-  }
-
-  /**
-   * プレイヤーを座席順でソートして取得
-   */
-  private getPlayersSortedBySeat() {
-    return Array.from(this.state.players.values()).sort(
-      (a, b) => a.seatId - b.seatId,
-    );
-  }
-
-  /**
-   * 次のプレイヤーに手番を進める
-   */
-  private advanceToNextPlayer() {
-    const sortedBySeat = this.getPlayersSortedBySeat();
-    const currentIndex = sortedBySeat.findIndex(
-      (p) => p.sessionId === this.state.currentTurnPlayerId,
-    );
-    const direction = this.state.turnDirection;
-    const nextIndex =
-      (currentIndex + direction + sortedBySeat.length) % sortedBySeat.length;
-    this.state.currentTurnPlayerId = sortedBySeat[nextIndex].sessionId;
   }
 
   /**
@@ -120,6 +106,11 @@ export class BeginPlayCommand extends Command<GameRoom> {
    */
   private updatePlayerActions() {
     const fieldCard = this.state.fieldCards[this.state.fieldCards.length - 1];
+    if (!fieldCard) return;
+
+    // 最初のカードがワイルドの場合、すべてのカードを出せる
+    const isFirstCardWild =
+      this.state.fieldCards.length === 1 && fieldCard.value === "wild";
 
     for (const [sessionId, player] of this.state.players.entries()) {
       const isCurrentTurn = sessionId === this.state.currentTurnPlayerId;
@@ -134,10 +125,12 @@ export class BeginPlayCommand extends Command<GameRoom> {
         player.canDobonReturn = false;
 
         // 出せるカードを計算
-        this.calculatePlayableCards(player, fieldCard, true);
+        calculatePlayableCardsForCurrentTurn(this.state, player, fieldCard, {
+          isFirstCardWild,
+        });
 
         // ドボン判定（手番プレイヤーもドボン可能）
-        player.canDobon = this.canDobon(player, fieldCard);
+        player.canDobon = canDobon(player, fieldCard);
       } else {
         // 手番でないプレイヤー
         player.canDraw = false;
@@ -147,89 +140,11 @@ export class BeginPlayCommand extends Command<GameRoom> {
         player.canDobonReturn = false;
 
         // カットイン用の出せるカードを計算
-        this.calculatePlayableCards(player, fieldCard, false);
+        calculatePlayableCardsForCutIn(player, fieldCard);
 
         // ドボン判定
-        player.canDobon = this.canDobon(player, fieldCard);
+        player.canDobon = canDobon(player, fieldCard);
       }
     }
-  }
-
-  /**
-   * プレイヤーが出せるカードを計算する（ストラテジーパターン使用）
-   * @param player プレイヤー
-   * @param fieldCard 場のカード
-   * @param isCurrentTurn 手番プレイヤーかどうか
-   */
-  private calculatePlayableCards(
-    player: Player,
-    fieldCard: Card | null,
-    isCurrentTurn: boolean,
-  ) {
-    player.playableCards.clear();
-
-    // 色選択待ちの場合（ただしドロー累積中はドローカードを重ねられる）
-    if (this.state.waitingForColorChoice && this.state.drawStack === 0) {
-      return;
-    }
-
-    if (!fieldCard) return;
-
-    // 最初のカードがワイルドの場合、すべてのカードを出せる
-    const isFirstCardWild =
-      this.state.fieldCards.length === 1 && fieldCard.value === "wild";
-
-    for (const card of player.myHand) {
-      const effect = CardEffectRegistry.getEffectForCard(card);
-
-      if (isCurrentTurn) {
-        // 手番プレイヤーの判定
-        if (isFirstCardWild) {
-          // 最初のカードがワイルドなら全カード出せる
-          player.playableCards.set(card.id, true);
-        } else if (this.canPlayCard(card, fieldCard, effect)) {
-          player.playableCards.set(card.id, true);
-        }
-      } else {
-        // 手番でないプレイヤーはカットインのみ
-        if (effect.canCutIn(card, fieldCard)) {
-          player.playableCards.set(card.id, true);
-        }
-      }
-    }
-  }
-
-  /**
-   * 手番プレイヤーがカードを出せるかどうかを判定する（ストラテジーパターン使用）
-   */
-  private canPlayCard(
-    card: Card,
-    fieldCard: Card,
-    effect: ReturnType<typeof CardEffectRegistry.getEffectForCard>,
-  ): boolean {
-    // ドロー累積中の場合
-    if (this.state.drawStack > 0) {
-      return effect.canPlayOnDrawStack(card, fieldCard);
-    }
-
-    // 通常時
-    return effect.canPlay(card, fieldCard, this.state.currentColor);
-  }
-
-  /**
-   * ドボンできるかどうかを判定する
-   * 場のカードの点数と手札の合計点数が一致すればドボン可能
-   */
-  private canDobon(player: Player, fieldCard: Card | null): boolean {
-    if (!fieldCard) return false;
-
-    // 手札の合計点数を計算
-    let handTotal = 0;
-    for (const card of player.myHand) {
-      handTotal += card.points;
-    }
-
-    // 場のカードの点数と一致すればドボン可能
-    return handTotal === fieldCard.points;
   }
 }
