@@ -78,9 +78,9 @@ export const useGameRoom = () => {
   );
 
   const playCard = useCallback(
-    (cardId: string, stackCount = 1) => {
+    (cardIds: string[]) => {
       if (gameRoomState.status !== "connected") return;
-      gameRoomState.room.send("playCard", { cardId, stackCount });
+      gameRoomState.room.send("playCard", { cardIds });
     },
     [gameRoomState],
   );

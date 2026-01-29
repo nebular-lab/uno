@@ -156,7 +156,7 @@ export const MyHand = ({ disabled }: Props) => {
 
     if (stackableCards.length === 1) {
       // 重ね出しできるカードが1枚だけなら直接出す
-      playCard(cardId, 1);
+      playCard([cardId]);
       setSelectedCardIds([]);
     } else {
       // 複数枚ある場合は選択モードにする
