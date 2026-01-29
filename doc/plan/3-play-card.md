@@ -182,7 +182,7 @@ if (isCurrentTurn) {
 
 ---
 
-## Step 6: フロントエンドの修正
+## Step 6: フロントエンドの修正 ✅
 
 **変更ファイル:** `apps/client/src/hooks/useGameRoom.ts`
 
@@ -397,19 +397,7 @@ private applyCardEffect(card: Card, stackCount: number) {
 
 Step 7の全テストがパスすることを確認。
 
-**→ コミットして作業を止める**
-
----
-
-## Step 11: 最終確認
-
-```bash
-pnpm check
-pnpm typecheck
-cd apps/server && pnpm test
-```
-
-**→ 最終コミット（実装完了）**
+**→ コミットして作業を止める（実装完了）**
 
 ---
 
