@@ -18,9 +18,7 @@ export function advanceToNextPlayer(state: GameState): void {
  * プレイヤーを座席順でソートして取得
  */
 export function getPlayersSortedBySeat(state: GameState): Player[] {
-  return Array.from(state.players.values()).sort(
-    (a, b) => a.seatId - b.seatId,
-  );
+  return Array.from(state.players.values()).sort((a, b) => a.seatId - b.seatId);
 }
 
 /**
