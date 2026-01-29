@@ -509,4 +509,222 @@ describe("PlayCardCommand", () => {
       expect(room.state.currentColor).toBe("green");
     });
   });
+
+  // -------------------------------------------------------
+  // 上がり
+  // -------------------------------------------------------
+  describe("上がり", () => {
+    it("数字カードで上がり: 手札が0枚になる", async () => {
+      const { room, owner } = await setupWithHands(
+        testCards.red5, // 場: 赤5
+        [testCards.red3], // 手札: 赤3のみ（1枚で上がれる）
+        dummyHand(200),
+        dummyHand(300),
+      );
+
+      const currentPlayer = room.state.players.get(owner.sessionId);
+      expect(currentPlayer?.handCount).toBe(1);
+
+      owner.send("playCard", { cardIds: [testCards.red3.id] });
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      expect(currentPlayer?.handCount).toBe(0);
+    });
+
+    it("数字カードの重ね出しで上がり: 同じ数字2枚で上がれる", async () => {
+      const { room, owner } = await setupWithHands(
+        testCards.red5,
+        [
+          testCards.red5_2,
+          { id: "r5-dup", color: "red", value: "5", points: 5 },
+        ], // 手札: 赤5×2枚
+        dummyHand(200),
+        dummyHand(300),
+      );
+
+      const currentPlayer = room.state.players.get(owner.sessionId);
+      expect(currentPlayer?.handCount).toBe(2);
+
+      owner.send("playCard", { cardIds: [testCards.red5_2.id, "r5-dup"] });
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      expect(currentPlayer?.handCount).toBe(0);
+    });
+
+    it("上がり時に他のプレイヤーがドボン可能になる（手札合計が出したカードの点数と一致）", async () => {
+      // Player1が赤3（3点）で上がり → Player2の手札合計が3点ならドボン可能
+      const { room, owner, player2 } = await setupWithHands(
+        testCards.red5,
+        [testCards.red3], // Owner: 赤3で上がる
+        [
+          { id: "p2-1", color: "blue", value: "1", points: 1 },
+          { id: "p2-2", color: "blue", value: "2", points: 2 },
+        ], // Player2: 手札合計3点
+        dummyHand(300),
+      );
+
+      owner.send("playCard", { cardIds: [testCards.red3.id] });
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const p2Player = room.state.players.get(player2.sessionId);
+      expect(p2Player?.canDobon).toBe(true);
+    });
+
+    it("上がり時にドボン不可能なプレイヤーはcanDobon=false", async () => {
+      const { room, owner, player2 } = await setupWithHands(
+        testCards.red5,
+        [testCards.red3], // Owner: 赤3で上がる（3点）
+        [
+          { id: "p2-1", color: "blue", value: "5", points: 5 },
+          { id: "p2-2", color: "blue", value: "7", points: 7 },
+        ], // Player2: 手札合計12点（ドボン不可）
+        dummyHand(300),
+      );
+
+      owner.send("playCard", { cardIds: [testCards.red3.id] });
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const p2Player = room.state.players.get(player2.sessionId);
+      expect(p2Player?.canDobon).toBe(false);
+    });
+  });
+
+  // -------------------------------------------------------
+  // ドボン判定
+  // -------------------------------------------------------
+  describe("ドボン判定", () => {
+    it("カードを出した後、他のプレイヤーのcanDobonが更新される", async () => {
+      // Player1が赤5（5点）を出す → Player2の手札合計が5点ならドボン可能
+      const { room, owner, player2 } = await setupWithHands(
+        testCards.red3, // 場: 赤3
+        [
+          testCards.red5, // Owner: 赤5を出す
+          ...Array.from({ length: 6 }, (_, i) => createDummyCard(101 + i)),
+        ],
+        [
+          { id: "p2-3", color: "blue", value: "3", points: 3 },
+          { id: "p2-2", color: "blue", value: "2", points: 2 },
+        ], // Player2: 手札合計5点
+        dummyHand(300),
+      );
+
+      owner.send("playCard", { cardIds: [testCards.red5.id] });
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const p2Player = room.state.players.get(player2.sessionId);
+      expect(p2Player?.canDobon).toBe(true);
+    });
+
+    it("重ね出しの場合は合計点数でドボン判定", async () => {
+      // Player1が赤5×2枚（10点）を出す → Player2の手札合計が10点ならドボン可能
+      const { room, owner, player2 } = await setupWithHands(
+        testCards.red5, // 場: 赤5
+        [
+          testCards.red5_2,
+          { id: "r5-3", color: "red", value: "5", points: 5 },
+          ...Array.from({ length: 5 }, (_, i) => createDummyCard(102 + i)),
+        ], // Owner: 赤5×2枚を出す
+        [
+          { id: "p2-5", color: "blue", value: "5", points: 5 },
+          { id: "p2-5b", color: "green", value: "5", points: 5 },
+        ], // Player2: 手札合計10点
+        dummyHand(300),
+      );
+
+      owner.send("playCard", { cardIds: [testCards.red5_2.id, "r5-3"] });
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const p2Player = room.state.players.get(player2.sessionId);
+      expect(p2Player?.canDobon).toBe(true);
+    });
+
+    it("記号カードでもドボン可能（手札に記号カードが含まれていても可）", async () => {
+      // Player1がドロー2（20点）を出す → Player2の手札合計が20点ならドボン可能
+      const { room, owner, player2 } = await setupWithHands(
+        testCards.red5,
+        [
+          testCards.redDraw2, // 20点
+          ...Array.from({ length: 6 }, (_, i) => createDummyCard(101 + i)),
+        ],
+        [
+          testCards.redSkip, // 20点（記号カード）
+        ], // Player2: 手札にスキップ（20点）
+        dummyHand(300),
+      );
+
+      owner.send("playCard", { cardIds: [testCards.redDraw2.id] });
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const p2Player = room.state.players.get(player2.sessionId);
+      expect(p2Player?.canDobon).toBe(true);
+    });
+
+    it("複数プレイヤーが同時にドボン可能", async () => {
+      // Player1が赤5（5点）を出す → Player2とPlayer3の両方が手札合計5点
+      const { room, owner, player2, player3 } = await setupWithHands(
+        testCards.red3,
+        [
+          testCards.red5,
+          ...Array.from({ length: 6 }, (_, i) => createDummyCard(101 + i)),
+        ],
+        [
+          { id: "p2-3", color: "blue", value: "3", points: 3 },
+          { id: "p2-2", color: "blue", value: "2", points: 2 },
+        ], // Player2: 合計5点
+        [
+          { id: "p3-4", color: "green", value: "4", points: 4 },
+          { id: "p3-1", color: "green", value: "1", points: 1 },
+        ], // Player3: 合計5点
+      );
+
+      owner.send("playCard", { cardIds: [testCards.red5.id] });
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const p2Player = room.state.players.get(player2.sessionId);
+      const p3Player = room.state.players.get(player3.sessionId);
+      expect(p2Player?.canDobon).toBe(true);
+      expect(p3Player?.canDobon).toBe(true);
+    });
+
+    it("手番プレイヤーもドボン可能（場のカードに対して）", async () => {
+      // ゲーム開始時、場の赤5に対してOwnerの手札合計が5点ならドボン可能
+      const { room, owner } = await setupWithHands(
+        testCards.red5, // 場: 赤5（5点）
+        [
+          { id: "o-3", color: "blue", value: "3", points: 3 },
+          { id: "o-2", color: "blue", value: "2", points: 2 },
+        ], // Owner: 手札合計5点
+        dummyHand(200),
+        dummyHand(300),
+      );
+
+      const ownerPlayer = room.state.players.get(owner.sessionId);
+      expect(ownerPlayer?.canDobon).toBe(true);
+    });
+  });
+
+  // -------------------------------------------------------
+  // カットイン制限
+  // -------------------------------------------------------
+  describe("カットイン制限", () => {
+    it("上がりカードにはカットインできない（playableCardsが空になる）", async () => {
+      // Player1が上がる → Player2は同じカードを持っていてもカットインできない
+      const { room, owner, player2 } = await setupWithHands(
+        testCards.red5,
+        [testCards.red3], // Ownerが赤3で上がる
+        [
+          testCards.red3, // Player2も赤3を持っている
+          ...Array.from({ length: 6 }, (_, i) => createDummyCard(201 + i)),
+        ],
+        dummyHand(300),
+      );
+
+      owner.send("playCard", { cardIds: [testCards.red3.id] });
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const p2Player = room.state.players.get(player2.sessionId);
+      // 上がりカードにはカットインできないのでplayableCardsは空
+      expect(p2Player?.playableCards.size).toBe(0);
+    });
+  });
 });
