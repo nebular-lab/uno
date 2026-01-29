@@ -7,7 +7,18 @@
 
 ---
 
-## Step 1: 共通ユーティリティのテスト作成（playerActions）
+## 作業フロー
+
+**重要: 各ステップ完了後、必ずコミットして作業を止めること。**
+
+1. ステップの作業を実行
+2. テストがパスすることを確認
+3. コミットを作成（メッセージ例: `Step N: 〇〇を追加`）
+4. 作業を停止し、次のステップは別のセッションで実行
+
+---
+
+## Step 1: 共通ユーティリティのテスト作成（playerActions） ✅
 
 **新規ファイル:** `apps/server/src/utils/playerActions.test.ts`
 
@@ -19,7 +30,7 @@
 
 ---
 
-## Step 2: 共通ユーティリティの実装（playerActions）
+## Step 2: 共通ユーティリティの実装（playerActions） ✅
 
 **新規ファイル:** `apps/server/src/utils/playerActions.ts`
 
@@ -58,6 +69,8 @@ export function canDobon(player: Player, fieldCard: Card): boolean {
 ```
 
 Step 1のテストがパスすることを確認。
+
+**→ コミットして作業を止める**
 
 ---
 
@@ -138,6 +151,8 @@ export function calculatePlayableCardsForCutIn(
 
 Step 3のテストがパスすることを確認。
 
+**→ コミットして作業を止める**
+
 ---
 
 ## Step 5: BeginPlayCommand のリファクタリング
@@ -163,6 +178,8 @@ if (isCurrentTurn) {
 
 既存テスト（`BeginPlayCommand.test.ts`）がパスすることを確認。
 
+**→ コミットして作業を止める**
+
 ---
 
 ## Step 6: フロントエンドの修正
@@ -187,6 +204,8 @@ if (stackableCards.length === 1) {
   setSelectedCardIds([]);
 }
 ```
+
+**→ コミットして作業を止める**
 
 ---
 
@@ -248,6 +267,8 @@ validate({ sessionId, cardIds }: Payload): boolean {
 
 Step 7のバリデーションテストがパスすることを確認。
 
+**→ コミットして作業を止める**
+
 ---
 
 ## Step 9: PlayCardCommand の execute() 実装
@@ -307,6 +328,8 @@ execute({ sessionId, cardIds }: Payload) {
 ```
 
 Step 7の実行テストがパスすることを確認。
+
+**→ コミットして作業を止める**
 
 ---
 
@@ -374,6 +397,8 @@ private applyCardEffect(card: Card, stackCount: number) {
 
 Step 7の全テストがパスすることを確認。
 
+**→ コミットして作業を止める**
+
 ---
 
 ## Step 11: 最終確認
@@ -383,6 +408,8 @@ pnpm check
 pnpm typecheck
 cd apps/server && pnpm test
 ```
+
+**→ 最終コミット（実装完了）**
 
 ---
 
