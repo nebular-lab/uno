@@ -12,12 +12,6 @@ export const useGameRoom = () => {
   const gamePlayState = useAtomValue(gamePlayStateAtom);
   const navigateToLobby = useSetAtom(navigateToLobbyAtom);
 
-  // Ready状態を切り替え
-  const toggleReady = useCallback(() => {
-    if (gameRoomState.status !== "connected") return;
-    gameRoomState.room.send("toggleReady");
-  }, [gameRoomState]);
-
   // 退席
   const leaveRoom = useCallback(async () => {
     if (gameRoomState.status !== "connected") return;
@@ -41,8 +35,8 @@ export const useGameRoom = () => {
   const isHost =
     mySeatIndex >= 0 && (gamePlayState.players[mySeatIndex]?.isHost ?? false);
 
-  // 準備完了しているプレイヤー数
-  const readyCount = gamePlayState.players.filter((p) => p?.isReady).length;
+  // プレイヤー数
+  const playerCount = gamePlayState.players.filter((p) => p !== null).length;
 
   // 自分のプレイヤー情報を取得
   const myPlayerInfo =
@@ -90,10 +84,8 @@ export const useGameRoom = () => {
     players: gamePlayState.players,
     mySessionId: gamePlayState.mySessionId,
     mySeatIndex,
-    isReady: gamePlayState.isReady,
     isHost,
-    readyCount,
-    toggleReady,
+    playerCount,
     leaveRoom,
     startGame,
     isConnected: gameRoomState.status === "connected",

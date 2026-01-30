@@ -9,71 +9,18 @@ type Props = {
   roomId: string;
 };
 
-// 準備状態トグル
-const ReadyToggle = ({
-  isReady,
-  onToggle,
-}: {
-  isReady: boolean;
-  onToggle: () => void;
-}) => {
-  return (
-    <button
-      className={cn(
-        "flex h-18 w-64 items-center justify-center gap-3 rounded-lg px-6 text-lg font-bold transition-all shadow-lg",
-        isReady
-          ? "bg-green-600 hover:bg-green-500 text-white"
-          : "bg-blue-600 hover:bg-blue-500 text-white hover:scale-[1.02]",
-      )}
-      onClick={onToggle}
-      type="button"
-    >
-      {/* チェックボックス風のインジケーター */}
-      <div
-        className={cn(
-          "flex size-6 items-center justify-center rounded border-2 transition-colors",
-          isReady
-            ? "border-white bg-white text-green-600"
-            : "border-white/50 bg-transparent",
-        )}
-      >
-        {isReady && (
-          <svg
-            aria-label="チェック"
-            className="size-4"
-            fill="none"
-            role="img"
-            stroke="currentColor"
-            strokeWidth={3}
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M5 13l4 4L19 7"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        )}
-      </div>
-      <span>{isReady ? "準備完了" : "準備できたらタップ"}</span>
-    </button>
-  );
-};
-
 export const WaitingRoomScreen = ({ roomId }: Props) => {
   const {
     players,
     mySeatIndex,
-    isReady,
     isHost,
-    readyCount,
-    toggleReady,
+    playerCount,
     leaveRoom,
     startGame,
   } = useGameRoom();
 
-  // ゲーム開始可能かどうか（準備完了が3人以上）
-  const canStartGame = readyCount >= 3;
+  // ゲーム開始可能かどうか（3人以上のプレイヤー）
+  const canStartGame = playerCount >= 3;
 
   // 自分が下中央（position 3）に来るように回転
   // displayIndex: 画面上の表示位置（0-5）
@@ -125,37 +72,37 @@ export const WaitingRoomScreen = ({ roomId }: Props) => {
         </Button>
       </div>
 
-      {/* 準備状態トグル・ゲーム開始ボタン（右下） */}
-      <div className="absolute bottom-4 right-4 flex items-center gap-4">
-        {isHost ? (
-          <>
-            <span
-              className={cn(
-                "text-sm",
-                canStartGame ? "text-green-400" : "text-slate-400",
-              )}
-            >
-              {canStartGame
-                ? "ゲームを開始できます！"
-                : `あと${3 - readyCount}人の準備が必要`}
-            </span>
-            <Button
-              className="h-18 px-8 text-lg bg-blue-600 hover:bg-blue-500 border-0 font-bold text-white shadow-lg transition-all hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
-              disabled={!canStartGame}
-              onClick={startGame}
-            >
-              ゲーム開始
-            </Button>
-          </>
-        ) : (
-          isReady && (
-            <span className="text-sm text-slate-400">
-              ホストがゲームを開始するのをお待ちください
-            </span>
-          )
-        )}
-        {!isHost && <ReadyToggle isReady={isReady} onToggle={toggleReady} />}
-      </div>
+      {/* ゲーム開始ボタン（右下、ホストのみ表示） */}
+      {isHost && (
+        <div className="absolute bottom-4 right-4 flex items-center gap-4">
+          <span
+            className={cn(
+              "text-sm",
+              canStartGame ? "text-green-400" : "text-slate-400",
+            )}
+          >
+            {canStartGame
+              ? "ゲームを開始できます！"
+              : `あと${3 - playerCount}人必要`}
+          </span>
+          <Button
+            className="h-18 px-8 text-lg bg-blue-600 hover:bg-blue-500 border-0 font-bold text-white shadow-lg transition-all hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
+            disabled={!canStartGame}
+            onClick={startGame}
+          >
+            ゲーム開始
+          </Button>
+        </div>
+      )}
+
+      {/* 非ホストへのメッセージ */}
+      {!isHost && (
+        <div className="absolute bottom-4 right-4">
+          <span className="text-sm text-slate-400">
+            ホストがゲームを開始するのをお待ちください
+          </span>
+        </div>
+      )}
     </TableContainer>
   );
 };

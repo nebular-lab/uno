@@ -32,7 +32,6 @@ export const gameStateAtom = atom<GameRoomState>({ status: "idle" });
 const initialGamePlayState: GamePlayState = {
   players: [null, null, null, null, null, null],
   mySessionId: "",
-  isReady: false,
   myHand: [],
   phase: "waiting",
   dealingRound: 0,
@@ -72,7 +71,6 @@ const convertPlayer = (serverPlayer: ServerPlayer): ClientPlayer => {
     name: serverPlayer.name,
     cardCount: serverPlayer.handCount,
     isHost: serverPlayer.isOwner,
-    isReady: serverPlayer.isReady,
     isSpectator: serverPlayer.isSpectator,
     timeRemaining: serverPlayer.timeRemaining,
     // アクションフラグ
@@ -119,7 +117,6 @@ const setupRoomStateSync = (
     set(gamePlayStateAtom, {
       players: createSeatsArray(playersMap),
       mySessionId: room.sessionId,
-      isReady: myServerPlayer?.isReady ?? false,
       myHand: myServerPlayer?.myHand
         ? Array.from(myServerPlayer.myHand).map(convertCard)
         : [],
@@ -147,8 +144,13 @@ const setupRoomStateSync = (
   room.onMessage("playCardAnimation", (event: PlayCardAnimationEvent) => {
     const isSelf = event.playerId === room.sessionId;
 
-    // 開始位置をスナップショット（カードが削除される前に取得）
-    let startPosition: { x: number; y: number } | null = null;
+    // 開始位置とサイズをスナップショット（カードが削除される前に取得）
+    let startPosition: {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    } | null = null;
     if (isSelf && event.cards.length > 0) {
       const cardPositions = store.get(cardPositionsAtom);
       const firstCardPos = cardPositions[event.cards[0].id];
@@ -168,7 +170,8 @@ const setupRoomStateSync = (
       const seatPositions = store.get(playerSeatPositionsAtom);
       const seatPos = seatPositions[displayIndex];
       if (seatPos) {
-        startPosition = { ...seatPos };
+        // 他プレイヤーの場合はデフォルトのカードサイズを使用
+        startPosition = { ...seatPos, width: 40, height: 56 };
       }
     }
 

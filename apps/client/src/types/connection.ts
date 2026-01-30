@@ -36,7 +36,6 @@ export type ClientPlayer = {
   name: string;
   cardCount: number;
   isHost: boolean;
-  isReady: boolean;
   isSpectator: boolean;
   timeRemaining: number; // タイマー残り秒数（0なら非アクティブ）
   // アクションフラグ
@@ -54,7 +53,6 @@ export type GamePlayState = {
   // プレイヤー情報
   players: (ClientPlayer | null)[]; // 6人分の席配列
   mySessionId: string;
-  isReady: boolean;
   myHand: ClientCard[];
 
   // ゲーム進行状態

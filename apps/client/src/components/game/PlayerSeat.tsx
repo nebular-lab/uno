@@ -73,9 +73,8 @@ export const EmptySeat = ({
   );
 };
 
-// プレイヤーステータスバッジ（Ready/Wait または カード枚数 + HOST表示）
+// プレイヤーステータスバッジ（カード枚数 + HOST表示）
 const PlayerStatusBadge = ({
-  isReady,
   isHost,
   isPlaying,
   isSpectator,
@@ -83,7 +82,6 @@ const PlayerStatusBadge = ({
   cardCount,
   size = 70,
 }: {
-  isReady?: boolean;
   isHost?: boolean;
   isPlaying?: boolean;
   isSpectator?: boolean;
@@ -123,17 +121,14 @@ const PlayerStatusBadge = ({
           </div>
         )
       ) : (
-        // 待機中: Ready/Wait を表示
+        // 待機中: 何も表示しない（ステータス無し）
         <div
           className={cn(
-            "flex items-center justify-center rounded-full text-white text-xs font-medium shadow-lg",
+            "flex items-center justify-center rounded-full bg-slate-700 shadow-lg",
             borderClass,
-            isReady ? "bg-green-600" : "bg-slate-700",
           )}
           style={{ width: size, height: size }}
-        >
-          {isReady ? "準備完了" : "準備中"}
-        </div>
+        />
       )}
       {/* HOSTバッジ（待機室のみ表示） */}
       {isHost && !isPlaying && (
@@ -243,7 +238,6 @@ export const PlayerSeat = ({
           isCurrentPlayer={isCurrentPlayer}
           isHost={player.isHost}
           isPlaying={isPlaying}
-          isReady={player.isReady}
           isSpectator={player.isSpectator}
           size={70}
         />
