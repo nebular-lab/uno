@@ -61,10 +61,10 @@ export class GameRoom extends Room<GameState, RoomMetadata> {
    */
   private registerMessageHandlers() {
     // カードを出す（重ね出し対応）
-    this.onMessage("playCard", (client, cardIds: string[]) => {
+    this.onMessage("playCard", (client, message: { cardIds: string[] }) => {
       this.dispatcher.dispatch(new PlayCardCommand(), {
         sessionId: client.sessionId,
-        cardIds: cardIds,
+        cardIds: message.cardIds,
       });
     });
 
