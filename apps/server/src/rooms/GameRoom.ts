@@ -18,6 +18,11 @@ import { PlayCardCommand } from "../commands/PlayCardCommand";
 import { StartGameCommand } from "../commands/StartGameCommand";
 import { TurnTimerService } from "../services/TurnTimerService";
 import { createDeck, shuffleDeck } from "../utils/deck";
+import {
+  calculatePlayableCardsForCurrentTurn,
+  calculatePlayableCardsForCutIn,
+} from "../utils/playableCards";
+import { canDobon } from "../utils/playerActions";
 
 /**
  * 山札を生成する関数の型
@@ -146,6 +151,52 @@ export class GameRoom extends Room<GameState, RoomMetadata> {
         this.setDeckProvider(() => deck);
       },
     );
+
+    // テスト用: 特定プレイヤーの手札を設定
+    this.onMessage(
+      "__setHand",
+      (
+        client,
+        cards: { id: string; color: string; value: string; points: number }[],
+      ) => {
+        const player = this.state.players.get(client.sessionId);
+        if (player) {
+          player.myHand.splice(0, player.myHand.length);
+          for (const c of cards) {
+            player.myHand.push(new Card(c.id, c.color, c.value, c.points));
+          }
+          player.handCount = player.myHand.length;
+
+          // playableCards と canDobon を更新
+          if (this.state.phase === "playing") {
+            this.updateAllPlayerActions();
+          }
+        }
+      },
+    );
+  }
+
+  /**
+   * 全プレイヤーのアクション可否を更新する（テスト用）
+   */
+  private updateAllPlayerActions() {
+    const fieldCard = this.state.fieldCards[this.state.fieldCards.length - 1];
+    if (!fieldCard) return;
+
+    for (const [sessionId, player] of this.state.players.entries()) {
+      const isCurrentTurn = sessionId === this.state.currentTurnPlayerId;
+
+      if (isCurrentTurn) {
+        calculatePlayableCardsForCurrentTurn(this.state, player, fieldCard, {
+          isFirstCardWild: false,
+        });
+      } else {
+        calculatePlayableCardsForCutIn(player, fieldCard);
+      }
+
+      // ドボン判定
+      player.canDobon = canDobon(player, fieldCard);
+    }
   }
 
   /**

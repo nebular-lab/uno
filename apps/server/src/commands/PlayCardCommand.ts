@@ -9,7 +9,6 @@ import {
 } from "../utils/playableCards";
 import {
   advanceToNextPlayer,
-  canDobon,
   getPlayersSortedBySeat,
   isSymbolCard,
 } from "../utils/playerActions";
@@ -103,8 +102,14 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
     // ドローフラグをリセット
     this.state.hasDrawnThisTurn = false;
 
+    // 出されたカードの合計点数を計算
+    const totalPlayedPoints = playedCards.reduce(
+      (sum, card) => sum + card.points,
+      0,
+    );
+
     // 全プレイヤーのアクション可否を更新
-    this.updatePlayerActions();
+    this.updatePlayerActions(totalPlayedPoints);
 
     // タイマー開始
     this.startCurrentPlayerTimer();
@@ -136,8 +141,9 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
 
   /**
    * 全プレイヤーのアクション可否を更新する
+   * @param totalPlayedPoints 出されたカードの合計点数（ドボン判定用）
    */
-  private updatePlayerActions() {
+  private updatePlayerActions(totalPlayedPoints: number) {
     const fieldCard = this.state.fieldCards[this.state.fieldCards.length - 1];
     if (!fieldCard) return;
 
@@ -163,8 +169,12 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
         player.canPass = false;
       }
 
-      // ドボン判定（全プレイヤー共通）
-      player.canDobon = canDobon(player, fieldCard);
+      // ドボン判定（重ね出しの場合は合計点数で判定）
+      const handTotal = player.myHand.reduce(
+        (sum, card) => sum + card.points,
+        0,
+      );
+      player.canDobon = handTotal === totalPlayedPoints;
       player.canDobonReturn = false;
     }
   }

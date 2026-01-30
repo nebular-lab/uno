@@ -101,7 +101,16 @@ describe("NormalFinishCommand", () => {
       await room.waitForNextPatch();
     }
 
-    return { room, owner, player2, player3 };
+    // 手札を設定するヘルパー（playing フェーズ後に呼ぶ）
+    const setHand = async (
+      client: typeof owner,
+      cards: CardData[],
+    ): Promise<void> => {
+      client.send("__setHand", cards);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    };
+
+    return { room, owner, player2, player3, setHand };
   }
 
   // -------------------------------------------------------
@@ -109,12 +118,15 @@ describe("NormalFinishCommand", () => {
   // -------------------------------------------------------
   describe("フェーズ遷移", () => {
     it("上がりが発生するとフェーズがresultに変わる", async () => {
-      const { room, owner } = await setupWithHands(
+      const { room, owner, setHand } = await setupWithHands(
         testCards.red5,
-        [testCards.red3], // Owner: 1枚で上がれる
+        dummyHand(100), // デッキ用（あとで上書き）
         dummyHand(200),
         dummyHand(300),
       );
+
+      // Ownerの手札を1枚だけに設定
+      await setHand(owner, [testCards.red3]);
 
       expect(room.state.phase).toBe("playing");
 
@@ -135,13 +147,18 @@ describe("NormalFinishCommand", () => {
   // -------------------------------------------------------
   describe("収支計算", () => {
     it("上がったプレイヤーは他のプレイヤーの手札合計点数を獲得する", async () => {
-      // Player2: 7点、Player3: 手札合計を計算
-      const { room, owner, player2, player3 } = await setupWithHands(
+      // Player2: 7点、Player3: 9点
+      const { room, owner, player2, player3, setHand } = await setupWithHands(
         testCards.red5,
-        [testCards.red3], // Owner: 上がる
-        [testCards.blue7], // Player2: 7点
-        [testCards.yellow9], // Player3: 9点
+        dummyHand(100), // デッキ用（あとで上書き）
+        dummyHand(200),
+        dummyHand(300),
       );
+
+      // 各プレイヤーの手札を設定
+      await setHand(owner, [testCards.red3]); // Owner: 上がる
+      await setHand(player2, [testCards.blue7]); // Player2: 7点
+      await setHand(player3, [testCards.yellow9]); // Player3: 9点
 
       const ownerPlayer = room.state.players.get(owner.sessionId);
       const p2Player = room.state.players.get(player2.sessionId);
@@ -167,12 +184,17 @@ describe("NormalFinishCommand", () => {
     });
 
     it("レート倍率が適用される（山札切れ連続後）", async () => {
-      const { room, owner, player2 } = await setupWithHands(
+      const { room, owner, player2, player3, setHand } = await setupWithHands(
         testCards.red5,
-        [testCards.red3], // Owner: 上がる
-        [testCards.blue7], // Player2: 7点
-        [testCards.yellow9], // Player3: 9点
+        dummyHand(100), // デッキ用（あとで上書き）
+        dummyHand(200),
+        dummyHand(300),
       );
+
+      // 各プレイヤーの手札を設定
+      await setHand(owner, [testCards.red3]); // Owner: 上がる
+      await setHand(player2, [testCards.blue7]); // Player2: 7点
+      await setHand(player3, [testCards.yellow9]); // Player3: 9点
 
       // 山札切れ1回後を想定（レート2倍）
       room.state.rateMultiplier = 2;
@@ -201,12 +223,15 @@ describe("NormalFinishCommand", () => {
   // -------------------------------------------------------
   describe("ゲーム結果履歴", () => {
     it("GameResultがgameHistoryに追加される", async () => {
-      const { room, owner } = await setupWithHands(
+      const { room, owner, setHand } = await setupWithHands(
         testCards.red5,
-        [testCards.red3],
+        dummyHand(100),
         dummyHand(200),
         dummyHand(300),
       );
+
+      // Ownerの手札を1枚だけに設定
+      await setHand(owner, [testCards.red3]);
 
       const historyLengthBefore = room.state.gameHistory.length;
 
@@ -226,12 +251,15 @@ describe("NormalFinishCommand", () => {
   // -------------------------------------------------------
   describe("次のゲームの準備", () => {
     it("次のゲームの最初のプレイヤーが上がったプレイヤーに設定される", async () => {
-      const { room, owner } = await setupWithHands(
+      const { room, owner, setHand } = await setupWithHands(
         testCards.red5,
-        [testCards.red3],
+        dummyHand(100),
         dummyHand(200),
         dummyHand(300),
       );
+
+      // Ownerの手札を1枚だけに設定
+      await setHand(owner, [testCards.red3]);
 
       owner.send("playCard", { cardIds: [testCards.red3.id] });
 
@@ -244,12 +272,15 @@ describe("NormalFinishCommand", () => {
     });
 
     it("レート倍率が1にリセットされる", async () => {
-      const { room, owner } = await setupWithHands(
+      const { room, owner, setHand } = await setupWithHands(
         testCards.red5,
-        [testCards.red3],
+        dummyHand(100),
         dummyHand(200),
         dummyHand(300),
       );
+
+      // Ownerの手札を1枚だけに設定
+      await setHand(owner, [testCards.red3]);
 
       // 山札切れ後を想定
       room.state.rateMultiplier = 4;
@@ -272,12 +303,15 @@ describe("NormalFinishCommand", () => {
   // -------------------------------------------------------
   describe("result後のフェーズ遷移", () => {
     it("一定時間後にwaitingフェーズに戻る", async () => {
-      const { room, owner } = await setupWithHands(
+      const { room, owner, setHand } = await setupWithHands(
         testCards.red5,
-        [testCards.red3],
+        dummyHand(100),
         dummyHand(200),
         dummyHand(300),
       );
+
+      // Ownerの手札を1枚だけに設定
+      await setHand(owner, [testCards.red3]);
 
       owner.send("playCard", { cardIds: [testCards.red3.id] });
 
