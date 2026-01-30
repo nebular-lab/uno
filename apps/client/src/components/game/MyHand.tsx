@@ -35,7 +35,13 @@ type SortableCardProps = {
   selected: boolean;
   selectionOrder?: number;
   onCardClick: () => void;
-  onPositionUpdate: (cardId: string, x: number, y: number) => void;
+  onPositionUpdate: (
+    cardId: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+  ) => void;
 };
 
 const SortableCard = ({
@@ -75,6 +81,8 @@ const SortableCard = ({
           card.id,
           rect.left + rect.width / 2,
           rect.top + rect.height / 2,
+          rect.width,
+          rect.height,
         );
       }
     };
@@ -133,8 +141,8 @@ export const MyHand = ({ disabled }: Props) => {
 
   // カード位置更新のコールバック
   const handlePositionUpdate = useCallback(
-    (cardId: string, x: number, y: number) => {
-      setCardPosition({ cardId, x, y });
+    (cardId: string, x: number, y: number, width: number, height: number) => {
+      setCardPosition({ cardId, x, y, width, height });
     },
     [setCardPosition],
   );

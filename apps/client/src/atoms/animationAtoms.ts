@@ -13,8 +13,8 @@ export interface CardAnimation {
   isSelf: boolean; // 自分が出したカードかどうか
   startTime: number;
   duration: number;
-  // アニメーション開始位置のスナップショット（カード削除前に取得）
-  startPosition: { x: number; y: number } | null;
+  // アニメーション開始位置とサイズのスナップショット（カード削除前に取得）
+  startPosition: { x: number; y: number; width: number; height: number } | null;
 }
 
 // 現在再生中のアニメーション

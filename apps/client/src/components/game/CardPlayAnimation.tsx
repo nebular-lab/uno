@@ -44,14 +44,12 @@ const AnimatedCard = ({
   index,
   startPos,
   endPos,
-  isSelf,
   duration,
 }: {
   card: { id: string; color: string; value: string };
   index: number;
-  startPos: { x: number; y: number };
+  startPos: { x: number; y: number; width: number; height: number };
   endPos: { x: number; y: number };
-  isSelf: boolean;
   duration: number;
 }) => {
   const isDraw4 = card.value === "draw4";
@@ -73,49 +71,48 @@ const AnimatedCard = ({
   const deltaX = endPos.x - startPos.x;
   const deltaY = endPos.y - startPos.y;
 
-  // スケール計算
-  // 自分のカード: 手札サイズ(78x110)から場札サイズ(56x80)へ
-  // 他プレイヤー: 小さいサイズから場札サイズへ
-  const startScale = isSelf ? 1.0 : 0.5;
-  const endScale = 56 / 78; // 場札/手札の比率
+  // 実際のカードサイズを使用
+  const { width, height } = startPos;
+
+  // フォントサイズを幅に比例させる（基準: 78pxで2.25rem）
+  const fontSize = (width / 78) * 2.25;
 
   const totalDuration = duration / 1000;
-  const scalePhaseRatio = 0.3; // 最初の30%でスケール変更
 
   return (
     <motion.div
       animate={{
-        // キーフレーム: [開始, スケール完了, 移動完了]
-        x: [0, 0, deltaX + index * 4],
-        y: [0, 0, deltaY],
-        scale: [startScale, endScale, endScale],
-        opacity: [isSelf ? 1 : 0, 1, 1],
-        rotate: [index * 5, index * 3, index * 3],
+        x: [0, deltaX + index * 4],
+        y: [0, deltaY],
+        rotate: [index * 5, index * 3],
       }}
       className="absolute"
       exit={{ opacity: 0 }}
       key={card.id}
       style={{
-        left: startPos.x - 39, // カード幅の半分
-        top: startPos.y - 55, // カード高さの半分
+        left: startPos.x - width / 2,
+        top: startPos.y - height / 2,
         transformOrigin: "center center",
       }}
       transition={{
         duration: totalDuration,
         ease: "easeOut",
         delay: index * 0.05,
-        // 各プロパティのタイミングを制御
-        times: [0, scalePhaseRatio, 1],
       }}
     >
       <div
         className={cn(
-          "flex h-[110px] w-[78px] items-center justify-center rounded-lg border-2 text-lg font-bold shadow-lg",
+          "flex items-center justify-center rounded-lg border-2 font-bold shadow-lg",
           getBgClass(),
           getTextClass(),
         )}
+        style={{
+          width: `${width}px`,
+          height: `${height}px`,
+          fontSize: `${fontSize}rem`,
+        }}
       >
-        <span className="text-5xl">{displayValue}</span>
+        <span>{displayValue}</span>
       </div>
     </motion.div>
   );
@@ -143,7 +140,6 @@ export const CardPlayAnimation = () => {
             duration={animation.duration}
             endPos={fieldCardPosition}
             index={index}
-            isSelf={animation.isSelf}
             key={card.id}
             startPos={startPos}
           />
