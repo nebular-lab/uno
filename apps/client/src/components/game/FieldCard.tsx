@@ -1,4 +1,7 @@
+import { useSetAtom } from "jotai";
 import { motion } from "motion/react";
+import { useEffect, useRef } from "react";
+import { fieldCardPositionAtom } from "@/atoms/cardPositionAtom";
 import type { ClientCard } from "@/hooks/useGameRoom";
 import { cn } from "@/lib/utils";
 
@@ -43,8 +46,27 @@ const getDisplayValue = (value: string): string => {
 };
 
 export const FieldCard = ({ card }: Props) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const setFieldCardPosition = useSetAtom(fieldCardPositionAtom);
   const isWild = card.value === "wild";
   const isDraw4 = card.value === "draw4";
+
+  // 場札の位置を報告
+  useEffect(() => {
+    const updatePosition = () => {
+      if (ref.current) {
+        const rect = ref.current.getBoundingClientRect();
+        setFieldCardPosition({
+          x: rect.left + rect.width / 2,
+          y: rect.top + rect.height / 2,
+        });
+      }
+    };
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    return () => window.removeEventListener("resize", updatePosition);
+  }, [setFieldCardPosition]);
 
   // 背景クラスの決定
   const getBgClass = () => {
@@ -71,6 +93,7 @@ export const FieldCard = ({ card }: Props) => {
         getTextClass(),
       )}
       initial={{ scale: 0.5, opacity: 0, rotateY: 180 }}
+      ref={ref}
       transition={{ duration: 0.3, type: "spring", stiffness: 300 }}
     >
       {/* 中央の値 */}

@@ -10,6 +10,7 @@ import {
   lobbyStateAtom,
   resetDisconnectedAtom,
 } from "./atoms/connectionAtoms";
+import { CardPlayAnimation } from "./components/game/CardPlayAnimation";
 import { ScalableContainer } from "./components/ScalableContainer";
 import { Button } from "./components/ui/button";
 import {
@@ -94,6 +95,9 @@ function App() {
   return (
     <>
       <ScalableContainer>{renderScreen()}</ScalableContainer>
+
+      {/* カード出しアニメーション（ScalableContainerの外でビューポート基準で表示） */}
+      {screen.screen === "game" && <CardPlayAnimation />}
 
       {/* 異常切断ダイアログ */}
       <Dialog open={isDisconnected}>

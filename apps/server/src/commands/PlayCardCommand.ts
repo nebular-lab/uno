@@ -1,5 +1,5 @@
 import { Command } from "@colyseus/command";
-import type { Card } from "@dobon-uno/shared";
+import type { Card, PlayCardAnimationEvent } from "@dobon-uno/shared";
 import type { CardEffectContext } from "../effects";
 import { CardEffectRegistry } from "../effects";
 import type { GameRoom } from "../rooms/GameRoom";
@@ -81,6 +81,14 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
     }
     player.handCount = player.myHand.length;
 
+    // アニメーションイベントを送信
+    this.broadcastPlayCardAnimation(
+      sessionId,
+      player.seatId,
+      playedCards,
+      isCurrentTurn,
+    );
+
     // カットインの場合、手番を変更
     if (!isCurrentTurn) {
       this.state.currentTurnPlayerId = sessionId;
@@ -113,6 +121,31 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
 
     // タイマー開始
     this.startCurrentPlayerTimer();
+  }
+
+  /**
+   * カード出しアニメーションイベントを送信
+   */
+  private broadcastPlayCardAnimation(
+    playerId: string,
+    seatId: number,
+    cards: Card[],
+    isCurrentTurn: boolean,
+  ): void {
+    const event: PlayCardAnimationEvent = {
+      type: "playCardAnimation",
+      playerId,
+      seatId,
+      cards: cards.map((c) => ({
+        id: c.id,
+        color: c.color,
+        value: c.value,
+        points: c.points,
+      })),
+      isCurrentTurn,
+      animationDuration: 500,
+    };
+    this.room.broadcast("playCardAnimation", event);
   }
 
   /**

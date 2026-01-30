@@ -1,3 +1,6 @@
+import { useSetAtom } from "jotai";
+import { useEffect, useRef } from "react";
+import { playerSeatPositionsAtom } from "@/atoms/cardPositionAtom";
 import { cn } from "@/lib/utils";
 import type { ClientPlayer } from "@/types/connection";
 
@@ -199,13 +202,35 @@ export const PlayerSeat = ({
   displayIndex,
   isPlaying,
 }: Props) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const setPlayerSeatPositions = useSetAtom(playerSeatPositionsAtom);
   const posIndex = displayIndex ?? player.seatIndex;
   const seatPos = seatPositions[posIndex] ?? seatPositions[0];
   const avatarPos = avatarPositions[posIndex] ?? avatarPositions[0];
   const namePos = namePositions[posIndex] ?? namePositions[0];
 
+  // シート位置を報告
+  useEffect(() => {
+    const updatePosition = () => {
+      if (ref.current) {
+        const rect = ref.current.getBoundingClientRect();
+        setPlayerSeatPositions((prev) => ({
+          ...prev,
+          [posIndex]: {
+            x: rect.left + rect.width / 2,
+            y: rect.top + rect.height / 2,
+          },
+        }));
+      }
+    };
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    return () => window.removeEventListener("resize", updatePosition);
+  }, [posIndex, setPlayerSeatPositions]);
+
   return (
-    <div className={cn("absolute size-fit", seatPos)}>
+    <div className={cn("absolute size-fit", seatPos)} ref={ref}>
       <PlayerNamePlate
         isCurrentPlayer={isCurrentPlayer}
         name={player.name}

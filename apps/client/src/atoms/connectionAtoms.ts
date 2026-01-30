@@ -1,11 +1,12 @@
 import type {
   GameState,
+  PlayCardAnimationEvent,
   RoomMetadata,
   Card as ServerCard,
   Player as ServerPlayer,
 } from "@dobon-uno/shared";
 import type { Room, RoomAvailable } from "colyseus.js";
-import { atom } from "jotai";
+import { atom, getDefaultStore } from "jotai";
 import { colyseusClient } from "../lib/colyseus";
 import type {
   ClientCard,
@@ -14,7 +15,12 @@ import type {
   GameRoomState,
   LobbyState,
 } from "../types/connection";
+import { type CardAnimation, currentAnimationAtom } from "./animationAtoms";
 import { playerAtom, screenAtom } from "./appAtoms";
+import { cardPositionsAtom, playerSeatPositionsAtom } from "./cardPositionAtom";
+
+// Jotaiのデフォルトストア（アニメーション用）
+const store = getDefaultStore();
 
 // ロビー接続状態
 export const lobbyStateAtom = atom<LobbyState>({ status: "idle" });
@@ -136,6 +142,61 @@ const setupRoomStateSync = (
 
   // 状態変更を購読
   room.onStateChange(updatePlayState);
+
+  // アニメーションイベントを購読
+  room.onMessage("playCardAnimation", (event: PlayCardAnimationEvent) => {
+    const isSelf = event.playerId === room.sessionId;
+
+    // 開始位置をスナップショット（カードが削除される前に取得）
+    let startPosition: { x: number; y: number } | null = null;
+    if (isSelf && event.cards.length > 0) {
+      const cardPositions = store.get(cardPositionsAtom);
+      const firstCardPos = cardPositions[event.cards[0].id];
+      if (firstCardPos) {
+        startPosition = { ...firstCardPos };
+      }
+    } else {
+      // 他プレイヤーの場合はシート位置を使用
+      // mySeatIndexを計算してdisplayIndexを求める
+      const gamePlayState = store.get(gamePlayStateAtom);
+      const mySeatIndex = gamePlayState.players.findIndex(
+        (p) => p !== null && p.sessionId === room.sessionId,
+      );
+      const seatIndex = event.seatId - 1;
+      const displayIndex =
+        mySeatIndex === -1 ? seatIndex : (seatIndex - mySeatIndex + 3 + 6) % 6;
+      const seatPositions = store.get(playerSeatPositionsAtom);
+      const seatPos = seatPositions[displayIndex];
+      if (seatPos) {
+        startPosition = { ...seatPos };
+      }
+    }
+
+    const animation: CardAnimation = {
+      id: `play-${Date.now()}`,
+      type: "playCard",
+      playerId: event.playerId,
+      seatId: event.seatId,
+      cards: event.cards.map((c) => ({
+        id: c.id,
+        color: c.color,
+        value: c.value,
+        points: c.points,
+      })),
+      isSelf,
+      startTime: Date.now(),
+      duration: event.animationDuration,
+      startPosition,
+    };
+
+    // アニメーション用はデフォルトストアを使用
+    store.set(currentAnimationAtom, animation);
+
+    // アニメーション完了後にクリア
+    setTimeout(() => {
+      store.set(currentAnimationAtom, null);
+    }, event.animationDuration);
+  });
 };
 
 // ロビーに接続

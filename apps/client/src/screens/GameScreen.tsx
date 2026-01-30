@@ -62,8 +62,7 @@ export const GameScreen = () => {
   // 決定ボタンで選択したカードを出す
   const handlePlaySelected = () => {
     if (selectedCardIds.length === 0) return;
-    // 最初のカードIDと選択枚数を送信
-    playCard(selectedCardIds[0], selectedCardIds.length);
+    playCard(selectedCardIds);
     setSelectedCardIds([]);
   };
 

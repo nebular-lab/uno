@@ -14,7 +14,8 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { ArrowUpDown } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { setCardPositionAtom } from "@/atoms/cardPositionAtom";
 import {
   orderedMyHandAtom,
   sortHandAtom,
@@ -34,6 +35,7 @@ type SortableCardProps = {
   selected: boolean;
   selectionOrder?: number;
   onCardClick: () => void;
+  onPositionUpdate: (cardId: string, x: number, y: number) => void;
 };
 
 const SortableCard = ({
@@ -44,7 +46,9 @@ const SortableCard = ({
   selected,
   selectionOrder,
   onCardClick,
+  onPositionUpdate,
 }: SortableCardProps) => {
+  const cardRef = useRef<HTMLDivElement>(null);
   const {
     attributes,
     listeners,
@@ -62,8 +66,44 @@ const SortableCard = ({
     zIndex: isDragging ? 10 : 0,
   };
 
+  // カードの位置を報告（継続的に更新）
+  useEffect(() => {
+    const updatePosition = () => {
+      if (cardRef.current && !isDragging) {
+        const rect = cardRef.current.getBoundingClientRect();
+        onPositionUpdate(
+          card.id,
+          rect.left + rect.width / 2,
+          rect.top + rect.height / 2,
+        );
+      }
+    };
+
+    updatePosition();
+    // レイアウト変更時に位置を再計算
+    const observer = new ResizeObserver(updatePosition);
+    if (cardRef.current) {
+      observer.observe(cardRef.current);
+    }
+    window.addEventListener("resize", updatePosition);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updatePosition);
+    };
+  }, [card.id, isDragging, onPositionUpdate]);
+
+  // 複数のrefを結合
+  const setRefs = useCallback(
+    (node: HTMLDivElement | null) => {
+      setNodeRef(node);
+      (cardRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+    },
+    [setNodeRef],
+  );
+
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+    <div ref={setRefs} style={style} {...attributes} {...listeners}>
       <Card
         card={card}
         disabled={disabled}
@@ -85,10 +125,19 @@ export const MyHand = ({ disabled }: Props) => {
   const cards = useAtomValue(orderedMyHandAtom);
   const sortHand = useSetAtom(sortHandAtom);
   const updateHandOrder = useSetAtom(updateHandOrderAtom);
+  const setCardPosition = useSetAtom(setCardPositionAtom);
   const [selectedCardIds, setSelectedCardIds] = useAtom(selectedCardIdsAtom);
   const { playCard, playableCards } = useGameRoom();
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+
+  // カード位置更新のコールバック
+  const handlePositionUpdate = useCallback(
+    (cardId: string, x: number, y: number) => {
+      setCardPosition({ cardId, x, y });
+    },
+    [setCardPosition],
+  );
 
   // 重ね出しできるカードを取得
   // force-changeは色が違っても重ね出し可能
@@ -259,6 +308,7 @@ export const MyHand = ({ disabled }: Props) => {
                       disabled={disabled}
                       key={card.id}
                       onCardClick={() => handleCardClick(card.id)}
+                      onPositionUpdate={handlePositionUpdate}
                       playable={
                         selectedCardIds.length > 0
                           ? isStackSelectable(card)
