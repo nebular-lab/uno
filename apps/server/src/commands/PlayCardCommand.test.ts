@@ -514,8 +514,8 @@ describe("PlayCardCommand", () => {
 
       // 3枚減る
       expect(currentPlayer?.handCount).toBe(handCountBefore - 3);
-      // 最後のカードの色になる
-      expect(room.state.currentColor).toBe("green");
+      // 最初に選んだカードの色になる
+      expect(room.state.currentColor).toBe("red");
     });
   });
 

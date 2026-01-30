@@ -98,8 +98,9 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
     }
 
     // カード効果を適用
+    // 強制色変えの重ね出しでは最初のカードの色を使うため、firstCardも渡す
     const lastPlayedCard = playedCards[playedCards.length - 1];
-    this.applyCardEffect(lastPlayedCard, playedCards.length);
+    this.applyCardEffect(lastPlayedCard, playedCards.length, firstCard);
 
     // 上がり判定
     if (player.handCount === 0) {
@@ -217,8 +218,11 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
 
   /**
    * カード効果を適用する
+   * @param card 最後に出されたカード（効果適用用）
+   * @param stackCount 重ね出し枚数
+   * @param firstCard 最初に出されたカード（強制色変えの色決定用）
    */
-  private applyCardEffect(card: Card, stackCount: number) {
+  private applyCardEffect(card: Card, stackCount: number, firstCard: Card) {
     const effect = CardEffectRegistry.getEffectForCard(card);
     const context = this.createEffectContext(card);
 
@@ -233,9 +237,10 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
       }
     }
 
-    // 色の更新
-    if (card.color !== "wild") {
-      this.state.currentColor = card.color;
+    // 色の更新（強制色変えの重ね出しでは最初のカードの色を使用）
+    const colorCard = card.value === "force-change" ? firstCard : card;
+    if (colorCard.color !== "wild") {
+      this.state.currentColor = colorCard.color;
       this.state.waitingForColorChoice = false;
     } else if (card.value === "wild" || card.value === "draw4") {
       this.state.waitingForColorChoice = true;
