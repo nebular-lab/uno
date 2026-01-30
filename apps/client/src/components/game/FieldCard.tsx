@@ -94,7 +94,7 @@ export const FieldCard = ({
 
   return (
     <motion.div
-      animate={{ scale: 1, opacity: 1, rotateY: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
       className={cn(
         "relative flex h-20 w-14 items-center justify-center rounded-lg text-lg font-bold shadow-lg",
         getBgClass(),
@@ -103,9 +103,9 @@ export const FieldCard = ({
           ? "border-4 border-yellow-300 ring-2 ring-yellow-300/50"
           : "border-2",
       )}
-      initial={{ scale: 0.5, opacity: 0, rotateY: 180 }}
+      initial={{ scale: 0.95, opacity: 0.5 }}
       ref={ref}
-      transition={{ duration: 0.3, type: "spring", stiffness: 300 }}
+      transition={{ duration: 0.15 }}
     >
       {/* 中央の値 */}
       <span className="text-2xl">{displayValue}</span>
