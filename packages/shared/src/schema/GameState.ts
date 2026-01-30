@@ -18,6 +18,7 @@ export class GameState extends Schema {
   @type("number") deckCount: number = 0; // 山札の枚数（全員に見える）
   @type([Card]) discardPile = new ArraySchema<Card>(); // 捨て札
   @type([Card]) fieldCards = new ArraySchema<Card>(); // 場のカード（最新のみ表示）
+  @type("number") lastPlayedCount: number = 1; // 最後に出されたカードの枚数（重ね出し表示用）
   @type("string") currentColor: string = ""; // 現在有効な色
   @type("string") currentTurnPlayerId: string = ""; // 現在の手番プレイヤー
   @type("number") turnDirection: number = 1; // 1=時計回り, -1=反時計回り

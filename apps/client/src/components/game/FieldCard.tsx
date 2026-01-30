@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 
 type Props = {
   card: ClientCard;
+  isTopCard?: boolean; // 一番上のカードかどうか（位置報告用）
+  isHighlighted?: boolean; // 強調表示（強制色変えの最初のカード）
 };
 
 // カードの色に対応するTailwindクラス（背景色のみ）
@@ -45,14 +47,20 @@ const getDisplayValue = (value: string): string => {
   }
 };
 
-export const FieldCard = ({ card }: Props) => {
+export const FieldCard = ({
+  card,
+  isTopCard = true,
+  isHighlighted = false,
+}: Props) => {
   const ref = useRef<HTMLDivElement>(null);
   const setFieldCardPosition = useSetAtom(fieldCardPositionAtom);
   const isWild = card.value === "wild";
   const isDraw4 = card.value === "draw4";
 
-  // 場札の位置を報告
+  // 場札の位置を報告（一番上のカードのみ）
   useEffect(() => {
+    if (!isTopCard) return;
+
     const updatePosition = () => {
       if (ref.current) {
         const rect = ref.current.getBoundingClientRect();
@@ -66,7 +74,7 @@ export const FieldCard = ({ card }: Props) => {
     updatePosition();
     window.addEventListener("resize", updatePosition);
     return () => window.removeEventListener("resize", updatePosition);
-  }, [setFieldCardPosition]);
+  }, [setFieldCardPosition, isTopCard]);
 
   // 背景クラスの決定
   const getBgClass = () => {
@@ -88,9 +96,12 @@ export const FieldCard = ({ card }: Props) => {
     <motion.div
       animate={{ scale: 1, opacity: 1, rotateY: 0 }}
       className={cn(
-        "relative flex h-20 w-14 items-center justify-center rounded-lg border-2 text-lg font-bold shadow-lg",
+        "relative flex h-20 w-14 items-center justify-center rounded-lg text-lg font-bold shadow-lg",
         getBgClass(),
         getTextClass(),
+        isHighlighted
+          ? "border-4 border-yellow-300 ring-2 ring-yellow-300/50"
+          : "border-2",
       )}
       initial={{ scale: 0.5, opacity: 0, rotateY: 180 }}
       ref={ref}
@@ -98,6 +109,12 @@ export const FieldCard = ({ card }: Props) => {
     >
       {/* 中央の値 */}
       <span className="text-2xl">{displayValue}</span>
+      {/* 強調時のラベル */}
+      {isHighlighted && (
+        <div className="absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-yellow-400 px-1.5 py-0.5 text-xs font-bold text-black">
+          色決め
+        </div>
+      )}
     </motion.div>
   );
 };

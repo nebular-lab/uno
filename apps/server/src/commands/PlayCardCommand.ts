@@ -81,6 +81,9 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
     }
     player.handCount = player.myHand.length;
 
+    // 重ね出し表示用に出したカード枚数を記録
+    this.state.lastPlayedCount = playedCards.length;
+
     // アニメーションイベントを送信
     this.broadcastPlayCardAnimation(
       sessionId,

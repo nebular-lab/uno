@@ -1,5 +1,6 @@
-import { useAtom } from "jotai";
-import { useState } from "react";
+import { useAtom, useAtomValue } from "jotai";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { currentAnimationAtom } from "@/atoms/animationAtoms";
 import { selectedCardIdsAtom } from "@/atoms/selectedCardAtom";
 import { ActionButtons } from "@/components/game/ActionButtons";
 import { CountdownOverlay } from "@/components/game/CountdownOverlay";
@@ -11,6 +12,7 @@ import { TableContainer } from "@/components/game/TableContainer";
 import { TurnDirectionIndicator } from "@/components/game/TurnDirectionIndicator";
 import { Button } from "@/components/ui/button";
 import { useGameRoom } from "@/hooks/useGameRoom";
+import type { ClientCard } from "@/types/connection";
 
 export const GameScreen = () => {
   const {
@@ -19,6 +21,7 @@ export const GameScreen = () => {
     phase,
     countdown,
     fieldCards,
+    lastPlayedCount,
     deckCount,
     currentTurnPlayerId,
     myHand,
@@ -28,8 +31,31 @@ export const GameScreen = () => {
   } = useGameRoom();
 
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
-
   const [selectedCardIds, setSelectedCardIds] = useAtom(selectedCardIdsAtom);
+  const currentAnimation = useAtomValue(currentAnimationAtom);
+
+  // アニメーション中は前の状態を保持するための参照
+  const displayedFieldCardsRef = useRef<{
+    cards: ClientCard[];
+    lastPlayedCount: number;
+  }>({ cards: [], lastPlayedCount: 1 });
+
+  // 表示用の場札を計算（アニメーション中は更新しない）
+  const displayedFieldCards = useMemo(() => {
+    if (currentAnimation) {
+      // アニメーション中は前の状態を維持
+      return displayedFieldCardsRef.current;
+    }
+    // アニメーション完了後に更新
+    return { cards: fieldCards, lastPlayedCount };
+  }, [currentAnimation, fieldCards, lastPlayedCount]);
+
+  // アニメーションが終わったら表示用の状態を更新
+  useEffect(() => {
+    if (!currentAnimation) {
+      displayedFieldCardsRef.current = { cards: fieldCards, lastPlayedCount };
+    }
+  }, [currentAnimation, fieldCards, lastPlayedCount]);
 
   // 選択中の最初のカード情報
   const firstSelectedCard =
@@ -106,11 +132,29 @@ export const GameScreen = () => {
         );
       })}
 
-      {/* 場のカード（テーブル中央） */}
+      {/* 場のカード（テーブル中央、重ね出し対応） */}
       {(phase === "revealing" || phase === "playing") &&
-        fieldCards.length > 0 && (
+        displayedFieldCards.cards.length > 0 && (
           <div className="absolute left-1/2 top-[38%] z-10 -translate-x-1/2 -translate-y-1/2">
-            <FieldCard card={fieldCards[0]} />
+            <div className="flex items-center gap-2">
+              {displayedFieldCards.cards
+                .slice(-displayedFieldCards.lastPlayedCount)
+                .map((card, index) => {
+                  // 強制色変えの重ね出し時、最初のカードを強調
+                  const isFirstForceChange =
+                    index === 0 &&
+                    displayedFieldCards.lastPlayedCount > 1 &&
+                    card.value === "force-change";
+                  return (
+                    <FieldCard
+                      card={card}
+                      isHighlighted={isFirstForceChange}
+                      isTopCard={index === displayedFieldCards.lastPlayedCount - 1}
+                      key={card.id}
+                    />
+                  );
+                })}
+            </div>
           </div>
         )}
 

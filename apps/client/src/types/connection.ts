@@ -60,6 +60,7 @@ export type GamePlayState = {
   dealingRound: number;
   countdown: number;
   fieldCards: ClientCard[];
+  lastPlayedCount: number; // 最後に出されたカードの枚数（重ね出し表示用）
   currentTurnPlayerId: string;
   currentColor: string;
   deckCount: number;

@@ -37,6 +37,7 @@ const initialGamePlayState: GamePlayState = {
   dealingRound: 0,
   countdown: 0,
   fieldCards: [],
+  lastPlayedCount: 1,
   currentTurnPlayerId: "",
   currentColor: "",
   deckCount: 0,
@@ -126,6 +127,7 @@ const setupRoomStateSync = (
       fieldCards: state.fieldCards
         ? Array.from(state.fieldCards).map(convertCard)
         : [],
+      lastPlayedCount: state.lastPlayedCount ?? 1,
       currentTurnPlayerId: state.currentTurnPlayerId ?? "",
       currentColor: state.currentColor ?? "",
       deckCount: state.deckCount ?? 0,

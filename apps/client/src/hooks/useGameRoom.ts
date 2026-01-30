@@ -94,6 +94,7 @@ export const useGameRoom = () => {
     dealingRound: gamePlayState.dealingRound,
     countdown: gamePlayState.countdown,
     fieldCards: gamePlayState.fieldCards,
+    lastPlayedCount: gamePlayState.lastPlayedCount,
     myHand: gamePlayState.myHand,
     currentTurnPlayerId: gamePlayState.currentTurnPlayerId,
     currentColor: gamePlayState.currentColor,
