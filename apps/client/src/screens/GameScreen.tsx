@@ -10,14 +10,6 @@ import { Table } from "@/components/game/Table";
 import { TableContainer } from "@/components/game/TableContainer";
 import { TurnDirectionIndicator } from "@/components/game/TurnDirectionIndicator";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { useGameRoom } from "@/hooks/useGameRoom";
 
 export const GameScreen = () => {
@@ -180,34 +172,34 @@ export const GameScreen = () => {
       </Button>
 
       {/* 退席確認ダイアログ */}
-      <Dialog onOpenChange={setShowLeaveDialog} open={showLeaveDialog}>
-        <DialogContent className="bg-slate-800 border-slate-700">
-          <DialogHeader>
-            <DialogTitle className="text-white">退席確認</DialogTitle>
-            <DialogDescription className="text-slate-300">
+      {showLeaveDialog && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="w-[480px] rounded-xl border border-slate-600 bg-slate-800 p-9 shadow-xl">
+            <h2 className="text-2xl font-semibold text-white">退席確認</h2>
+            <p className="mt-3 text-base text-slate-300">
               ゲームから退席しますか？
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2">
-            <Button
-              className="border-slate-600 text-slate-300 hover:bg-slate-700"
-              onClick={() => setShowLeaveDialog(false)}
-              variant="outline"
-            >
-              キャンセル
-            </Button>
-            <Button
-              className="bg-red-600 text-white hover:bg-red-700"
-              onClick={() => {
-                leaveRoom();
-                setShowLeaveDialog(false);
-              }}
-            >
-              OK
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </p>
+            <div className="mt-8 flex justify-end gap-4">
+              <Button
+                className="h-12 px-6 text-base border-slate-500 bg-slate-700 text-slate-200 hover:bg-slate-600"
+                onClick={() => setShowLeaveDialog(false)}
+                variant="outline"
+              >
+                キャンセル
+              </Button>
+              <Button
+                className="h-12 px-6 text-base bg-red-500 text-white hover:bg-red-400"
+                onClick={() => {
+                  leaveRoom();
+                  setShowLeaveDialog(false);
+                }}
+              >
+                OK
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </TableContainer>
   );
 };
