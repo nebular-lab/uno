@@ -20,9 +20,11 @@ const createSemiCirclePath = (isClockwise: boolean): string => {
     return `M 0,${r} A ${r},${r} 0 0 1 0,${-r} L ${ax},${-r + ay}`;
   }
   // 反時計回り: 上から下へ弧を描き、折れ曲がりで終わる（左に膨らむ）
+  // sweep-flag=0 で反時計回り方向に弧を描く（左に膨らむ）
+  // 左の円: 左上に折れ曲がる、右の円（180度回転）: 右下に折れ曲がる
   const ax = arrowSize * Math.sin((arrowAngle * Math.PI) / 180);
   const ay = arrowSize * Math.cos((arrowAngle * Math.PI) / 180);
-  return `M 0,${-r} A ${r},${r} 0 0 1 0,${r} L ${ax},${r - ay}`;
+  return `M 0,${-r} A ${r},${r} 0 0 0 0,${r} L ${ax},${r - ay}`;
 };
 
 export const TurnDirectionIndicator = ({ direction }: Props) => {
