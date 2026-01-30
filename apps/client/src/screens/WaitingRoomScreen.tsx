@@ -10,14 +10,8 @@ type Props = {
 };
 
 export const WaitingRoomScreen = ({ roomId }: Props) => {
-  const {
-    players,
-    mySeatIndex,
-    isHost,
-    playerCount,
-    leaveRoom,
-    startGame,
-  } = useGameRoom();
+  const { players, mySeatIndex, isHost, playerCount, leaveRoom, startGame } =
+    useGameRoom();
 
   // ゲーム開始可能かどうか（3人以上のプレイヤー）
   const canStartGame = playerCount >= 3;

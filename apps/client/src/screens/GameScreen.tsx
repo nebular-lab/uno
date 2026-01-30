@@ -149,7 +149,9 @@ export const GameScreen = () => {
                     <FieldCard
                       card={card}
                       isHighlighted={isFirstForceChange}
-                      isTopCard={index === displayedFieldCards.lastPlayedCount - 1}
+                      isTopCard={
+                        index === displayedFieldCards.lastPlayedCount - 1
+                      }
                       key={card.id}
                     />
                   );
