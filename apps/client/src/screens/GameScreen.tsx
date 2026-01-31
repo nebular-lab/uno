@@ -34,6 +34,7 @@ export const GameScreen = () => {
     fieldCards,
     lastPlayedCount,
     deckCount,
+    drawStackCount,
     currentTurnPlayerId,
     myHand,
     turnDirection,
@@ -179,6 +180,17 @@ export const GameScreen = () => {
           <span className="font-bold text-white text-xl">{deckCount}</span>
         </div>
       </div>
+
+      {/* ドロースタック表示（テーブル右寄り） */}
+      {drawStackCount > 0 && (
+        <div className="absolute left-[calc(50%+120px)] top-[38%] z-10 -translate-x-1/2 -translate-y-1/2">
+          <div className="flex size-16 items-center justify-center rounded-full bg-red-600 border-2 border-red-400 shadow-lg">
+            <span className="font-bold text-white text-xl">
+              +{drawStackCount}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* カウントダウン表示 */}
       {phase === "countdown" && countdown > 0 && (

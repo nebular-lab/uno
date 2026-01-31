@@ -34,7 +34,7 @@ export const ActionButtons = () => {
           onClick={drawStack}
           variant="ghost"
         >
-          <span className="text-sm font-bold">{drawStackCount || 4}枚引く</span>
+          <span className="text-sm font-bold">{drawStackCount}枚引く</span>
         </Button>
       )}
 

@@ -797,6 +797,105 @@ describe("PlayCardCommand", () => {
   });
 
   // -------------------------------------------------------
+  // ドロースタック累積
+  // -------------------------------------------------------
+  describe("ドロースタック累積", () => {
+    it("前のプレイヤーが+2を出した後に+2を出すと、drawStackが4になる", async () => {
+      const { room, owner, player2, setHand } = await setupWithHands(
+        testCards.red5,
+        dummyHand(100),
+        dummyHand(200),
+        dummyHand(300),
+      );
+
+      // Ownerの手札にdraw2を設定
+      await setHand(owner, [
+        testCards.redDraw2,
+        ...Array.from({ length: 6 }, (_, i) => createDummyCard(101 + i)),
+      ]);
+      // Player2の手札にdraw2を設定
+      await setHand(player2, [
+        testCards.redDraw2_2,
+        ...Array.from({ length: 6 }, (_, i) => createDummyCard(201 + i)),
+      ]);
+
+      // Owner が draw2 を出す
+      owner.send("playCard", { cardIds: [testCards.redDraw2.id] });
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(room.state.drawStack).toBe(2);
+
+      // Player2 が draw2 を重ねる
+      player2.send("playCard", { cardIds: [testCards.redDraw2_2.id] });
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(room.state.drawStack).toBe(4);
+    });
+
+    it("前のプレイヤーが+2を出した後に+4を出すと、drawStackが6になる", async () => {
+      const { room, owner, player2, setHand } = await setupWithHands(
+        testCards.red5,
+        dummyHand(100),
+        dummyHand(200),
+        dummyHand(300),
+      );
+
+      // Ownerの手札にdraw2を設定
+      await setHand(owner, [
+        testCards.redDraw2,
+        ...Array.from({ length: 6 }, (_, i) => createDummyCard(101 + i)),
+      ]);
+      // Player2の手札にdraw4を設定
+      await setHand(player2, [
+        testCards.draw4,
+        ...Array.from({ length: 6 }, (_, i) => createDummyCard(201 + i)),
+      ]);
+
+      // Owner が draw2 を出す
+      owner.send("playCard", { cardIds: [testCards.redDraw2.id] });
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(room.state.drawStack).toBe(2);
+
+      // Player2 が draw4 を重ねる（色選択待ちになる）
+      player2.send("playCard", { cardIds: [testCards.draw4.id] });
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(room.state.drawStack).toBe(6);
+      expect(room.state.waitingForColorChoice).toBe(true);
+    });
+
+    it("前のプレイヤーが+2を出した後に+2を2枚重ねて出すと、drawStackが6になる", async () => {
+      const { room, owner, player2, setHand } = await setupWithHands(
+        testCards.red5,
+        dummyHand(100),
+        dummyHand(200),
+        dummyHand(300),
+      );
+
+      // Ownerの手札にdraw2を設定
+      await setHand(owner, [
+        testCards.redDraw2,
+        ...Array.from({ length: 6 }, (_, i) => createDummyCard(101 + i)),
+      ]);
+      // Player2の手札にdraw2を2枚設定
+      await setHand(player2, [
+        testCards.redDraw2_2,
+        { id: "r-draw2-3", color: "red", value: "draw2", points: 20 },
+        ...Array.from({ length: 5 }, (_, i) => createDummyCard(202 + i)),
+      ]);
+
+      // Owner が draw2 を出す
+      owner.send("playCard", { cardIds: [testCards.redDraw2.id] });
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(room.state.drawStack).toBe(2);
+
+      // Player2 が draw2 を2枚重ねて出す
+      player2.send("playCard", {
+        cardIds: [testCards.redDraw2_2.id, "r-draw2-3"],
+      });
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(room.state.drawStack).toBe(6);
+    });
+  });
+
+  // -------------------------------------------------------
   // カットイン制限
   // -------------------------------------------------------
   describe("カットイン制限", () => {
