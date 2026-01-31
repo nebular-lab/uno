@@ -1,22 +1,12 @@
 import { Command } from "@colyseus/command";
 import type { Card, PlayCardAnimationEvent } from "@dobon-uno/shared";
-import type { CardEffectContext } from "../effects";
 import { CardEffectRegistry } from "../effects";
 import type { GameRoom } from "../rooms/GameRoom";
-import {
-  calculatePlayableCardsForCurrentTurn,
-  calculatePlayableCardsForCutIn,
-} from "../utils/playableCards";
-import {
-  advanceToNextPlayer,
-  getPlayersSortedBySeat,
-  isSymbolCard,
-} from "../utils/playerActions";
-import { ChooseColorCommand } from "./ChooseColorCommand";
-import { DrawCardCommand } from "./DrawCardCommand";
-import { DrawStackCommand } from "./DrawStackCommand";
+import { CardEffectContextFactory } from "../services/CardEffectContextFactory";
+import { PlayerActionUpdater } from "../services/PlayerActionUpdater";
+import { TimeoutHandler } from "../services/TimeoutHandler";
+import { advanceToNextPlayer, isSymbolCard } from "../utils/playerActions";
 import { NormalFinishCommand } from "./NormalFinishCommand";
-import { PassCommand } from "./PassCommand";
 
 interface Payload {
   sessionId: string;
@@ -124,7 +114,11 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
     );
 
     // 全プレイヤーのアクション可否を更新（カードを出したプレイヤーはドボン不可）
-    this.updatePlayerActions(totalPlayedPoints, sessionId);
+    const actionUpdater = new PlayerActionUpdater(this.state);
+    actionUpdater.update({
+      cardPlayerId: sessionId,
+      totalPlayedPoints,
+    });
 
     // タイマー開始
     this.startCurrentPlayerTimer();
@@ -184,53 +178,6 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
   }
 
   /**
-   * 全プレイヤーのアクション可否を更新する
-   * @param totalPlayedPoints 出されたカードの合計点数（ドボン判定用）
-   * @param cardPlayerId カードを出したプレイヤーのID（自分が出したカードにはドボン不可）
-   */
-  private updatePlayerActions(totalPlayedPoints: number, cardPlayerId: string) {
-    const fieldCard = this.state.fieldCards[this.state.fieldCards.length - 1];
-    if (!fieldCard) return;
-
-    for (const [sessionId, player] of this.state.players.entries()) {
-      const isCurrentTurn = sessionId === this.state.currentTurnPlayerId;
-
-      if (isCurrentTurn) {
-        // 手番プレイヤーのアクション設定
-        calculatePlayableCardsForCurrentTurn(this.state, player, fieldCard, {
-          isFirstCardWild: false,
-        });
-        player.canDraw =
-          !this.state.waitingForColorChoice && this.state.drawStack === 0;
-        player.canDrawStack =
-          this.state.drawStack > 0 && !this.state.waitingForColorChoice;
-        player.canChooseColor = this.state.waitingForColorChoice;
-        player.canPass = this.state.hasDrawnThisTurn;
-      } else {
-        // 手番でないプレイヤー
-        calculatePlayableCardsForCutIn(player, fieldCard);
-        player.canDraw = false;
-        player.canDrawStack = false;
-        player.canChooseColor = false;
-        player.canPass = false;
-      }
-
-      // ドボン判定（重ね出しの場合は合計点数で判定）
-      // 自分が出したカードに対してはドボン不可
-      if (sessionId === cardPlayerId) {
-        player.canDobon = false;
-      } else {
-        const handTotal = player.myHand.reduce(
-          (sum, card) => sum + card.points,
-          0,
-        );
-        player.canDobon = handTotal === totalPlayedPoints;
-      }
-      player.canDobonReturn = false;
-    }
-  }
-
-  /**
    * カード効果を適用する
    * @param card 最後に出されたカード（効果適用用）
    * @param stackCount 重ね出し枚数
@@ -238,7 +185,8 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
    */
   private applyCardEffect(card: Card, stackCount: number, firstCard: Card) {
     const effect = CardEffectRegistry.getEffectForCard(card);
-    const context = this.createEffectContext(card);
+    const contextFactory = new CardEffectContextFactory(this.state);
+    const context = contextFactory.create(card);
 
     // ゲーム中のカード効果を適用（Skip: スキップ、Reverse: 方向反転）
     effect.applyOnPlay(context);
@@ -258,18 +206,6 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
     } else if (card.value === "wild" || card.value === "draw4") {
       this.state.waitingForColorChoice = true;
     }
-  }
-
-  /**
-   * 効果コンテキストを作成する
-   */
-  private createEffectContext(card: Card): CardEffectContext {
-    return {
-      state: this.state,
-      card,
-      getPlayersSortedBySeat: () => getPlayersSortedBySeat(this.state),
-      advanceToNextPlayer: () => advanceToNextPlayer(this.state),
-    };
   }
 
   /**
@@ -319,39 +255,10 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
    */
   private startCurrentPlayerTimer(): void {
     const currentPlayerId = this.state.currentTurnPlayerId;
+    const timeoutHandler = new TimeoutHandler(this.state, this.room.dispatcher);
 
     this.room.turnTimerService.startTimer(currentPlayerId, () => {
-      this.handleTimeout(currentPlayerId);
+      timeoutHandler.handle(currentPlayerId);
     });
-  }
-
-  /**
-   * タイムアウト時の自動処理
-   */
-  private handleTimeout(playerId: string): void {
-    if (this.state.waitingForColorChoice) {
-      // ランダムに色を選択
-      const colors = ["red", "blue", "green", "yellow"] as const;
-      const randomColor = colors[Math.floor(Math.random() * colors.length)];
-      this.room.dispatcher.dispatch(new ChooseColorCommand(), {
-        sessionId: playerId,
-        color: randomColor,
-      });
-    } else if (this.state.drawStack > 0) {
-      // 累積分を引く
-      this.room.dispatcher.dispatch(new DrawStackCommand(), {
-        sessionId: playerId,
-      });
-    } else if (this.state.hasDrawnThisTurn) {
-      // パス
-      this.room.dispatcher.dispatch(new PassCommand(), {
-        sessionId: playerId,
-      });
-    } else {
-      // 1枚引いてパス
-      this.room.dispatcher.dispatch(new DrawCardCommand(), {
-        sessionId: playerId,
-      });
-    }
   }
 }
