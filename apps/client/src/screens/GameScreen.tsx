@@ -14,6 +14,17 @@ import { Button } from "@/components/ui/button";
 import { useGameRoom } from "@/hooks/useGameRoom";
 import type { ClientCard } from "@/types/connection";
 
+// 選択可能な色（wildは除く）
+type SelectableColor = "red" | "blue" | "green" | "yellow";
+
+// 色ボタンの背景色
+const colorButtonClasses: Record<SelectableColor, string> = {
+  red: "bg-red-500 hover:bg-red-600",
+  blue: "bg-blue-500 hover:bg-blue-600",
+  green: "bg-green-600 hover:bg-green-700",
+  yellow: "bg-yellow-400 hover:bg-yellow-500 text-black",
+};
+
 export const GameScreen = () => {
   const {
     players,
@@ -28,6 +39,8 @@ export const GameScreen = () => {
     turnDirection,
     playCard,
     leaveRoom,
+    canChooseColor,
+    chooseColor,
   } = useGameRoom();
 
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
@@ -202,6 +215,22 @@ export const GameScreen = () => {
               <span className="text-sm font-bold">キャンセル</span>
             </Button>
           </div>
+        </div>
+      )}
+
+      {/* 色選択ボタン（プレイヤーシートの右側に横1列） */}
+      {phase === "playing" && canChooseColor && (
+        <div className="absolute top-91 left-[calc(50%+120px)] flex gap-1">
+          {(["red", "blue", "green", "yellow"] as SelectableColor[]).map(
+            (color) => (
+              <Button
+                className={`size-[78px] ${colorButtonClasses[color]}`}
+                key={color}
+                onClick={() => chooseColor(color)}
+                variant="ghost"
+              />
+            ),
+          )}
         </div>
       )}
 

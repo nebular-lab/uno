@@ -1,22 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { useGameRoom } from "@/hooks/useGameRoom";
 
-// 選択可能な色（wildは除く）
-type SelectableColor = "red" | "blue" | "green" | "yellow";
-
-// 色ボタンの背景色
-const colorButtonClasses: Record<SelectableColor, string> = {
-  red: "bg-red-500 hover:bg-red-600",
-  blue: "bg-blue-500 hover:bg-blue-600",
-  green: "bg-green-600 hover:bg-green-700",
-  yellow: "bg-yellow-400 hover:bg-yellow-500 text-black",
-};
-
 export const ActionButtons = () => {
   const {
     canDraw,
     canDrawStack,
-    canChooseColor,
     canDobon,
     canDobonReturn,
     drawCard,
@@ -24,7 +12,6 @@ export const ActionButtons = () => {
     drawStackCount,
     dobon,
     dobonReturn,
-    chooseColor,
   } = useGameRoom();
 
   return (
@@ -49,22 +36,6 @@ export const ActionButtons = () => {
         >
           <span className="text-sm font-bold">{drawStackCount || 4}枚引く</span>
         </Button>
-      )}
-
-      {/* 色選択ボタン（2x2グリッド） */}
-      {canChooseColor && (
-        <div className="grid grid-cols-2 gap-1">
-          {(["red", "blue", "green", "yellow"] as SelectableColor[]).map(
-            (color) => (
-              <Button
-                className={`size-[37px] ${colorButtonClasses[color]}`}
-                key={color}
-                onClick={() => chooseColor(color)}
-                variant="ghost"
-              />
-            ),
-          )}
-        </div>
       )}
 
       {/* ドボンボタン */}
