@@ -226,6 +226,12 @@ export const PlayerSeat = ({
 
   return (
     <div className={cn("absolute size-fit", seatPos)} ref={ref}>
+      {/* 手番プレイヤーのパルスアニメーション */}
+      {isCurrentPlayer && (
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[80px] h-[80px] pointer-events-none z-0">
+          <div className="turn-pulse-ring" />
+        </div>
+      )}
       <PlayerNamePlate
         isCurrentPlayer={isCurrentPlayer}
         name={player.name}
