@@ -235,15 +235,14 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
     const effect = CardEffectRegistry.getEffectForCard(card);
     const context = this.createEffectContext(card);
 
-    effect.applyOnReveal(context);
+    // ゲーム中のカード効果を適用（Skip: スキップ、Reverse: 方向反転）
+    effect.applyOnPlay(context);
 
-    // 重ね出し時のドロー累積
-    if (stackCount > 1) {
-      if (card.value === "draw2") {
-        this.state.drawStack = 2 * stackCount;
-      } else if (card.value === "draw4") {
-        this.state.drawStack = 4 * stackCount;
-      }
+    // ドロー累積の処理（単発・重ね出し両対応）
+    if (card.value === "draw2") {
+      this.state.drawStack += 2 * stackCount;
+    } else if (card.value === "draw4") {
+      this.state.drawStack += 4 * stackCount;
     }
 
     // 色の更新（強制色変えの重ね出しでは最初のカードの色を使用）

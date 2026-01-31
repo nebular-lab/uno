@@ -34,6 +34,13 @@ export interface CardEffect {
   applyOnBeginPlay(context: CardEffectContext): void;
 
   /**
+   * ゲーム中にカードが出された時の効果を適用
+   * applyOnRevealとは異なり、通常のゲームプレイ中に呼ばれる
+   * @param context 効果コンテキスト
+   */
+  applyOnPlay(context: CardEffectContext): void;
+
+  /**
    * このカードが出せるかどうかを判定（通常時）
    * @param card 手札のカード
    * @param fieldCard 場のカード
@@ -69,6 +76,10 @@ export abstract class BaseCardEffect implements CardEffect {
   }
 
   applyOnBeginPlay(_context: CardEffectContext): void {
+    // デフォルトは何もしない
+  }
+
+  applyOnPlay(_context: CardEffectContext): void {
     // デフォルトは何もしない
   }
 

@@ -12,9 +12,15 @@ export class NumberEffect extends BaseCardEffect {
 /**
  * スキップカードの効果
  * 最初の場札として公開された場合、最初のプレイヤーがスキップされる
+ * ゲーム中に出された場合、次のプレイヤーがスキップされる
  */
 export class SkipEffect extends BaseCardEffect {
   applyOnReveal(context: CardEffectContext): void {
+    context.advanceToNextPlayer();
+  }
+
+  applyOnPlay(context: CardEffectContext): void {
+    // 次のプレイヤーをスキップ（PlayCardCommandで既に1回advanceしているので、もう1回進める）
     context.advanceToNextPlayer();
   }
 }
@@ -22,10 +28,16 @@ export class SkipEffect extends BaseCardEffect {
 /**
  * リバースカードの効果
  * 最初の場札として公開された場合、順番が逆になる
+ * ゲーム中に出された場合、順番を反転させる
  */
 export class ReverseEffect extends BaseCardEffect {
   applyOnReveal(context: CardEffectContext): void {
     context.state.turnDirection = -1;
+  }
+
+  applyOnPlay(context: CardEffectContext): void {
+    // 方向を反転（1 → -1、-1 → 1）
+    context.state.turnDirection *= -1;
   }
 }
 
