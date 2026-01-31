@@ -56,27 +56,13 @@ $ARGUMENTS に以下の形式で指定されます：
    VITE_COLYSEUS_URL=ws://localhost:<ポート番号>
    ```
 
-6. **devサーバーの起動**
-   - サーバーとクライアントのdevサーバーをバックグラウンドで起動
-   - 環境変数を明示的に渡して実行：
-     ```bash
-     cd /Users/daisukehirano/Documents/src/dobon-uno/<ブランチ名>/apps/server && PORT=<ポート番号> pnpm dev
-     ```
-     ```bash
-     cd /Users/daisukehirano/Documents/src/dobon-uno/<ブランチ名>/apps/client && VITE_COLYSEUS_URL=ws://localhost:<ポート番号> pnpm dev
-     ```
-   - 起動完了を待つ（数秒程度）
-
-7. **完了メッセージ**
+6. **完了メッセージ**
    - 作成したworktreeのパスを表示
-   - devサーバーが起動していることを案内：
-     - サーバー: http://localhost:<ポート番号>
-     - クライアント: http://localhost:5173（Viteが自動で空きポートを選択）
+   - 設定したポート番号を表示
+   - devサーバーの起動コマンドを案内（起動はしない）
 
 ## 注意事項
 
 - このコマンドは `dobon-uno/main` ディレクトリから実行する必要があります
 - 既に同名のブランチが存在する場合はエラーになります
-- 他のworktreeと同じポートを使用するとサーバーが起動に失敗します
-- mainで開発中の場合はポート2567が使用中の可能性があるため、別のポートを指定してください
 - .envファイルは.gitignoreに含まれているため、コミットされません
