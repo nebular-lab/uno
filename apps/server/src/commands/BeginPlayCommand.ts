@@ -119,7 +119,8 @@ export class BeginPlayCommand extends Command<GameRoom> {
         // 手番プレイヤーのアクション設定
         player.canDraw =
           !this.state.waitingForColorChoice && this.state.drawStack === 0;
-        player.canDrawStack = this.state.drawStack > 0;
+        player.canDrawStack =
+          this.state.drawStack > 0 && !this.state.waitingForColorChoice;
         player.canChooseColor = this.state.waitingForColorChoice;
         player.canPass = false;
         player.canDobonReturn = false;

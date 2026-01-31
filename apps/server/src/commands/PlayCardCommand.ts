@@ -202,7 +202,8 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
         });
         player.canDraw =
           !this.state.waitingForColorChoice && this.state.drawStack === 0;
-        player.canDrawStack = this.state.drawStack > 0;
+        player.canDrawStack =
+          this.state.drawStack > 0 && !this.state.waitingForColorChoice;
         player.canChooseColor = this.state.waitingForColorChoice;
         player.canPass = this.state.hasDrawnThisTurn;
       } else {
