@@ -108,8 +108,11 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
       return;
     }
 
-    // 次のプレイヤーに手番を移す
-    advanceToNextPlayer(this.state);
+    // 色選択待ちの場合は手番を移さない（カードを出したプレイヤーが色を選択する）
+    if (!this.state.waitingForColorChoice) {
+      // 次のプレイヤーに手番を移す
+      advanceToNextPlayer(this.state);
+    }
 
     // ドローフラグをリセット
     this.state.hasDrawnThisTurn = false;
@@ -120,8 +123,8 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
       0,
     );
 
-    // 全プレイヤーのアクション可否を更新
-    this.updatePlayerActions(totalPlayedPoints);
+    // 全プレイヤーのアクション可否を更新（カードを出したプレイヤーはドボン不可）
+    this.updatePlayerActions(totalPlayedPoints, sessionId);
 
     // タイマー開始
     this.startCurrentPlayerTimer();
@@ -179,8 +182,9 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
   /**
    * 全プレイヤーのアクション可否を更新する
    * @param totalPlayedPoints 出されたカードの合計点数（ドボン判定用）
+   * @param cardPlayerId カードを出したプレイヤーのID（自分が出したカードにはドボン不可）
    */
-  private updatePlayerActions(totalPlayedPoints: number) {
+  private updatePlayerActions(totalPlayedPoints: number, cardPlayerId: string) {
     const fieldCard = this.state.fieldCards[this.state.fieldCards.length - 1];
     if (!fieldCard) return;
 
@@ -207,11 +211,16 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
       }
 
       // ドボン判定（重ね出しの場合は合計点数で判定）
-      const handTotal = player.myHand.reduce(
-        (sum, card) => sum + card.points,
-        0,
-      );
-      player.canDobon = handTotal === totalPlayedPoints;
+      // 自分が出したカードに対してはドボン不可
+      if (sessionId === cardPlayerId) {
+        player.canDobon = false;
+      } else {
+        const handTotal = player.myHand.reduce(
+          (sum, card) => sum + card.points,
+          0,
+        );
+        player.canDobon = handTotal === totalPlayedPoints;
+      }
       player.canDobonReturn = false;
     }
   }

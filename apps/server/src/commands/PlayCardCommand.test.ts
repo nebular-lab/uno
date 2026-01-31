@@ -373,7 +373,7 @@ describe("PlayCardCommand", () => {
       expect(room.state.drawStack).toBe(2);
     });
 
-    it("ワイルド: 色選択待ち状態になる", async () => {
+    it("ワイルド: 色選択待ち状態になり、手番は移動しない", async () => {
       const { room, owner } = await setupWithHands(
         testCards.red5,
         [
@@ -385,14 +385,20 @@ describe("PlayCardCommand", () => {
       );
 
       expect(room.state.waitingForColorChoice).toBe(false);
+      const originalTurnPlayer = room.state.currentTurnPlayerId;
 
       owner.send("playCard", { cardIds: [testCards.wild.id] });
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       expect(room.state.waitingForColorChoice).toBe(true);
+      // 手番は移動せず、カードを出したプレイヤーが色を選択する
+      expect(room.state.currentTurnPlayerId).toBe(originalTurnPlayer);
+      // 色選択可能フラグが立っている
+      const ownerPlayer = room.state.players.get(owner.sessionId);
+      expect(ownerPlayer?.canChooseColor).toBe(true);
     });
 
-    it("ドロー4: drawStackが4になり色選択待ち状態になる", async () => {
+    it("ドロー4: drawStackが4になり色選択待ち状態になり、手番は移動しない", async () => {
       const { room, owner } = await setupWithHands(
         testCards.red5,
         [
@@ -403,11 +409,18 @@ describe("PlayCardCommand", () => {
         dummyHand(300),
       );
 
+      const originalTurnPlayer = room.state.currentTurnPlayerId;
+
       owner.send("playCard", { cardIds: [testCards.draw4.id] });
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       expect(room.state.drawStack).toBe(4);
       expect(room.state.waitingForColorChoice).toBe(true);
+      // 手番は移動せず、カードを出したプレイヤーが色を選択する
+      expect(room.state.currentTurnPlayerId).toBe(originalTurnPlayer);
+      // 色選択可能フラグが立っている
+      const ownerPlayer = room.state.players.get(owner.sessionId);
+      expect(ownerPlayer?.canChooseColor).toBe(true);
     });
 
     it("強制色変え: カードの色が現在の色になる", async () => {
@@ -748,6 +761,38 @@ describe("PlayCardCommand", () => {
 
       const ownerPlayer = room.state.players.get(owner.sessionId);
       expect(ownerPlayer?.canDobon).toBe(true);
+    });
+
+    it("自分が出したカードに対してはドボンできない", async () => {
+      // Player1が赤5（5点）を出す → Player1自身はドボン不可、Player2はドボン可能
+      const { room, owner, player2, setHand } = await setupWithHands(
+        testCards.red3, // 場: 赤3
+        dummyHand(100),
+        dummyHand(200),
+        dummyHand(300),
+      );
+
+      // Ownerの手札を設定（赤5を含む、残り合計5点）
+      await setHand(owner, [
+        testCards.red5, // 赤5を出す（5点）
+        { id: "o-3", color: "blue", value: "3", points: 3 },
+        { id: "o-2", color: "blue", value: "2", points: 2 },
+      ]);
+      // Player2の手札を合計5点に設定
+      await setHand(player2, [
+        { id: "p2-3", color: "blue", value: "3", points: 3 },
+        { id: "p2-2", color: "blue", value: "2", points: 2 },
+      ]);
+
+      owner.send("playCard", { cardIds: [testCards.red5.id] });
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const ownerPlayer = room.state.players.get(owner.sessionId);
+      const p2Player = room.state.players.get(player2.sessionId);
+      // カードを出したプレイヤー自身はドボン不可
+      expect(ownerPlayer?.canDobon).toBe(false);
+      // 他のプレイヤーはドボン可能
+      expect(p2Player?.canDobon).toBe(true);
     });
   });
 
