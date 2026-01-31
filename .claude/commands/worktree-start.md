@@ -41,7 +41,13 @@ $ARGUMENTS に以下の形式で指定されます：
    cd ../<ブランチ名> && pnpm install
    ```
 
-5. **.envファイルの作成**
+5. **sharedパッケージのビルド**
+
+   ```bash
+   cd ../<ブランチ名>/packages/shared && pnpm build
+   ```
+
+6. **.envファイルの作成**
    - サーバー用とクライアント用の.envファイルを作成
 
    **apps/server/.env**
@@ -56,7 +62,7 @@ $ARGUMENTS に以下の形式で指定されます：
    VITE_COLYSEUS_URL=ws://localhost:<ポート番号>
    ```
 
-6. **完了メッセージ**
+7. **完了メッセージ**
    - 作成したworktreeのパスを表示
    - 設定したポート番号を表示
    - devサーバーの起動コマンドを案内（起動はしない）
