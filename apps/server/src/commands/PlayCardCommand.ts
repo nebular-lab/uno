@@ -63,7 +63,7 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
 
     // 重ね出し検証
     if (cardIds.length > 1) {
-      if (!this.validateStackCards(cardIds, firstCard)) return;
+      if (!this.validateStackCards(player, cardIds, firstCard)) return;
     }
 
     // タイマー停止
@@ -157,11 +157,15 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
 
   /**
    * 重ね出しのカード検証
+   * @param player カードを出すプレイヤー（カットイン時は非手番プレイヤー）
+   * @param cardIds 出すカードのID配列
+   * @param firstCard 最初のカード
    */
-  private validateStackCards(cardIds: string[], firstCard: Card): boolean {
-    const player = this.state.players.get(this.state.currentTurnPlayerId);
-    if (!player) return false;
-
+  private validateStackCards(
+    player: { myHand: Card[] },
+    cardIds: string[],
+    firstCard: Card,
+  ): boolean {
     for (let i = 1; i < cardIds.length; i++) {
       const card = player.myHand.find((c) => c.id === cardIds[i]);
       if (!card) return false;

@@ -197,20 +197,22 @@ describe("PlayCardCommand", () => {
     });
 
     it("重ね出しで記号カード上がりは拒否される", async () => {
-      const { room, owner } = await setupWithHands(
+      const { room, owner, setHand } = await setupWithHands(
         testCards.redSkip, // 場: 赤スキップ
-        [testCards.redSkip2, testCards.redSkip], // 手札: 赤スキップ2枚のみ（重ね出しで上がろうとする）
+        dummyHand(100), // 初期手札（後で上書き）
         dummyHand(200),
         dummyHand(300),
       );
+
+      // 手札を2枚だけに設定
+      await setHand(owner, [testCards.redSkip2, testCards.redSkip]);
 
       const currentPlayer = room.state.players.get(owner.sessionId);
       // 手札2枚で1枚目は出せる
       expect(currentPlayer?.playableCards.has(testCards.redSkip2.id)).toBe(
         true,
       );
-
-      const handCountBefore = currentPlayer?.handCount || 0;
+      expect(currentPlayer?.handCount).toBe(2);
 
       // 2枚同時に出す（記号で上がろうとする）
       owner.send("playCard", {
@@ -219,7 +221,7 @@ describe("PlayCardCommand", () => {
       await new Promise((resolve) => setTimeout(resolve, 50));
 
       // 拒否されるので手札は減らない
-      expect(currentPlayer?.handCount).toBe(handCountBefore);
+      expect(currentPlayer?.handCount).toBe(2);
     });
   });
 
