@@ -244,14 +244,14 @@ export const GameScreen = () => {
           </div>
           <div className="flex gap-1">
             <Button
-              className="size-[78px] bg-blue-600 text-white hover:bg-blue-700"
+              className="size-[80px] bg-blue-600 text-white hover:bg-blue-700"
               onClick={handlePlaySelected}
               variant="ghost"
             >
               <span className="text-lg font-bold">決定</span>
             </Button>
             <Button
-              className="size-[78px] bg-gray-500/80 text-white hover:bg-gray-600"
+              className="size-[80px] bg-gray-500/80 text-white hover:bg-gray-600"
               onClick={handleCancel}
               variant="ghost"
             >
@@ -271,7 +271,7 @@ export const GameScreen = () => {
             {(["red", "blue", "green", "yellow"] as SelectableColor[]).map(
               (color) => (
                 <Button
-                  className={`size-[78px] ${colorButtonClasses[color]}`}
+                  className={`size-[80px] ${colorButtonClasses[color]}`}
                   key={color}
                   onClick={() => chooseColor(color)}
                   variant="ghost"
@@ -287,7 +287,7 @@ export const GameScreen = () => {
 
       {/* 退席ボタン */}
       <Button
-        className="absolute left-4 top-4 size-[78px] bg-slate-700 text-white hover:bg-slate-600"
+        className="absolute left-4 top-4 size-[80px] bg-slate-700 text-white hover:bg-slate-600"
         onClick={() => setShowLeaveDialog(true)}
         variant="ghost"
       >
@@ -304,14 +304,14 @@ export const GameScreen = () => {
             </p>
             <div className="mt-8 flex justify-end gap-4">
               <Button
-                className="h-12 px-6 text-base border-slate-500 bg-gray-600 text-slate-200 hover:bg-gray-500"
+                className="h-20 px-6 text-base border-slate-500 bg-gray-600 text-slate-200 hover:bg-gray-500"
                 onClick={() => setShowLeaveDialog(false)}
                 variant="outline"
               >
                 キャンセル
               </Button>
               <Button
-                className="h-12 px-6 text-base bg-blue-600 text-white hover:bg-blue-500"
+                className="h-20 px-6 text-base bg-blue-600 text-white hover:bg-blue-500"
                 onClick={() => {
                   leaveRoom();
                   setShowLeaveDialog(false);

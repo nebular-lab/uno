@@ -60,7 +60,7 @@ export function TitleScreen() {
           />
         </div>
         <Button
-          className="text-xl h-14 mt-2 bg-blue-600 hover:bg-blue-500 border-0 font-bold tracking-wider shadow-lg transition-all hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100 text-white"
+          className="text-xl h-20 mt-2 bg-blue-600 hover:bg-blue-500 border-0 font-bold tracking-wider shadow-lg transition-all hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100 text-white"
           disabled={!isValid}
           onClick={handleStart}
         >
