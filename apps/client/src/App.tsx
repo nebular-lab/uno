@@ -105,7 +105,7 @@ function App() {
             </p>
             <div className="mt-8 flex justify-end gap-4">
               <Button
-                className="h-12 px-6 text-base bg-blue-600 text-white hover:bg-blue-500"
+                className="h-20 px-6 text-base bg-blue-600 text-white hover:bg-blue-500"
                 onClick={handleDisconnectOk}
               >
                 OK

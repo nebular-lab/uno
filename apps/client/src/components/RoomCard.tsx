@@ -23,7 +23,7 @@ export function RoomCard({ room, onJoin }: RoomCardProps) {
         </span>
       </div>
       <Button
-        className="w-full h-12 bg-blue-600 hover:bg-blue-500 border-0 font-bold text-white transition-all text-lg"
+        className="w-full h-20 bg-blue-600 hover:bg-blue-500 border-0 font-bold text-white transition-all text-lg"
         onClick={onJoin}
       >
         参加
