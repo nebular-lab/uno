@@ -9,6 +9,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // https://vite.dev/config/
 export default defineConfig({
+  server: {
+    port: Number(process.env.VITE_PORT) || 5173,
+  },
   plugins: [
     react(),
     tailwindcss(),
