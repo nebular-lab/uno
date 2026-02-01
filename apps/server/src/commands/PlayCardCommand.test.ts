@@ -903,25 +903,31 @@ describe("PlayCardCommand", () => {
   describe("カットイン制限", () => {
     it("上がりカードにはカットインできない（playableCardsが空になる）", async () => {
       // Player1が上がる → Player2は同じカードを持っていてもカットインできない
+      // Player2の初期手札に赤3を含める（カットイン可能な状態を作る）
       const { room, owner, player2, setHand } = await setupWithHands(
-        testCards.red5,
-        dummyHand(100),
-        dummyHand(200),
+        testCards.red5, // 場: 赤5
+        dummyHand(100), // Owner: 7枚（後で上書き）
+        [
+          { id: "p2-r3", color: "red", value: "3", points: 3 }, // 赤3（カットイン可能）
+          ...Array.from({ length: 6 }, (_, i) => createDummyCard(201 + i)),
+        ],
         dummyHand(300),
       );
 
       // Ownerの手札を1枚だけに設定（上がり用）
       await setHand(owner, [testCards.red3]);
-      // Player2の手札に同じカードを設定
-      await setHand(player2, [
-        { id: "p2-r3", color: "red", value: "3", points: 3 }, // 赤3を持っている
-        ...Array.from({ length: 6 }, (_, i) => createDummyCard(201 + i)),
-      ]);
+
+      const ownerPlayer = room.state.players.get(owner.sessionId);
+      expect(ownerPlayer?.handCount).toBe(1);
 
       owner.send("playCard", { cardIds: [testCards.red3.id] });
       await new Promise((resolve) => setTimeout(resolve, 100));
 
+      // Ownerが上がり
+      expect(ownerPlayer?.handCount).toBe(0);
+
       const p2Player = room.state.players.get(player2.sessionId);
+
       // 上がりカードにはカットインできないのでplayableCardsは空
       expect(p2Player?.playableCards.size).toBe(0);
     });
