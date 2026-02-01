@@ -15,9 +15,26 @@ export class TurnTimerService {
   private timeoutTimers: Map<string, NodeJS.Timeout> = new Map();
   private intervalTimers: Map<string, NodeJS.Timeout> = new Map();
   private state: GameState;
+  private turnTimeout: number;
 
   constructor(state: GameState) {
     this.state = state;
+    this.turnTimeout = TIMING.TURN_TIMEOUT;
+  }
+
+  /**
+   * ターンタイムアウト時間を設定する（テスト用）
+   * @param timeout タイムアウト時間（ミリ秒）
+   */
+  setTurnTimeout(timeout: number): void {
+    this.turnTimeout = timeout;
+  }
+
+  /**
+   * 現在のターンタイムアウト時間を取得する
+   */
+  getTurnTimeout(): number {
+    return this.turnTimeout;
   }
 
   /**
@@ -32,7 +49,7 @@ export class TurnTimerService {
     if (!player) return;
 
     // 残り秒数を設定
-    player.timeRemaining = Math.ceil(TIMING.TURN_TIMEOUT / 1000);
+    player.timeRemaining = Math.ceil(this.turnTimeout / 1000);
 
     // 1秒ごとにカウントダウン
     const interval = setInterval(() => {
@@ -47,7 +64,7 @@ export class TurnTimerService {
       this.clearTimers(playerId);
       player.timeRemaining = 0;
       onTimeout(); // コールバックを実行
-    }, TIMING.TURN_TIMEOUT);
+    }, this.turnTimeout);
     this.timeoutTimers.set(playerId, timeout);
   }
 
