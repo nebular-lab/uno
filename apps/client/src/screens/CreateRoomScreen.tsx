@@ -1,5 +1,6 @@
 import { useAtomValue, useSetAtom } from "jotai";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { navigateToLobbyAtom } from "../atoms/appAtoms";
 import { createRoomAtom, gameStateAtom } from "../atoms/connectionAtoms";
 
@@ -59,7 +60,7 @@ export function CreateRoomScreen() {
             disabled={isLoading}
             onClick={handleCreate}
           >
-            {isLoading ? "作成中..." : "作成"}
+            {isLoading ? <Spinner size="lg" /> : "作成"}
           </Button>
         </div>
       </div>
