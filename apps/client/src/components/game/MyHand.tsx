@@ -267,12 +267,12 @@ export const MyHand = ({ disabled }: Props) => {
   return (
     <>
       <div className="fixed bottom-[150px] left-4 flex gap-2">
-        <div className="flex size-[78px] flex-col items-center justify-center rounded-md bg-black/50 text-white">
+        <div className="flex size-[80px] flex-col items-center justify-center rounded-md bg-black/50 text-white">
           <span className="text-xs text-zinc-400">合計</span>
           <span className="text-2xl font-bold">{totalPoints}</span>
         </div>
         <Button
-          className="size-[78px] bg-slate-700 border-2 border-slate-500 text-white hover:bg-slate-600"
+          className="size-[80px] bg-slate-700 border-2 border-slate-500 text-white hover:bg-slate-600"
           disabled={disabled || cards.length === 0}
           onClick={() => sortHand()}
           variant="ghost"

@@ -21,7 +21,7 @@ export const ActionButtons = () => {
       {/* 山札を引くボタン */}
       {canDraw && (
         <Button
-          className="size-[78px] bg-amber-700 text-white hover:bg-amber-600"
+          className="size-[80px] bg-amber-700 text-white hover:bg-amber-600"
           onClick={drawCard}
           variant="ghost"
         >
@@ -32,7 +32,7 @@ export const ActionButtons = () => {
       {/* ドロースタックを引くボタン */}
       {canDrawStack && (
         <Button
-          className="size-[78px] bg-red-500/80 text-white hover:bg-red-600"
+          className="size-[80px] bg-red-500/80 text-white hover:bg-red-600"
           onClick={drawStack}
           variant="ghost"
         >
@@ -43,7 +43,7 @@ export const ActionButtons = () => {
       {/* パスボタン */}
       {canPass && (
         <Button
-          className="size-[78px] bg-gray-500/80 text-white hover:bg-gray-600"
+          className="size-[80px] bg-gray-500/80 text-white hover:bg-gray-600"
           onClick={pass}
           variant="ghost"
         >
@@ -54,7 +54,7 @@ export const ActionButtons = () => {
       {/* ドボンボタン */}
       {canDobon && (
         <Button
-          className="size-[78px] bg-purple-500/80 text-white hover:bg-purple-600"
+          className="size-[80px] bg-purple-500/80 text-white hover:bg-purple-600"
           onClick={dobon}
           variant="ghost"
         >
@@ -65,7 +65,7 @@ export const ActionButtons = () => {
       {/* ドボン返しボタン */}
       {canDobonReturn && (
         <Button
-          className="size-[78px] bg-orange-500/80 text-white hover:bg-orange-600"
+          className="size-[80px] bg-orange-500/80 text-white hover:bg-orange-600"
           onClick={dobonReturn}
           variant="ghost"
         >

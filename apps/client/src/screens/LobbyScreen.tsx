@@ -57,7 +57,7 @@ export function LobbyScreen() {
         {/* ルーム作成ボタン */}
         <div className="flex justify-end mb-4">
           <Button
-            className="text-lg px-6 h-12 bg-blue-600 hover:bg-blue-500 border-0 font-bold shadow-lg transition-all hover:scale-[1.02] text-white"
+            className="text-lg px-6 h-20 bg-blue-600 hover:bg-blue-500 border-0 font-bold shadow-lg transition-all hover:scale-[1.02] text-white"
             onClick={navigateToCreateRoom}
           >
             ルームを作成

@@ -48,14 +48,14 @@ export function CreateRoomScreen() {
         {/* ボタン */}
         <div className="flex gap-4 w-full max-w-md">
           <Button
-            className="flex-1 text-lg h-14 bg-slate-700 hover:bg-slate-600 border-0 font-medium transition-all text-slate-300"
+            className="flex-1 text-lg h-20 bg-slate-700 hover:bg-slate-600 border-0 font-medium transition-all text-slate-300"
             disabled={isLoading}
             onClick={navigateToLobby}
           >
             キャンセル
           </Button>
           <Button
-            className="flex-1 text-lg h-14 bg-blue-600 hover:bg-blue-500 border-0 font-bold shadow-lg transition-all hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100 text-white"
+            className="flex-1 text-lg h-20 bg-blue-600 hover:bg-blue-500 border-0 font-bold shadow-lg transition-all hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100 text-white"
             disabled={isLoading}
             onClick={handleCreate}
           >

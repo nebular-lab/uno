@@ -187,8 +187,10 @@ export class GameRoom extends Room<GameState, RoomMetadata> {
    * 全プレイヤーのアクション可否を更新する（テスト用）
    */
   private updateAllPlayerActions() {
+    // 色が未決定（最初のカードがwild/draw4で引いた場合等）なら何でも出せる
+    const isColorNotSet = this.state.currentColor === "";
     const actionUpdater = new PlayerActionUpdater(this.state);
-    actionUpdater.update();
+    actionUpdater.update({ isFirstCardWild: isColorNotSet });
   }
 
   /**
