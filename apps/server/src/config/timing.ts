@@ -15,9 +15,8 @@ export const TIMING = {
   /** 場札公開後の待機 (ms) */
   REVEAL_DELAY: Math.max(1, 1000 * SPEED_MULTIPLIER),
   /**
-   * ターンタイムアウト (ms) - 本番: 10秒、テスト: 60秒
-   * テスト環境では長めに設定し、タイムアウトによるテスト失敗を防ぐ
+   * ターンタイムアウト (ms) - 60秒
    * タイマー機能のテストでは TurnTimerService.setTurnTimeout() で短い値を設定する
    */
-  TURN_TIMEOUT: isTest ? 60000 : 10000,
+  TURN_TIMEOUT: 60000,
 };
