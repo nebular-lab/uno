@@ -42,14 +42,16 @@ function App() {
     onNavigateAway: navigateToTitle,
   });
 
-  // phase変更に応じた画面遷移（waitingでなくなったらゲーム画面へ）
+  // phase変更に応じた画面遷移（ゲーム進行中のフェーズになったらゲーム画面へ）
   useEffect(() => {
     if (gameState.status !== "connected") return;
 
     const room = gameState.room;
+    // ゲーム進行中を示す有効なフェーズ（waitingや未初期化状態は除外）
+    const playingPhases = ["countdown", "revealing", "playing", "result"];
     const handleStateChange = () => {
       const phase = room.state.phase;
-      if (phase !== "waiting" && screen.screen === "waitingRoom") {
+      if (playingPhases.includes(phase) && screen.screen === "waitingRoom") {
         navigateToGame(room.roomId);
       }
     };

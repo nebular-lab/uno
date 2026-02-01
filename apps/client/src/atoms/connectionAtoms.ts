@@ -261,13 +261,16 @@ export const connectToLobbyAtom = atom(null, async (get, set) => {
       );
     });
 
-    // 切断ハンドリング
+    // 切断ハンドリング（手動でleave()を呼んだ後にdisconnectedにならないよう、現在の状態をチェック）
     lobby.onLeave((code) => {
-      if (code === 1000 || code === 4000) {
-        set(lobbyStateAtom, { status: "idle" });
-      } else {
-        set(lobbyStateAtom, { status: "disconnected" });
-      }
+      set(lobbyStateAtom, (prev) => {
+        // 既にidleや他の状態に変更されていたら何もしない
+        if (prev.status !== "connected") return prev;
+        if (code === 1000 || code === 4000) {
+          return { status: "idle" };
+        }
+        return { status: "disconnected" };
+      });
     });
   } catch (error) {
     const message =
@@ -280,8 +283,9 @@ export const connectToLobbyAtom = atom(null, async (get, set) => {
 export const disconnectFromLobbyAtom = atom(null, async (get, set) => {
   const state = get(lobbyStateAtom);
   if (state.status === "connected") {
-    await state.lobby.leave();
+    // 先にidleに設定してからleave()を呼ぶことで、onLeaveでdisconnectedにならないようにする
     set(lobbyStateAtom, { status: "idle" });
+    await state.lobby.leave();
   }
 });
 
@@ -319,10 +323,11 @@ export const createRoomAtom = atom(null, async (get, set) => {
     });
 
     // ロビーから切断して待機画面へ遷移
+    // 先にidleに設定してからleave()を呼ぶことで、onLeaveでdisconnectedにならないようにする
     const lobbyState = get(lobbyStateAtom);
     if (lobbyState.status === "connected") {
-      await lobbyState.lobby.leave();
       set(lobbyStateAtom, { status: "idle" });
+      await lobbyState.lobby.leave();
     }
     set(screenAtom, { screen: "waitingRoom", roomId: room.roomId });
   } catch (error) {
@@ -366,10 +371,11 @@ export const joinRoomAtom = atom(null, async (get, set, roomId: string) => {
     });
 
     // ロビーから切断して待機画面へ遷移
+    // 先にidleに設定してからleave()を呼ぶことで、onLeaveでdisconnectedにならないようにする
     const lobbyState = get(lobbyStateAtom);
     if (lobbyState.status === "connected") {
-      await lobbyState.lobby.leave();
       set(lobbyStateAtom, { status: "idle" });
+      await lobbyState.lobby.leave();
     }
     set(screenAtom, { screen: "waitingRoom", roomId: room.roomId });
   } catch (error) {
