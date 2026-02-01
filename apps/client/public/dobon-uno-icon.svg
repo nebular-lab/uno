@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a2744"/>
+      <stop offset="100%" stop-color="#0f1b33"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2a4a7f"/>
+      <stop offset="100%" stop-color="#1e3a6e"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+
+  <!-- 背景 -->
+  <rect width="512" height="512" rx="80" ry="80" fill="url(#bg)"/>
+
+  <!-- カードモチーフ（背景装飾） -->
+  <g opacity="0.08">
+    <rect x="60" y="100" width="100" height="140" rx="12" ry="12" fill="#fff" transform="rotate(-15, 110, 170)"/>
+    <rect x="350" y="100" width="100" height="140" rx="12" ry="12" fill="#fff" transform="rotate(15, 400, 170)"/>
+  </g>
+
+  <!-- メインテキスト DOBON -->
+  <text
+    x="256"
+    y="260"
+    text-anchor="middle"
+    font-family="'Arial Black', 'Helvetica Neue', Arial, sans-serif"
+    font-weight="900"
+    font-size="108"
+    fill="#ffffff"
+    letter-spacing="6"
+    filter="url(#shadow)"
+  >DOBON</text>
+
+  <!-- アンダーライン装飾 -->
+  <line x1="100" y1="290" x2="412" y2="290" stroke="#4a8fff" stroke-width="3" stroke-linecap="round" opacity="0.6"/>
+
+  <!-- サブテキスト UNO -->
+  <text
+    x="256"
+    y="345"
+    text-anchor="middle"
+    font-family="'Arial Black', 'Helvetica Neue', Arial, sans-serif"
+    font-weight="900"
+    font-size="48"
+    fill="#ffffffcc"
+    letter-spacing="12"
+  >UNO</text>
+
+
+</svg>
