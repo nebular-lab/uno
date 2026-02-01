@@ -65,7 +65,9 @@ export class PlayerActionUpdater {
     isFirstCardWild: boolean,
   ): void {
     player.canDraw =
-      !this.state.waitingForColorChoice && this.state.drawStack === 0;
+      !this.state.waitingForColorChoice &&
+      this.state.drawStack === 0 &&
+      !this.state.hasDrawnThisTurn;
     player.canDrawStack =
       this.state.drawStack > 0 && !this.state.waitingForColorChoice;
     player.canChooseColor = this.state.waitingForColorChoice;
