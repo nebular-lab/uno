@@ -1,6 +1,6 @@
-import { boot, type ColyseusTestServer } from "@colyseus/testing";
+import type { ColyseusTestServer } from "@colyseus/testing";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import appConfig from "../app.config";
+import { bootTestServer } from "../test/setup";
 
 // テスト用カードデータ
 const testCards = {
@@ -93,7 +93,7 @@ describe("PlayCardCommand", () => {
   let colyseus: ColyseusTestServer;
 
   beforeAll(async () => {
-    colyseus = await boot(appConfig);
+    colyseus = await bootTestServer();
   });
 
   afterAll(async () => {
@@ -825,6 +825,21 @@ describe("PlayCardCommand", () => {
       owner.send("playCard", { cardIds: [testCards.redDraw2.id] });
       await new Promise((resolve) => setTimeout(resolve, 100));
       expect(room.state.drawStack).toBe(2);
+
+      // デバッグ: Player2のplayableCardsを確認
+      const p2Player = room.state.players.get(player2.sessionId);
+      console.log(
+        "DEBUG: Player2 playableCards:",
+        Array.from(p2Player?.playableCards?.keys() || []),
+      );
+      console.log("DEBUG: Player2 canDrawStack:", p2Player?.canDrawStack);
+      console.log(
+        "DEBUG: currentTurn is Player2:",
+        room.state.currentTurnPlayerId === player2.sessionId,
+      );
+      const lastFieldCard =
+        room.state.fieldCards[room.state.fieldCards.length - 1];
+      console.log("DEBUG: fieldCard:", lastFieldCard?.id, lastFieldCard?.value);
 
       // Player2 が draw2 を重ねる
       player2.send("playCard", { cardIds: [testCards.redDraw2_2.id] });

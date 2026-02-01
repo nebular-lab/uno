@@ -1,6 +1,6 @@
-import { boot, type ColyseusTestServer } from "@colyseus/testing";
+import type { ColyseusTestServer } from "@colyseus/testing";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import appConfig from "../app.config";
+import { bootTestServer } from "../test/setup";
 
 type CardData = { id: string; color: string; value: string; points: number };
 
@@ -66,7 +66,7 @@ describe("DrawCardCommand", () => {
   let colyseus: ColyseusTestServer;
 
   beforeAll(async () => {
-    colyseus = await boot(appConfig);
+    colyseus = await bootTestServer();
   });
 
   afterAll(async () => {

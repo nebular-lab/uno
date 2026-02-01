@@ -14,6 +14,10 @@ export const TIMING = {
   COUNTDOWN_INTERVAL: Math.max(1, 1000 * SPEED_MULTIPLIER),
   /** 場札公開後の待機 (ms) */
   REVEAL_DELAY: Math.max(1, 1000 * SPEED_MULTIPLIER),
-  /** ターンタイムアウト (ms) - 10秒 */
-  TURN_TIMEOUT: Math.max(1, 10000 * SPEED_MULTIPLIER),
+  /**
+   * ターンタイムアウト (ms) - 本番: 10秒、テスト: 60秒
+   * テスト環境では長めに設定し、タイムアウトによるテスト失敗を防ぐ
+   * タイマー機能のテストでは TurnTimerService.setTurnTimeout() で短い値を設定する
+   */
+  TURN_TIMEOUT: isTest ? 60000 : 10000,
 };
