@@ -38,11 +38,14 @@
      ```
    - マージは実行せずに終了
 
-6. **worktreeディレクトリに戻る**
+6. **worktreeブランチを最新のmainで更新**
 
    ```bash
    cd /Users/daisukehirano/Documents/src/dobon-uno/<ブランチ名>
+   git merge main
    ```
+
+   - これによりworktreeブランチがmainと同期され、次の作業をクリーンな状態で開始できる
 
 7. **完了メッセージ**
    - マージが完了したことを報告
