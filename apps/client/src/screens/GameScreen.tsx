@@ -167,8 +167,12 @@ export const GameScreen = () => {
             displayedFieldCards.cards[displayedFieldCards.cards.length - 1];
           const isWildOrDraw4 =
             topCard?.value === "wild" || topCard?.value === "draw4";
+          // 誰かが色選択中かどうか（自分または他のプレイヤー）
+          const isAnyoneChoosingColor = players.some(
+            (p) => p?.canChooseColor === true,
+          );
           const showColorIndicator =
-            isWildOrDraw4 && currentColor && !canChooseColor;
+            isWildOrDraw4 && currentColor && !isAnyoneChoosingColor;
 
           return (
             <div className="absolute left-1/2 top-[38%] z-10 -translate-x-1/2 -translate-y-1/2">
