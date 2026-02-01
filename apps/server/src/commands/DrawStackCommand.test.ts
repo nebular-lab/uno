@@ -432,4 +432,77 @@ describe("DrawStackCommand", () => {
       expect(room.state.phase).toBe("result");
     });
   });
+
+  // -------------------------------------------------------
+  // 最初のカードがdraw4の場合
+  // -------------------------------------------------------
+  describe("最初のカードがdraw4の場合", () => {
+    it("drawStack引いた後、次のプレイヤーはどんなカードでも出せる", async () => {
+      // 最初のカードがdraw4
+      const { room, owner, player2, setHand } = await setupWithHands(
+        testCards.draw4,
+        dummyHand(100),
+        dummyHand(200),
+        dummyHand(300),
+      );
+
+      // 最初のカードがdraw4なので、drawStack=4、currentColor=""
+      expect(room.state.drawStack).toBe(4);
+      expect(room.state.currentColor).toBe("");
+
+      // Owner（最初のプレイヤー）がcanDrawStack=true
+      const ownerPlayer = room.state.players.get(owner.sessionId);
+      expect(ownerPlayer?.canDrawStack).toBe(true);
+
+      // Ownerが4枚引く
+      owner.send("drawStack");
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Player2の手番になる
+      expect(room.state.currentTurnPlayerId).toBe(player2.sessionId);
+      expect(room.state.drawStack).toBe(0);
+      // 色はまだ決まっていない
+      expect(room.state.currentColor).toBe("");
+
+      // Player2の手札に青カードを設定（draw4の色とは関係ない）
+      const blueCard = { id: "blue7", color: "blue", value: "7", points: 7 };
+      const greenCard = { id: "green3", color: "green", value: "3", points: 3 };
+      await setHand(player2, [
+        blueCard,
+        greenCard,
+        ...Array.from({ length: 5 }, (_, i) => createDummyCard(201 + i)),
+      ]);
+
+      const p2Player = room.state.players.get(player2.sessionId);
+      // 色が未決定なので、どんなカードでも出せる
+      expect(p2Player?.playableCards.has(blueCard.id)).toBe(true);
+      expect(p2Player?.playableCards.has(greenCard.id)).toBe(true);
+    });
+
+    it("drawStack引いた後に出したカードの色がcurrentColorになる", async () => {
+      const { room, owner, player2, setHand } = await setupWithHands(
+        testCards.draw4,
+        dummyHand(100),
+        dummyHand(200),
+        dummyHand(300),
+      );
+
+      // Ownerが4枚引く
+      owner.send("drawStack");
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Player2が青カードを出す
+      const blueCard = { id: "blue7", color: "blue", value: "7", points: 7 };
+      await setHand(player2, [
+        blueCard,
+        ...Array.from({ length: 6 }, (_, i) => createDummyCard(201 + i)),
+      ]);
+
+      player2.send("playCard", { cardIds: [blueCard.id] });
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // currentColorが青になる
+      expect(room.state.currentColor).toBe("blue");
+    });
+  });
 });
