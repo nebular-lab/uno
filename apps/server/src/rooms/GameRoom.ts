@@ -16,13 +16,9 @@ import { PassCommand } from "../commands/PassCommand";
 // Commands
 import { PlayCardCommand } from "../commands/PlayCardCommand";
 import { StartGameCommand } from "../commands/StartGameCommand";
+import { PlayerActionUpdater } from "../services/PlayerActionUpdater";
 import { TurnTimerService } from "../services/TurnTimerService";
 import { createDeck, shuffleDeck } from "../utils/deck";
-import {
-  calculatePlayableCardsForCurrentTurn,
-  calculatePlayableCardsForCutIn,
-} from "../utils/playableCards";
-import { canDobon } from "../utils/playerActions";
 
 /**
  * 山札を生成する関数の型
@@ -175,34 +171,24 @@ export class GameRoom extends Room<GameState, RoomMetadata> {
         this.updateAllPlayerActions();
       }
     });
+
+    // テスト用: 現在のプレイヤーのタイマーを停止
+    this.onMessage("__stopTimer", () => {
+      this.turnTimerService.stopTimer(this.state.currentTurnPlayerId);
+    });
+
+    // テスト用: ターンタイムアウト時間を設定
+    this.onMessage("__setTurnTimeout", (_client, timeout: number) => {
+      this.turnTimerService.setTurnTimeout(timeout);
+    });
   }
 
   /**
    * 全プレイヤーのアクション可否を更新する（テスト用）
    */
   private updateAllPlayerActions() {
-    const fieldCard = this.state.fieldCards[this.state.fieldCards.length - 1];
-    if (!fieldCard) return;
-
-    for (const [sessionId, player] of this.state.players.entries()) {
-      const isCurrentTurn = sessionId === this.state.currentTurnPlayerId;
-
-      if (isCurrentTurn) {
-        calculatePlayableCardsForCurrentTurn(this.state, player, fieldCard, {
-          isFirstCardWild: false,
-        });
-        player.canDraw =
-          !this.state.waitingForColorChoice && this.state.drawStack === 0;
-        player.canPass = this.state.hasDrawnThisTurn;
-      } else {
-        calculatePlayableCardsForCutIn(player, fieldCard);
-        player.canDraw = false;
-        player.canPass = false;
-      }
-
-      // ドボン判定
-      player.canDobon = canDobon(player, fieldCard);
-    }
+    const actionUpdater = new PlayerActionUpdater(this.state);
+    actionUpdater.update();
   }
 
   /**
