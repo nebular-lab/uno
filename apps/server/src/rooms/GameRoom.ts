@@ -166,6 +166,15 @@ export class GameRoom extends Room<GameState, RoomMetadata> {
         }
       },
     );
+
+    // テスト用: hasDrawnThisTurn を設定
+    this.onMessage("__setHasDrawnThisTurn", (_client, value: boolean) => {
+      this.state.hasDrawnThisTurn = value;
+      // canPass を更新
+      if (this.state.phase === "playing") {
+        this.updateAllPlayerActions();
+      }
+    });
   }
 
   /**
@@ -182,8 +191,13 @@ export class GameRoom extends Room<GameState, RoomMetadata> {
         calculatePlayableCardsForCurrentTurn(this.state, player, fieldCard, {
           isFirstCardWild: false,
         });
+        player.canDraw =
+          !this.state.waitingForColorChoice && this.state.drawStack === 0;
+        player.canPass = this.state.hasDrawnThisTurn;
       } else {
         calculatePlayableCardsForCutIn(player, fieldCard);
+        player.canDraw = false;
+        player.canPass = false;
       }
 
       // ドボン判定

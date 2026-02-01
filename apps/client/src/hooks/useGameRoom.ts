@@ -79,6 +79,11 @@ export const useGameRoom = () => {
     [gameRoomState],
   );
 
+  const pass = useCallback(() => {
+    if (gameRoomState.status !== "connected") return;
+    gameRoomState.room.send("pass");
+  }, [gameRoomState]);
+
   return {
     // 待機画面用
     players: gamePlayState.players,
@@ -107,6 +112,7 @@ export const useGameRoom = () => {
     canChooseColor: myPlayerInfo?.canChooseColor ?? false,
     canDobon: myPlayerInfo?.canDobon ?? false,
     canDobonReturn: myPlayerInfo?.canDobonReturn ?? false,
+    canPass: myPlayerInfo?.canPass ?? false,
     playableCards: myPlayerInfo?.playableCards ?? {},
     // アクション関数
     drawCard,
@@ -115,5 +121,6 @@ export const useGameRoom = () => {
     dobonReturn,
     chooseColor,
     playCard,
+    pass,
   };
 };
