@@ -76,7 +76,7 @@ export const WaitingRoomScreen = ({ roomId }: Props) => {
           >
             {canStartGame
               ? "ゲームを開始できます！"
-              : `あと${3 - playerCount}人必要`}
+              : `あと${3 - playerCount}人の参加が必要です。`}
           </span>
           <Button
             className="h-18 px-8 text-lg bg-blue-600 hover:bg-blue-500 border-0 font-bold text-white shadow-lg transition-all hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"

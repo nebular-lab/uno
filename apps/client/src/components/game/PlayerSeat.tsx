@@ -33,14 +33,16 @@ const avatarPositions = [
   "-right-1 -top-1 absolute z-30",
 ];
 
-// 名前プレートのjustify方向
+// 名前プレートの位置調整（丸がない部分の中央に名前を配置）
+// displayIndex 0-3: 丸が左側なので左パディング
+// displayIndex 4-5: 丸が右側なので右パディング
 const namePositions = [
-  "justify-end",
-  "justify-end",
-  "justify-end",
-  "justify-end",
-  "justify-start",
-  "justify-start",
+  "justify-center pl-[50px]",
+  "justify-center pl-[50px]",
+  "justify-center pl-[50px]",
+  "justify-center pl-[50px]",
+  "justify-center pr-[50px]",
+  "justify-center pr-[50px]",
 ];
 
 // 空席バッジ
@@ -177,11 +179,11 @@ const PlayerNamePlate = ({
     <div
       className={cn(
         namePos,
-        "relative z-10 flex h-[60px] w-[180px] items-center gap-2 rounded-full border-2 bg-slate-800/80 backdrop-blur-sm shadow-lg transition-colors",
+        "relative z-10 flex h-[60px] w-[200px] items-center gap-2 rounded-full border-2 bg-slate-800/80 backdrop-blur-sm shadow-lg transition-colors",
         isCurrentPlayer ? "border-yellow-400" : "border-slate-600",
       )}
     >
-      <div className="flex w-[130px] flex-col items-center justify-center">
+      <div className="flex w-[150px] flex-col items-center justify-center">
         <span className="truncate text-white text-sm font-medium">{name}</span>
       </div>
       {isCurrentPlayer && timeRemaining !== undefined && (
