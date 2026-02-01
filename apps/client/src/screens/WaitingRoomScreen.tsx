@@ -38,7 +38,6 @@ export const WaitingRoomScreen = ({ roomId }: Props) => {
         return player ? (
           <PlayerSeat
             displayIndex={displayIndex}
-            isCurrentPlayer={actualIndex === mySeatIndex}
             key={`seat-${actualIndex}`}
             player={player}
           />
