@@ -7,11 +7,13 @@ export const ActionButtons = () => {
     canDrawStack,
     canDobon,
     canDobonReturn,
+    canPass,
     drawCard,
     drawStack,
     drawStackCount,
     dobon,
     dobonReturn,
+    pass,
   } = useGameRoom();
 
   return (
@@ -35,6 +37,17 @@ export const ActionButtons = () => {
           variant="ghost"
         >
           <span className="text-sm font-bold">{drawStackCount}枚引く</span>
+        </Button>
+      )}
+
+      {/* パスボタン */}
+      {canPass && (
+        <Button
+          className="size-[78px] bg-gray-500/80 text-white hover:bg-gray-600"
+          onClick={pass}
+          variant="ghost"
+        >
+          <span className="text-sm font-bold">パス</span>
         </Button>
       )}
 
