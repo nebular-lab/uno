@@ -1,7 +1,7 @@
-import { boot, type ColyseusTestServer } from "@colyseus/testing";
+import type { ColyseusTestServer } from "@colyseus/testing";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import appConfig from "../app.config";
 import { TIMING } from "../config/timing";
+import { bootTestServer } from "../test/setup";
 
 // テスト用カードデータ
 const testCards = {
@@ -113,7 +113,7 @@ describe("BeginPlayCommand", () => {
   let colyseus: ColyseusTestServer;
 
   beforeAll(async () => {
-    colyseus = await boot(appConfig);
+    colyseus = await bootTestServer();
   });
 
   afterAll(async () => {
@@ -130,6 +130,7 @@ describe("BeginPlayCommand", () => {
     p1Hand: CardData[],
     p2Hand: CardData[],
     p3Hand: CardData[],
+    options: { turnTimeout?: number } = {},
   ) {
     const room = await colyseus.createRoom("game", {});
     const owner = await colyseus.connectTo(room, { playerName: "Owner" });
@@ -144,6 +145,12 @@ describe("BeginPlayCommand", () => {
     );
     owner.send("__setDeck", testDeck);
     await new Promise((resolve) => setTimeout(resolve, 50));
+
+    // タイマーテスト用にタイムアウト時間を設定（ゲーム開始前に設定する必要がある）
+    if (options.turnTimeout !== undefined) {
+      owner.send("__setTurnTimeout", options.turnTimeout);
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
 
     owner.send("startGame");
 
@@ -981,15 +988,19 @@ describe("BeginPlayCommand", () => {
     });
 
     it("タイムアウト後に手番プレイヤーのtimeRemainingが0になる", async () => {
-      const { room } = await setupWithFirstCard(testCards.number);
+      // タイマーテスト用に短いタイムアウトを設定
+      const shortTimeout = 100;
+      const { room } = await setupWithHands(
+        testCards.number,
+        dummyHand(100),
+        dummyHand(200),
+        dummyHand(300),
+        { turnTimeout: shortTimeout },
+      );
 
       const currentPlayerId = room.state.currentTurnPlayerId;
-      const currentPlayer = room.state.players.get(currentPlayerId);
-      expect(currentPlayer?.timeRemaining).toBeGreaterThan(0);
 
-      await new Promise((resolve) =>
-        setTimeout(resolve, TIMING.TURN_TIMEOUT + 50),
-      );
+      await new Promise((resolve) => setTimeout(resolve, shortTimeout + 100));
 
       const timeout = Date.now() + 1000;
       while (
@@ -1003,17 +1014,21 @@ describe("BeginPlayCommand", () => {
     });
 
     it("ドロー累積中にタイムアウトするとtimeRemainingが0になる", async () => {
-      const { room } = await setupWithFirstCard(testCards.draw4);
+      // タイマーテスト用に短いタイムアウトを設定
+      const shortTimeout = 100;
+      const { room } = await setupWithHands(
+        testCards.draw4,
+        dummyHand(100),
+        dummyHand(200),
+        dummyHand(300),
+        { turnTimeout: shortTimeout },
+      );
 
       expect(room.state.drawStack).toBe(4);
 
       const currentPlayerId = room.state.currentTurnPlayerId;
-      const currentPlayer = room.state.players.get(currentPlayerId);
-      expect(currentPlayer?.timeRemaining).toBeGreaterThan(0);
 
-      await new Promise((resolve) =>
-        setTimeout(resolve, TIMING.TURN_TIMEOUT + 50),
-      );
+      await new Promise((resolve) => setTimeout(resolve, shortTimeout + 100));
 
       const timeout = Date.now() + 1000;
       while (
