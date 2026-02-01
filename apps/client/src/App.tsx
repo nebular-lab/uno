@@ -13,14 +13,6 @@ import {
 import { CardPlayAnimation } from "./components/game/CardPlayAnimation";
 import { ScalableContainer } from "./components/ScalableContainer";
 import { Button } from "./components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "./components/ui/dialog";
 import { useBeforeUnload } from "./hooks/useBeforeUnload";
 import { CreateRoomScreen } from "./screens/CreateRoomScreen";
 import { GameScreen } from "./screens/GameScreen";
@@ -102,19 +94,26 @@ function App() {
       {screen.screen === "game" && <CardPlayAnimation />}
 
       {/* 異常切断ダイアログ */}
-      <Dialog open={isDisconnected}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>接続が切断されました</DialogTitle>
-            <DialogDescription>
+      {isDisconnected && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="w-[480px] rounded-xl border border-slate-600 bg-slate-800 p-9 shadow-xl">
+            <h2 className="text-2xl font-semibold text-white">
+              接続が切断されました
+            </h2>
+            <p className="mt-3 text-base text-slate-300">
               サーバーとの接続が切断されました。タイトル画面に戻ります。
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button onClick={handleDisconnectOk}>OK</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </p>
+            <div className="mt-8 flex justify-end gap-4">
+              <Button
+                className="h-12 px-6 text-base bg-blue-600 text-white hover:bg-blue-500"
+                onClick={handleDisconnectOk}
+              >
+                OK
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

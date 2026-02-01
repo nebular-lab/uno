@@ -268,14 +268,14 @@ export const GameScreen = () => {
             </p>
             <div className="mt-8 flex justify-end gap-4">
               <Button
-                className="h-12 px-6 text-base border-slate-500 bg-slate-700 text-slate-200 hover:bg-slate-600"
+                className="h-12 px-6 text-base border-slate-500 bg-gray-600 text-slate-200 hover:bg-gray-500"
                 onClick={() => setShowLeaveDialog(false)}
                 variant="outline"
               >
                 キャンセル
               </Button>
               <Button
-                className="h-12 px-6 text-base bg-red-500 text-white hover:bg-red-400"
+                className="h-12 px-6 text-base bg-blue-600 text-white hover:bg-blue-500"
                 onClick={() => {
                   leaveRoom();
                   setShowLeaveDialog(false);
