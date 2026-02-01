@@ -9,6 +9,7 @@ type Props = {
   isCurrentPlayer?: boolean;
   displayIndex?: number; // 表示位置（回転後の位置）
   isPlaying?: boolean; // ゲーム中かどうか（trueの場合はカード枚数を表示）
+  isChoosingColor?: boolean; // 色を選択中かどうか
 };
 
 // 6人の位置定義（0:上中央 → 時計回り）
@@ -43,6 +44,18 @@ const namePositions = [
   "justify-center pl-[50px]",
   "justify-center pr-[50px]",
   "justify-center pr-[50px]",
+];
+
+// ラベル（タイマー、色選択中）の位置調整（丸がない部分の中央に配置）
+// displayIndex 0-3: 丸が左側なので右に25pxオフセット
+// displayIndex 4-5: 丸が右側なので左に25pxオフセット
+const labelPositions = [
+  "left-[calc(50%+25px)]",
+  "left-[calc(50%+25px)]",
+  "left-[calc(50%+25px)]",
+  "left-[calc(50%+25px)]",
+  "left-[calc(50%-25px)]",
+  "left-[calc(50%-25px)]",
 ];
 
 // 空席バッジ
@@ -143,16 +156,24 @@ const PlayerStatusBadge = ({
 };
 
 // タイマー表示
-const TurnTimer = ({ timeRemaining }: { timeRemaining: number }) => {
+const TurnTimer = ({
+  timeRemaining,
+  displayIndex,
+}: {
+  timeRemaining: number;
+  displayIndex: number;
+}) => {
   if (timeRemaining <= 0) return null;
 
   // 残り3秒以下は赤、それ以外は黄色
   const isUrgent = timeRemaining <= 3;
+  const labelPos = labelPositions[displayIndex] ?? labelPositions[0];
 
   return (
     <div
       className={cn(
-        "absolute -bottom-5 left-1/2 -translate-x-1/2 rounded-full px-2 py-0.5 text-xs font-bold shadow",
+        "absolute -bottom-5 -translate-x-1/2 rounded-full px-2 py-0.5 text-xs font-bold shadow",
+        labelPos,
         isUrgent
           ? "bg-red-500 text-white animate-pulse"
           : "bg-yellow-400 text-black",
@@ -169,11 +190,13 @@ const PlayerNamePlate = ({
   namePos,
   isCurrentPlayer,
   timeRemaining,
+  displayIndex,
 }: {
   name: string;
   namePos: string;
   isCurrentPlayer?: boolean;
   timeRemaining?: number;
+  displayIndex: number;
 }) => {
   return (
     <div
@@ -187,7 +210,7 @@ const PlayerNamePlate = ({
         <span className="truncate text-white text-sm font-medium">{name}</span>
       </div>
       {isCurrentPlayer && timeRemaining !== undefined && (
-        <TurnTimer timeRemaining={timeRemaining} />
+        <TurnTimer displayIndex={displayIndex} timeRemaining={timeRemaining} />
       )}
     </div>
   );
@@ -198,6 +221,7 @@ export const PlayerSeat = ({
   isCurrentPlayer,
   displayIndex,
   isPlaying,
+  isChoosingColor,
 }: Props) => {
   const ref = useRef<HTMLDivElement>(null);
   const setPlayerSeatPositions = useSetAtom(playerSeatPositionsAtom);
@@ -226,15 +250,34 @@ export const PlayerSeat = ({
     return () => window.removeEventListener("resize", updatePosition);
   }, [posIndex, setPlayerSeatPositions]);
 
+  const labelPos = labelPositions[posIndex] ?? labelPositions[0];
+
   return (
     <div className={cn("absolute size-fit", seatPos)} ref={ref}>
       {/* 手番プレイヤーのパルスアニメーション */}
       {isCurrentPlayer && (
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[80px] h-[80px] pointer-events-none z-0">
+        <div
+          className={cn(
+            "absolute top-1/2 -translate-x-1/2 -translate-y-1/2 w-[80px] h-[80px] pointer-events-none z-0",
+            labelPos,
+          )}
+        >
           <div className="turn-pulse-ring" />
         </div>
       )}
+      {/* 色選択中ラベル */}
+      {isChoosingColor && (
+        <div
+          className={cn(
+            "absolute -top-5 -translate-x-1/2 whitespace-nowrap rounded-full bg-amber-500 px-2 py-0.5 text-xs font-bold text-black shadow z-20",
+            labelPos,
+          )}
+        >
+          色を選択中
+        </div>
+      )}
       <PlayerNamePlate
+        displayIndex={posIndex}
         isCurrentPlayer={isCurrentPlayer}
         name={player.name}
         namePos={namePos}

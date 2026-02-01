@@ -25,6 +25,14 @@ const colorButtonClasses: Record<SelectableColor, string> = {
   yellow: "bg-yellow-400 hover:bg-yellow-500 text-black",
 };
 
+// 色インジケーターの背景色
+const colorIndicatorClasses: Record<SelectableColor, string> = {
+  red: "bg-red-500 border-red-300",
+  blue: "bg-blue-500 border-blue-300",
+  green: "bg-green-600 border-green-400",
+  yellow: "bg-yellow-400 border-yellow-200",
+};
+
 export const GameScreen = () => {
   const {
     players,
@@ -36,6 +44,7 @@ export const GameScreen = () => {
     deckCount,
     drawStackCount,
     currentTurnPlayerId,
+    currentColor,
     myHand,
     turnDirection,
     playCard,
@@ -129,9 +138,13 @@ export const GameScreen = () => {
         const player = players[actualIndex];
         const isCurrentTurn =
           player !== null && player.sessionId === currentTurnPlayerId;
+        // 自分以外のプレイヤーが色を選択中かどうか
+        const isOtherPlayerChoosingColor =
+          displayIndex !== 3 && player?.canChooseColor === true;
         return player ? (
           <PlayerSeat
             displayIndex={displayIndex}
+            isChoosingColor={isOtherPlayerChoosingColor}
             isCurrentPlayer={isCurrentTurn}
             isPlaying={true}
             key={`seat-${actualIndex}`}
@@ -148,31 +161,49 @@ export const GameScreen = () => {
 
       {/* 場のカード（テーブル中央、重ね出し対応） */}
       {(phase === "revealing" || phase === "playing") &&
-        displayedFieldCards.cards.length > 0 && (
-          <div className="absolute left-1/2 top-[38%] z-10 -translate-x-1/2 -translate-y-1/2">
-            <div className="flex items-center gap-2">
-              {displayedFieldCards.cards
-                .slice(-displayedFieldCards.lastPlayedCount)
-                .map((card, index) => {
-                  // 強制色変えの重ね出し時、最初のカードを強調
-                  const isFirstForceChange =
-                    index === 0 &&
-                    displayedFieldCards.lastPlayedCount > 1 &&
-                    card.value === "force-change";
-                  return (
-                    <FieldCard
-                      card={card}
-                      isHighlighted={isFirstForceChange}
-                      isTopCard={
-                        index === displayedFieldCards.lastPlayedCount - 1
-                      }
-                      key={card.id}
-                    />
-                  );
-                })}
+        displayedFieldCards.cards.length > 0 &&
+        (() => {
+          const topCard =
+            displayedFieldCards.cards[displayedFieldCards.cards.length - 1];
+          const isWildOrDraw4 =
+            topCard?.value === "wild" || topCard?.value === "draw4";
+          const showColorIndicator =
+            isWildOrDraw4 && currentColor && !canChooseColor;
+
+          return (
+            <div className="absolute left-1/2 top-[38%] z-10 -translate-x-1/2 -translate-y-1/2">
+              <div className="relative">
+                <div className="flex items-center gap-2">
+                  {displayedFieldCards.cards
+                    .slice(-displayedFieldCards.lastPlayedCount)
+                    .map((card, index) => {
+                      // 強制色変えの重ね出し時、最初のカードを強調
+                      const isFirstForceChange =
+                        index === 0 &&
+                        displayedFieldCards.lastPlayedCount > 1 &&
+                        card.value === "force-change";
+                      return (
+                        <FieldCard
+                          card={card}
+                          isHighlighted={isFirstForceChange}
+                          isTopCard={
+                            index === displayedFieldCards.lastPlayedCount - 1
+                          }
+                          key={card.id}
+                        />
+                      );
+                    })}
+                </div>
+                {/* 選択された色の表示（カードの上） */}
+                {showColorIndicator && (
+                  <div
+                    className={`absolute -top-6 left-1/2 -translate-x-1/2 h-4 w-10 rounded-full border-2 shadow ${colorIndicatorClasses[currentColor as SelectableColor]}`}
+                  />
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
       {/* 山札の残り枚数（テーブル左寄り） */}
       <div className="absolute left-[calc(50%-120px)] top-[38%] z-10 -translate-x-1/2 -translate-y-1/2">
@@ -232,17 +263,22 @@ export const GameScreen = () => {
 
       {/* 色選択ボタン（プレイヤーシートの右側に横1列） */}
       {phase === "playing" && canChooseColor && (
-        <div className="absolute top-91 left-[calc(50%+120px)] flex gap-1">
-          {(["red", "blue", "green", "yellow"] as SelectableColor[]).map(
-            (color) => (
-              <Button
-                className={`size-[78px] ${colorButtonClasses[color]}`}
-                key={color}
-                onClick={() => chooseColor(color)}
-                variant="ghost"
-              />
-            ),
-          )}
+        <div className="absolute top-91 left-[calc(50%+120px)]">
+          <div className="absolute -top-8 left-0 text-white text-sm font-medium whitespace-nowrap">
+            色を選択してください。
+          </div>
+          <div className="flex gap-1">
+            {(["red", "blue", "green", "yellow"] as SelectableColor[]).map(
+              (color) => (
+                <Button
+                  className={`size-[78px] ${colorButtonClasses[color]}`}
+                  key={color}
+                  onClick={() => chooseColor(color)}
+                  variant="ghost"
+                />
+              ),
+            )}
+          </div>
         </div>
       )}
 
