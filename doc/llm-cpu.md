@@ -11,6 +11,7 @@ UNOゲームにLLM（大規模言語モデル）を使用したCPUプレイヤ�
 | ライブラリ | 構造化出力 | TypeScript対応 | モデル対応 | 特徴 |
 |-----------|----------|--------------|----------|------|
 | **Vercel AI SDK** | ◎ | ◎ | OpenAI, Anthropic, Google, Ollama | 最も活発な開発、Zod統合が優秀 |
+| **OpenCode SDK** | ○ | ◎ | 75+プロバイダー（OpenCode経由） | OpenCodeサーバー経由、間接的なLLMアクセス |
 | **LangChain.js** | ○ | ○ | 多数 | 機能豊富だが複雑 |
 | **Instructor-JS** | ◎ | ◎ | OpenAI, Anthropic, Ollama | シンプルで構造化出力に特化 |
 
@@ -44,7 +45,68 @@ const result = await generateText({
 });
 ```
 
-### 1.2 LangChain.js
+### 1.2 OpenCode SDK
+
+**公式サイト**: https://opencode.ai/docs/sdk/
+
+#### 概要
+OpenCode SDKは、**OpenCodeサーバー**（AIコーディングエージェント）と通信するためのTypeScriptクライアントです。
+LLMプロバイダーと直接通信するVercel AI SDKとは異なり、OpenCodeサーバーを介してAI機能にアクセスします。
+
+#### 特徴
+- OpenCodeサーバー経由で75以上のLLMプロバイダーに対応
+- TypeScript型定義が完備（OpenAPI仕様から自動生成）
+- セッション管理、ストリーミングレスポンス対応
+- 構造化出力は `StructuredOutput` ツール注入方式で実現
+
+#### アーキテクチャの違い
+
+```
+[Vercel AI SDK]
+  アプリ → AI SDK → LLMプロバイダー（直接通信）
+
+[OpenCode SDK]
+  アプリ → OpenCode SDK → OpenCodeサーバー → LLMプロバイダー
+```
+
+#### コード例
+```typescript
+import Opencode from '@opencode-ai/sdk';
+
+const client = new Opencode();
+
+// セッションを作成してメッセージを送信
+const session = await client.session.create();
+const response = await client.chat.send({
+  sessionId: session.id,
+  message: 'ゲームの状況を分析して次のアクションを決定してください',
+});
+```
+
+#### Vercel AI SDK との比較
+
+| 観点 | Vercel AI SDK | OpenCode SDK |
+|------|--------------|--------------|
+| **通信方式** | LLMプロバイダーと直接通信 | OpenCodeサーバー経由 |
+| **依存関係** | なし（スタンドアロン） | OpenCodeサーバーが必要 |
+| **構造化出力** | `Output.object()` で直接サポート | StructuredOutputツール注入 |
+| **セットアップ** | APIキー設定のみ | サーバー起動 + SDK設定 |
+| **ユースケース** | アプリ組み込み向け | 開発ツール/CLI向け |
+| **レイテンシ** | 低（直接通信） | やや高（サーバー経由） |
+
+#### 本プロジェクトでの評価
+
+**不採用の理由:**
+1. **追加の依存関係**: OpenCodeサーバーの起動・管理が必要
+2. **オーバーヘッド**: サーバー経由のため、レイテンシが増加
+3. **ユースケースの不一致**: OpenCodeは開発支援ツール向けで、ゲームCPUのような組み込み用途には適さない
+4. **構造化出力の成熟度**: Vercel AI SDKの方がZod統合が洗練されている
+
+OpenCode SDKは開発支援ツールとしては優秀ですが、**ゲームサーバーに組み込むLLM呼び出し**にはVercel AI SDKの直接通信の方が適しています。
+
+---
+
+### 1.3 LangChain.js
 
 **公式サイト**: https://js.langchain.com/
 
@@ -69,7 +131,7 @@ const structuredModel = model.withStructuredOutput(
 const result = await structuredModel.invoke('次のアクションを決定');
 ```
 
-### 1.3 Instructor-JS
+### 1.4 Instructor-JS
 
 **公式サイト**: https://js.useinstructor.com/
 
@@ -686,5 +748,7 @@ export class RuleBasedCPU {
 - [AI SDK 6 リリースノート](https://vercel.com/blog/ai-sdk-6)
 - [AI SDK 構造化出力](https://ai-sdk.dev/docs/ai-sdk-core/generating-structured-data)
 - [Ollama AI Provider](https://ai-sdk.dev/providers/community-providers/ollama)
+- [OpenCode SDK](https://opencode.ai/docs/sdk/)
+- [OpenCode GitHub](https://github.com/opencode-ai/opencode)
 - [LangChain.js](https://js.langchain.com/)
 - [Instructor-JS](https://js.useinstructor.com/)
