@@ -35,6 +35,10 @@ export class GameState extends Schema {
   @type("boolean") waitingForColorChoice: boolean = false;
   @type("boolean") hasDrawnThisTurn: boolean = false; // 今ターン山札を引いたか
 
+  // ドボン関連
+  @type("string") dobonTargetId: string = ""; // ドボンされた人のsessionId
+  @type(["string"]) dobonPlayerIds = new ArraySchema<string>(); // ドボンした人のsessionIdリスト
+
   // 履歴
   @type([GameResult]) gameHistory = new ArraySchema<GameResult>(); // ゲーム結果の履歴
 }

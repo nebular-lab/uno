@@ -1,18 +1,10 @@
 import { Command } from "@colyseus/command";
-import { GameResult } from "@dobon-uno/shared";
 import type { GameRoom } from "../rooms/GameRoom";
+import { createGameResult, RESULT_DISPLAY_DURATION } from "../utils/finishGame";
 
 interface Payload {
   sessionId: string; // 上がったプレイヤーのID
 }
-
-/** 上がり表示時間（ミリ秒） */
-const FINISH_DISPLAY_DURATION = 3000;
-/** スコアパネル表示時間（ミリ秒） */
-const SCORE_DISPLAY_DURATION = 5000;
-/** 結果表示合計時間（ミリ秒） */
-const RESULT_DISPLAY_DURATION =
-  FINISH_DISPLAY_DURATION + SCORE_DISPLAY_DURATION;
 
 /**
  * 普通の上がりでゲームが終了した時のコマンド
@@ -49,12 +41,7 @@ export class NormalFinishCommand extends Command<GameRoom, Payload> {
 
     // 2. 収支計算
     const rateMultiplier = this.state.rateMultiplier;
-    const gameResult = new GameResult();
-    gameResult.gameNumber = this.state.gameHistory.length + 1;
-    gameResult.winnerId = sessionId;
-    gameResult.finishType = "normal";
-    gameResult.timestamp = Date.now();
-
+    const scoreChanges = new Map<string, number>();
     let totalWinnings = 0;
 
     for (const [playerId, player] of this.state.players.entries()) {
@@ -71,7 +58,7 @@ export class NormalFinishCommand extends Command<GameRoom, Payload> {
 
       // 点数を引く
       player.score -= loss;
-      gameResult.scoreChanges.set(playerId, -loss);
+      scoreChanges.set(playerId, -loss);
 
       totalWinnings += loss;
     }
@@ -80,10 +67,16 @@ export class NormalFinishCommand extends Command<GameRoom, Payload> {
     const winner = this.state.players.get(sessionId);
     if (winner) {
       winner.score += totalWinnings;
-      gameResult.scoreChanges.set(sessionId, totalWinnings);
+      scoreChanges.set(sessionId, totalWinnings);
     }
 
-    // 3. GameResultをgameHistoryに追加
+    // 3. GameResultを作成してgameHistoryに追加
+    const gameResult = createGameResult(
+      this.state,
+      sessionId,
+      "normal",
+      scoreChanges,
+    );
     this.state.gameHistory.push(gameResult);
 
     // 4. 次のゲームの最初のプレイヤーを設定
