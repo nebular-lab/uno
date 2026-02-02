@@ -25,8 +25,10 @@ export class PassCommand extends Command<GameRoom, Payload> {
     advanceToNextPlayer(this.state);
 
     // 全プレイヤーのアクション状態を更新
+    // 色が未決定（最初のカードがwild/draw4で引いた場合等）なら何でも出せる
+    const isColorNotSet = this.state.currentColor === "";
     const actionUpdater = new PlayerActionUpdater(this.state);
-    actionUpdater.update();
+    actionUpdater.update({ isFirstCardWild: isColorNotSet });
 
     // 次のプレイヤーのタイマーを開始
     this.startCurrentPlayerTimer();
