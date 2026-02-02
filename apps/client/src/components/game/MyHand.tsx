@@ -385,7 +385,7 @@ export const MyHand = ({ disabled }: Props) => {
                 items={cards.map((card) => card.id)}
                 strategy={horizontalListSortingStrategy}
               >
-                <div className="flex gap-0.5 px-1">
+                <div className="mx-auto flex w-fit gap-0.5 px-1">
                   {cards.map((card) => {
                     const selectionIndex = selectedCardIds.indexOf(card.id);
                     const isSelected = selectionIndex !== -1;
