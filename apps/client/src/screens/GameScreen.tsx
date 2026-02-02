@@ -7,6 +7,8 @@ import { CountdownOverlay } from "@/components/game/CountdownOverlay";
 import { FieldCard } from "@/components/game/FieldCard";
 import { MyHand } from "@/components/game/MyHand";
 import { EmptySeat, PlayerSeat } from "@/components/game/PlayerSeat";
+import { ScoreButton } from "@/components/game/ScoreButton";
+import { ScorePanel } from "@/components/game/ScorePanel";
 import { Table } from "@/components/game/Table";
 import { TableContainer } from "@/components/game/TableContainer";
 import { TurnDirectionIndicator } from "@/components/game/TurnDirectionIndicator";
@@ -51,9 +53,26 @@ export const GameScreen = () => {
     leaveRoom,
     canChooseColor,
     chooseColor,
+    gameHistory,
+    latestGameResult,
   } = useGameRoom();
 
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+  const [showScorePanel, setShowScorePanel] = useState(false);
+
+  // resultフェーズになったら自動でスコアパネルを開く
+  useEffect(() => {
+    if (phase === "result") {
+      setShowScorePanel(true);
+    }
+  }, [phase]);
+
+  // waitingフェーズになったら自動でスコアパネルを閉じる
+  useEffect(() => {
+    if (phase === "waiting") {
+      setShowScorePanel(false);
+    }
+  }, [phase]);
   const [selectedCardIds, setSelectedCardIds] = useAtom(selectedCardIdsAtom);
   const currentAnimation = useAtomValue(currentAnimationAtom);
 
@@ -141,12 +160,17 @@ export const GameScreen = () => {
         // 自分以外のプレイヤーが色を選択中かどうか
         const isOtherPlayerChoosingColor =
           displayIndex !== 3 && player?.canChooseColor === true;
+        // resultフェーズで勝者かどうか
+        const isWinner =
+          phase === "result" &&
+          latestGameResult?.winnerId === player?.sessionId;
         return player ? (
           <PlayerSeat
             displayIndex={displayIndex}
             isChoosingColor={isOtherPlayerChoosingColor}
             isCurrentPlayer={isCurrentTurn}
             isPlaying={true}
+            isWinner={isWinner}
             key={`seat-${actualIndex}`}
             player={player}
           />
@@ -298,6 +322,9 @@ export const GameScreen = () => {
         退席
       </Button>
 
+      {/* スコアボタン */}
+      <ScoreButton onClick={() => setShowScorePanel(true)} />
+
       {/* 退席確認ダイアログ */}
       {showLeaveDialog && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60">
@@ -327,6 +354,14 @@ export const GameScreen = () => {
           </div>
         </div>
       )}
+
+      {/* スコアパネル */}
+      <ScorePanel
+        gameHistory={gameHistory}
+        isOpen={showScorePanel}
+        onClose={() => setShowScorePanel(false)}
+        players={players}
+      />
     </TableContainer>
   );
 };
