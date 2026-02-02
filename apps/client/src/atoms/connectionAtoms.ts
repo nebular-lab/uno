@@ -43,6 +43,7 @@ const initialGamePlayState: GamePlayState = {
   deckCount: 0,
   drawStack: 0,
   turnDirection: 1,
+  gameHistory: [],
 };
 
 // ゲームプレイ状態（Room.stateから変換）
@@ -115,6 +116,23 @@ const setupRoomStateSync = (
 
     const myServerPlayer = state.players?.get(room.sessionId);
 
+    // gameHistoryを変換
+    const gameHistory = state.gameHistory
+      ? Array.from(state.gameHistory).map((result) => {
+          const scoreChanges: Record<string, number> = {};
+          result.scoreChanges?.forEach((value, key) => {
+            scoreChanges[key] = value;
+          });
+          return {
+            gameNumber: result.gameNumber,
+            scoreChanges,
+            timestamp: result.timestamp,
+            winnerId: result.winnerId,
+            finishType: result.finishType,
+          };
+        })
+      : [];
+
     set(gamePlayStateAtom, {
       players: createSeatsArray(playersMap),
       mySessionId: room.sessionId,
@@ -133,6 +151,7 @@ const setupRoomStateSync = (
       deckCount: state.deckCount ?? 0,
       drawStack: state.drawStack ?? 0,
       turnDirection: state.turnDirection ?? 1,
+      gameHistory,
     });
   };
 

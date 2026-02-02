@@ -48,6 +48,15 @@ export type ClientPlayer = {
   playableCards: Record<string, boolean>; // cardId -> 出せるか
 };
 
+// クライアント用のゲーム結果型
+export type ClientGameResult = {
+  gameNumber: number;
+  scoreChanges: Record<string, number>; // sessionId -> 得点変動
+  timestamp: number;
+  winnerId: string;
+  finishType: string; // "normal" | "dobon" | "dobonReturn"
+};
+
 // ゲームプレイ状態（Room.stateをReact用に変換した状態）
 export type GamePlayState = {
   // プレイヤー情報
@@ -66,4 +75,7 @@ export type GamePlayState = {
   deckCount: number;
   drawStack: number; // ドロー累積枚数
   turnDirection: number; // 1=時計回り, -1=反時計回り
+
+  // ゲーム履歴
+  gameHistory: ClientGameResult[];
 };
