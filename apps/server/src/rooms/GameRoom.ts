@@ -301,4 +301,45 @@ export class GameRoom extends Room<GameState, RoomMetadata> {
     // Dispatcherの停止
     this.dispatcher.stop();
   }
+
+  /**
+   * ゲーム状態をリセットする（次のゲーム開始前の状態に戻す）
+   * NormalFinishCommand、DobonCommand、DobonReturnCommandから呼び出される
+   */
+  resetGameState() {
+    // プレイヤー状態のリセット
+    for (const player of this.state.players.values()) {
+      // 手札をクリア
+      player.myHand.splice(0, player.myHand.length);
+      player.handCount = 0;
+
+      // アクションフラグをリセット
+      player.canPass = false;
+      player.canDraw = false;
+      player.canChooseColor = false;
+      player.canDobon = false;
+      player.canDobonReturn = false;
+      player.canDrawStack = false;
+      player.playableCards.clear();
+      player.timeRemaining = 0;
+    }
+
+    // ゲーム状態のリセット
+    this.state.fieldCards.splice(0, this.state.fieldCards.length);
+    this.state.discardPile.splice(0, this.state.discardPile.length);
+    this.state.deckCount = 0;
+    this.state.currentColor = "";
+    this.state.currentTurnPlayerId = "";
+    this.state.turnDirection = 1;
+    this.state.drawStack = 0;
+    this.state.waitingForColorChoice = false;
+    this.state.hasDrawnThisTurn = false;
+    this.state.lastPlayedCount = 1;
+    this.state.firstCard = null;
+    this.state.dealingRound = 0;
+    this.state.countdown = 0;
+
+    // 山札をクリア
+    this.deck = [];
+  }
 }
