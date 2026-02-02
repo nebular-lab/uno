@@ -9,7 +9,7 @@ import {
   lobbyStateAtom,
 } from "../atoms/connectionAtoms";
 import { RoomCard } from "../components/RoomCard";
-import { RoomCardSkeleton } from "../components/RoomCardSkeleton";
+import { Spinner } from "../components/ui/spinner";
 
 export function LobbyScreen() {
   const player = useAtomValue(playerAtom);
@@ -73,10 +73,8 @@ export function LobbyScreen() {
 
         {/* ローディング */}
         {isLoading && (
-          <div className="grid grid-cols-4 gap-4">
-            <RoomCardSkeleton />
-            <RoomCardSkeleton />
-            <RoomCardSkeleton />
+          <div className="flex items-center justify-center py-16">
+            <Spinner className="text-white" size="lg" />
           </div>
         )}
 
