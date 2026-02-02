@@ -14,7 +14,13 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { ArrowUpDown } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { setCardPositionAtom } from "@/atoms/cardPositionAtom";
 import {
   orderedMyHandAtom,
@@ -111,7 +117,13 @@ const SortableCard = ({
   );
 
   return (
-    <div ref={setRefs} style={style} {...attributes} {...listeners}>
+    <div
+      data-card-id={card.id}
+      ref={setRefs}
+      style={style}
+      {...attributes}
+      {...listeners}
+    >
       <Card
         card={card}
         disabled={disabled}
@@ -137,7 +149,12 @@ export const MyHand = ({ disabled }: Props) => {
   const [selectedCardIds, setSelectedCardIds] = useAtom(selectedCardIdsAtom);
   const { playCard, playableCards } = useGameRoom();
   const containerRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+  const [scrollState, setScrollState] = useState({
+    hiddenLeft: 0,
+    hiddenRight: 0,
+  });
 
   // カード位置更新のコールバック
   const handlePositionUpdate = useCallback(
@@ -238,6 +255,54 @@ export const MyHand = ({ disabled }: Props) => {
     return () => window.removeEventListener("resize", updateScale);
   }, []);
 
+  // スクロール状態を更新
+  const updateScrollState = useCallback(() => {
+    const scrollContainer = scrollRef.current;
+    if (!scrollContainer) return;
+
+    const cardElements = scrollContainer.querySelectorAll("[data-card-id]");
+    if (cardElements.length === 0) {
+      setScrollState({ hiddenLeft: 0, hiddenRight: 0 });
+      return;
+    }
+
+    const containerRect = scrollContainer.getBoundingClientRect();
+    let hiddenLeft = 0;
+    let hiddenRight = 0;
+
+    cardElements.forEach((el) => {
+      const rect = el.getBoundingClientRect();
+      const cardCenter = rect.left + rect.width / 2;
+      if (cardCenter < containerRect.left) {
+        hiddenLeft++;
+      } else if (cardCenter > containerRect.right) {
+        hiddenRight++;
+      }
+    });
+
+    setScrollState({ hiddenLeft, hiddenRight });
+  }, []);
+
+  // カード枚数が変わったら状態を更新
+  const cardCount = cards.length;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: cardCount変更時にスクロール状態を再計算したい
+  useLayoutEffect(() => {
+    updateScrollState();
+  }, [cardCount, updateScrollState]);
+
+  useEffect(() => {
+    const scrollContainer = scrollRef.current;
+    if (!scrollContainer) return;
+
+    scrollContainer.addEventListener("scroll", updateScrollState);
+    window.addEventListener("resize", updateScrollState);
+
+    return () => {
+      scrollContainer.removeEventListener("scroll", updateScrollState);
+      window.removeEventListener("resize", updateScrollState);
+    };
+  }, [updateScrollState]);
+
   const totalPoints = cards.reduce((sum, card) => sum + card.points, 0);
 
   const sensors = useSensors(
@@ -281,58 +346,79 @@ export const MyHand = ({ disabled }: Props) => {
         </Button>
       </div>
       <div
-        className="absolute bottom-4 left-1/2 max-w-[90%] -translate-x-1/2"
+        className="absolute bottom-4 left-1/2 w-full -translate-x-1/2"
         ref={containerRef}
       >
-        <div
-          className="scrollbar-hide overflow-x-auto px-4 py-2"
-          style={{
-            scrollbarWidth: "none",
-            msOverflowStyle: "none",
-          }}
-        >
-          <DndContext
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-            sensors={sensors}
-          >
-            <SortableContext
-              items={cards.map((card) => card.id)}
-              strategy={horizontalListSortingStrategy}
-            >
-              <div className="flex gap-0.5 px-1">
-                {cards.map((card) => {
-                  const selectionIndex = selectedCardIds.indexOf(card.id);
-                  const isSelected = selectionIndex !== -1;
-                  // force-changeの場合のみ選択順番を表示
-                  const showOrder =
-                    isSelected &&
-                    firstSelectedCard?.value === "force-change" &&
-                    selectedCardIds.length > 1;
+        {/* 左側枚数表示（スクロールエリアの左外側に配置） */}
+        {scrollState.hiddenLeft > 0 && (
+          <div className="absolute left-[5%] top-1/2 -translate-x-full -translate-y-1/2 pr-2">
+            <div className="flex size-12 items-center justify-center rounded-full bg-black/70 text-xl font-bold text-white">
+              +{scrollState.hiddenLeft}
+            </div>
+          </div>
+        )}
 
-                  return (
-                    <SortableCard
-                      card={card}
-                      disabled={disabled}
-                      key={card.id}
-                      onCardClick={() => handleCardClick(card.id)}
-                      onPositionUpdate={handlePositionUpdate}
-                      playable={
-                        selectedCardIds.length > 0
-                          ? isStackSelectable(card)
-                          : isPlayable(card.id)
-                      }
-                      scale={scale}
-                      selected={isSelected}
-                      selectionOrder={
-                        showOrder ? selectionIndex + 1 : undefined
-                      }
-                    />
-                  );
-                })}
-              </div>
-            </SortableContext>
-          </DndContext>
+        {/* 右側枚数表示（スクロールエリアの右外側に配置） */}
+        {scrollState.hiddenRight > 0 && (
+          <div className="absolute right-[5%] top-1/2 translate-x-full -translate-y-1/2 pl-2">
+            <div className="flex size-12 items-center justify-center rounded-full bg-black/70 text-xl font-bold text-white">
+              +{scrollState.hiddenRight}
+            </div>
+          </div>
+        )}
+
+        <div className="mx-auto min-w-0 max-w-[90%]">
+          <div
+            className="scrollbar-hide overflow-x-auto px-4 py-2"
+            ref={scrollRef}
+            style={{
+              scrollbarWidth: "none",
+              msOverflowStyle: "none",
+            }}
+          >
+            <DndContext
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+              sensors={sensors}
+            >
+              <SortableContext
+                items={cards.map((card) => card.id)}
+                strategy={horizontalListSortingStrategy}
+              >
+                <div className="flex gap-0.5 px-1">
+                  {cards.map((card) => {
+                    const selectionIndex = selectedCardIds.indexOf(card.id);
+                    const isSelected = selectionIndex !== -1;
+                    // force-changeの場合のみ選択順番を表示
+                    const showOrder =
+                      isSelected &&
+                      firstSelectedCard?.value === "force-change" &&
+                      selectedCardIds.length > 1;
+
+                    return (
+                      <SortableCard
+                        card={card}
+                        disabled={disabled}
+                        key={card.id}
+                        onCardClick={() => handleCardClick(card.id)}
+                        onPositionUpdate={handlePositionUpdate}
+                        playable={
+                          selectedCardIds.length > 0
+                            ? isStackSelectable(card)
+                            : isPlayable(card.id)
+                        }
+                        scale={scale}
+                        selected={isSelected}
+                        selectionOrder={
+                          showOrder ? selectionIndex + 1 : undefined
+                        }
+                      />
+                    );
+                  })}
+                </div>
+              </SortableContext>
+            </DndContext>
+          </div>
         </div>
       </div>
     </>
