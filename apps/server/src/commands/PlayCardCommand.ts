@@ -87,6 +87,10 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
       this.state.currentTurnPlayerId = sessionId;
     }
 
+    // ドボンターゲットをリセット（カードを出した人がドボンされる対象）
+    this.state.dobonTargetId = sessionId;
+    this.state.dobonPlayerIds.splice(0, this.state.dobonPlayerIds.length);
+
     // カード効果を適用
     // 強制色変えの重ね出しでは最初のカードの色を使うため、firstCardも渡す
     const lastPlayedCard = playedCards[playedCards.length - 1];
