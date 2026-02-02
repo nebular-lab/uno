@@ -299,7 +299,7 @@ describe("NormalFinishCommand", () => {
   // タイマー
   // -------------------------------------------------------
   describe("タイマー", () => {
-    it("3秒後にphaseがwaitingになる", async () => {
+    it("8秒後にphaseがwaitingになる（上がり表示3秒 + スコア表示5秒）", async () => {
       const { room, owner, setHand } = await setupWithHands(
         testCards.red5,
         dummyHand(100),
@@ -314,13 +314,13 @@ describe("NormalFinishCommand", () => {
 
       expect(room.state.phase).toBe("result");
 
-      // 3秒待つ
-      await new Promise((resolve) => setTimeout(resolve, 3500));
+      // 8秒待つ
+      await new Promise((resolve) => setTimeout(resolve, 8500));
 
       expect(room.state.phase).toBe("waiting");
     });
 
-    it("3秒後にゲーム状態がリセットされる", async () => {
+    it("8秒後にゲーム状態がリセットされる", async () => {
       const { room, owner, player2, setHand } = await setupWithHands(
         testCards.red5,
         dummyHand(100),
@@ -333,8 +333,8 @@ describe("NormalFinishCommand", () => {
       owner.send("playCard", { cardIds: [testCards.red3.id] });
       await new Promise((resolve) => setTimeout(resolve, 200));
 
-      // 3秒待つ
-      await new Promise((resolve) => setTimeout(resolve, 3500));
+      // 8秒待つ
+      await new Promise((resolve) => setTimeout(resolve, 8500));
 
       // プレイヤーの手札がクリアされる
       const ownerPlayer = room.state.players.get(owner.sessionId);

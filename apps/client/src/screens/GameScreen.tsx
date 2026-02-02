@@ -55,15 +55,27 @@ export const GameScreen = () => {
     chooseColor,
     gameHistory,
     latestGameResult,
+    isHost,
+    startGame,
+    playerCount,
   } = useGameRoom();
 
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
   const [showScorePanel, setShowScorePanel] = useState(false);
+  const [showWinnerLabel, setShowWinnerLabel] = useState(false);
 
-  // resultフェーズになったら自動でスコアパネルを開く
+  // resultフェーズになったら、最初3秒は「上がり！」表示、その後スコアパネルを開く
   useEffect(() => {
     if (phase === "result") {
-      setShowScorePanel(true);
+      setShowWinnerLabel(true);
+      setShowScorePanel(false);
+
+      const timer = setTimeout(() => {
+        setShowWinnerLabel(false);
+        setShowScorePanel(true);
+      }, 3000);
+
+      return () => clearTimeout(timer);
     }
   }, [phase]);
 
@@ -71,6 +83,7 @@ export const GameScreen = () => {
   useEffect(() => {
     if (phase === "waiting") {
       setShowScorePanel(false);
+      setShowWinnerLabel(false);
     }
   }, [phase]);
   const [selectedCardIds, setSelectedCardIds] = useAtom(selectedCardIdsAtom);
@@ -160,16 +173,17 @@ export const GameScreen = () => {
         // 自分以外のプレイヤーが色を選択中かどうか
         const isOtherPlayerChoosingColor =
           displayIndex !== 3 && player?.canChooseColor === true;
-        // resultフェーズで勝者かどうか
+        // resultフェーズで勝者かどうか（上がり表示中のみ）
         const isWinner =
           phase === "result" &&
+          showWinnerLabel &&
           latestGameResult?.winnerId === player?.sessionId;
         return player ? (
           <PlayerSeat
             displayIndex={displayIndex}
             isChoosingColor={isOtherPlayerChoosingColor}
             isCurrentPlayer={isCurrentTurn}
-            isPlaying={true}
+            isPlaying={phase !== "waiting"}
             isWinner={isWinner}
             key={`seat-${actualIndex}`}
             player={player}
@@ -233,15 +247,17 @@ export const GameScreen = () => {
           );
         })()}
 
-      {/* 山札の残り枚数（テーブル左寄り） */}
-      <div className="absolute left-[calc(50%-120px)] top-[38%] z-10 -translate-x-1/2 -translate-y-1/2">
-        <div className="flex size-16 items-center justify-center rounded-full bg-slate-700 border-2 border-slate-500 shadow-lg">
-          <span className="font-bold text-white text-xl">{deckCount}</span>
+      {/* 山札の残り枚数（テーブル左寄り、waitingフェーズでは非表示） */}
+      {phase !== "waiting" && (
+        <div className="absolute left-[calc(50%-120px)] top-[38%] z-10 -translate-x-1/2 -translate-y-1/2">
+          <div className="flex size-16 items-center justify-center rounded-full bg-slate-700 border-2 border-slate-500 shadow-lg">
+            <span className="font-bold text-white text-xl">{deckCount}</span>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* ドロースタック表示（テーブル右寄り） */}
-      {drawStackCount > 0 && (
+      {/* ドロースタック表示（テーブル右寄り、waitingフェーズでは非表示） */}
+      {phase !== "waiting" && drawStackCount > 0 && (
         <div className="absolute left-[calc(50%+120px)] top-[38%] z-10 -translate-x-1/2 -translate-y-1/2">
           <div className="flex size-16 items-center justify-center rounded-full bg-red-600 border-2 border-red-400 shadow-lg">
             <span className="font-bold text-white text-xl">
@@ -312,6 +328,43 @@ export const GameScreen = () => {
 
       {/* アクションボタン */}
       {phase === "playing" && <ActionButtons />}
+
+      {/* waitingフェーズ用UI */}
+      {phase === "waiting" && (
+        <>
+          {/* ホストにはゲーム開始ボタン */}
+          {isHost && (
+            <div className="absolute bottom-4 right-4 flex items-center gap-4">
+              <span
+                className={
+                  playerCount >= 3
+                    ? "text-sm text-green-400"
+                    : "text-sm text-slate-400"
+                }
+              >
+                {playerCount >= 3
+                  ? "ゲームを開始できます！"
+                  : `あと${3 - playerCount}人の参加が必要です。`}
+              </span>
+              <Button
+                className="h-20 px-8 text-lg bg-blue-600 hover:bg-blue-500 border-0 font-bold text-white shadow-lg transition-all hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
+                disabled={playerCount < 3}
+                onClick={startGame}
+              >
+                ゲーム開始
+              </Button>
+            </div>
+          )}
+          {/* 非ホストには待機メッセージ */}
+          {!isHost && (
+            <div className="absolute bottom-4 right-4">
+              <span className="text-sm text-slate-400">
+                ホストがゲームを開始するのをお待ちください
+              </span>
+            </div>
+          )}
+        </>
+      )}
 
       {/* 退席ボタン */}
       <Button

@@ -129,8 +129,8 @@ describe("GameRoom", () => {
 
       expect(room.state.phase).toBe("result");
 
-      // 3秒待ってリセットされるのを待つ
-      await new Promise((resolve) => setTimeout(resolve, 3500));
+      // 8秒待ってリセットされるのを待つ（上がり表示3秒 + スコア表示5秒）
+      await new Promise((resolve) => setTimeout(resolve, 8500));
 
       // 全プレイヤーの手札がクリアされている
       const ownerPlayer = room.state.players.get(owner.sessionId);
@@ -160,8 +160,8 @@ describe("GameRoom", () => {
 
       expect(room.state.phase).toBe("result");
 
-      // 3秒待ってリセットされるのを待つ
-      await new Promise((resolve) => setTimeout(resolve, 3500));
+      // 8秒待ってリセットされるのを待つ（上がり表示3秒 + スコア表示5秒）
+      await new Promise((resolve) => setTimeout(resolve, 8500));
 
       // ゲーム状態がリセットされている
       expect(room.state.phase).toBe("waiting");
@@ -188,8 +188,8 @@ describe("GameRoom", () => {
       owner.send("playCard", { cardIds: [testCards.red3.id] });
       await new Promise((resolve) => setTimeout(resolve, 200));
 
-      // 3秒待ってリセットされるのを待つ
-      await new Promise((resolve) => setTimeout(resolve, 3500));
+      // 8秒待ってリセットされるのを待つ（上がり表示3秒 + スコア表示5秒）
+      await new Promise((resolve) => setTimeout(resolve, 8500));
 
       // 全プレイヤーのアクションフラグがリセットされている
       for (const player of room.state.players.values()) {

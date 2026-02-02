@@ -6,8 +6,13 @@ interface Payload {
   sessionId: string; // 上がったプレイヤーのID
 }
 
-/** 結果表示時間（ミリ秒） */
-const RESULT_DISPLAY_DURATION = 3000;
+/** 上がり表示時間（ミリ秒） */
+const FINISH_DISPLAY_DURATION = 3000;
+/** スコアパネル表示時間（ミリ秒） */
+const SCORE_DISPLAY_DURATION = 5000;
+/** 結果表示合計時間（ミリ秒） */
+const RESULT_DISPLAY_DURATION =
+  FINISH_DISPLAY_DURATION + SCORE_DISPLAY_DURATION;
 
 /**
  * 普通の上がりでゲームが終了した時のコマンド
