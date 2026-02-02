@@ -1,213 +1,60 @@
 # LLM CPU プレイヤー設計書
 
-UNOゲームにLLM（大規模言語モデル）を使用したCPUプレイヤーを追加するための技術選定と設計ドキュメント。
+UNOゲームにLLM（大規模言語モデル）を使用したCPUプレイヤーを追加するための設計・実装計画ドキュメント。
+
+**使用ライブラリ**: [Vercel AI SDK](https://ai-sdk.dev/)
 
 ---
 
-## 1. 技術選定
+## 1. 実装計画
 
-### 候補ライブラリの比較
+### Phase 1: 基盤構築
 
-| ライブラリ | 構造化出力 | TypeScript対応 | モデル対応 | 特徴 |
-|-----------|----------|--------------|----------|------|
-| **Vercel AI SDK** | ◎ | ◎ | OpenAI, Anthropic, Google, Ollama | 最も活発な開発、Zod統合が優秀 |
-| **OpenCode SDK** | ○ | ◎ | 75+プロバイダー（OpenCode経由） | OpenCodeサーバー経由、間接的なLLMアクセス |
-| **LangChain.js** | ○ | ○ | 多数 | 機能豊富だが複雑 |
-| **Instructor-JS** | ◎ | ◎ | OpenAI, Anthropic, Ollama | シンプルで構造化出力に特化 |
+| タスク | 内容 | 成果物 |
+|-------|------|-------|
+| 1-1 | 依存パッケージのインストール | package.json更新 |
+| 1-2 | 出力スキーマ定義（Zod） | `schemas/actionSchema.ts` |
+| 1-3 | LLMプロバイダー抽象化クラス作成 | `LLMProvider.ts` |
+| 1-4 | 環境変数設定 | `.env.example` 更新 |
 
-### 1.1 Vercel AI SDK
+### Phase 2: プロンプト設計
 
-**公式サイト**: https://ai-sdk.dev/
+| タスク | 内容 | 成果物 |
+|-------|------|-------|
+| 2-1 | システムプロンプト作成 | `prompts/systemPrompt.ts` |
+| 2-2 | ゲーム状態フォーマッター作成 | `prompts/gameStateFormatter.ts` |
+| 2-3 | プロンプトのテスト・調整 | テストケース |
 
-#### 特徴
-- `generateText`/`streamText` に `output` プロパティで構造化出力を指定
-- Zodスキーマによる型安全な出力
-- AI SDK 6で `Output.object()` APIが追加され、ツール呼び出しと構造化出力の統合が可能
-- OllamaプロバイダーでローカルLLMにも対応
+### Phase 3: CPUサービス実装
 
-#### コード例
-```typescript
-import { generateText } from 'ai';
-import { openai } from '@ai-sdk/openai';
-import { z } from 'zod';
+| タスク | 内容 | 成果物 |
+|-------|------|-------|
+| 3-1 | CPUPlayerService実装 | `CPUPlayerService.ts` |
+| 3-2 | フォールバック（ルールベース）実装 | `RuleBasedCPU.ts` |
+| 3-3 | 単体テスト作成 | `*.test.ts` |
 
-const result = await generateText({
-  model: openai('gpt-4o-mini'),
-  prompt: 'ゲームの状況を分析して次のアクションを決定してください',
-  output: Output.object({
-    schema: z.object({
-      action: z.enum(['playCard', 'draw', 'pass', 'dobon']),
-      cardIds: z.array(z.string()).optional(),
-      color: z.enum(['red', 'blue', 'green', 'yellow']).optional(),
-      reasoning: z.string(),
-    }),
-  }),
-});
-```
+### Phase 4: ゲーム統合
 
-### 1.2 OpenCode SDK
+| タスク | 内容 | 成果物 |
+|-------|------|-------|
+| 4-1 | Playerスキーマ拡張（isCPUフラグ） | `Player.ts` 更新 |
+| 4-2 | GameRoomへのCPU統合 | `GameRoom.ts` 更新 |
+| 4-3 | CPUプレイヤー追加API | メッセージハンドラー追加 |
+| 4-4 | 統合テスト | E2Eテスト |
 
-**公式サイト**: https://opencode.ai/docs/sdk/
+### Phase 5: クライアント対応
 
-#### 概要
-OpenCode SDKは、**OpenCodeサーバー**（AIコーディングエージェント）と通信するためのTypeScriptクライアントです。
-LLMプロバイダーと直接通信するVercel AI SDKとは異なり、OpenCodeサーバーを介してAI機能にアクセスします。
-
-#### 特徴
-- OpenCodeサーバー経由で75以上のLLMプロバイダーに対応
-- TypeScript型定義が完備（OpenAPI仕様から自動生成）
-- セッション管理、ストリーミングレスポンス対応
-- 構造化出力は `StructuredOutput` ツール注入方式で実現
-
-#### アーキテクチャの違い
-
-```
-[Vercel AI SDK]
-  アプリ → AI SDK → LLMプロバイダー（直接通信）
-
-[OpenCode SDK]
-  アプリ → OpenCode SDK → OpenCodeサーバー → LLMプロバイダー
-```
-
-#### コード例
-```typescript
-import Opencode from '@opencode-ai/sdk';
-
-const client = new Opencode();
-
-// セッションを作成してメッセージを送信
-const session = await client.session.create();
-const response = await client.chat.send({
-  sessionId: session.id,
-  message: 'ゲームの状況を分析して次のアクションを決定してください',
-});
-```
-
-#### Vercel AI SDK との比較
-
-| 観点 | Vercel AI SDK | OpenCode SDK |
-|------|--------------|--------------|
-| **通信方式** | LLMプロバイダーと直接通信 | OpenCodeサーバー経由 |
-| **依存関係** | なし（スタンドアロン） | OpenCodeサーバーが必要 |
-| **構造化出力** | `Output.object()` で直接サポート | StructuredOutputツール注入 |
-| **セットアップ** | APIキー設定のみ | サーバー起動 + SDK設定 |
-| **ユースケース** | アプリ組み込み向け | 開発ツール/CLI向け |
-| **レイテンシ** | 低（直接通信） | やや高（サーバー経由） |
-
-#### 本プロジェクトでの評価
-
-**不採用の理由:**
-1. **追加の依存関係**: OpenCodeサーバーの起動・管理が必要
-2. **オーバーヘッド**: サーバー経由のため、レイテンシが増加
-3. **ユースケースの不一致**: OpenCodeは開発支援ツール向けで、ゲームCPUのような組み込み用途には適さない
-4. **構造化出力の成熟度**: Vercel AI SDKの方がZod統合が洗練されている
-
-OpenCode SDKは開発支援ツールとしては優秀ですが、**ゲームサーバーに組み込むLLM呼び出し**にはVercel AI SDKの直接通信の方が適しています。
+| タスク | 内容 | 成果物 |
+|-------|------|-------|
+| 5-1 | CPU追加UIコンポーネント | React コンポーネント |
+| 5-2 | CPU思考中の表示演出 | アニメーション |
+| 5-3 | 難易度選択UI | 設定画面 |
 
 ---
 
-### 1.3 LangChain.js
+## 2. アーキテクチャ
 
-**公式サイト**: https://js.langchain.com/
-
-#### 特徴
-- `withStructuredOutput` メソッドでZodスキーマを接続
-- エージェント機能が豊富
-- 多くのモデルプロバイダーに対応
-
-#### コード例
-```typescript
-import { ChatOpenAI } from '@langchain/openai';
-import { z } from 'zod';
-
-const model = new ChatOpenAI({ model: 'gpt-4o-mini' });
-const structuredModel = model.withStructuredOutput(
-  z.object({
-    action: z.enum(['playCard', 'draw', 'pass', 'dobon']),
-    cardIds: z.array(z.string()).optional(),
-  })
-);
-
-const result = await structuredModel.invoke('次のアクションを決定');
-```
-
-### 1.4 Instructor-JS
-
-**公式サイト**: https://js.useinstructor.com/
-
-#### 特徴
-- 構造化出力に特化したシンプルなライブラリ
-- 自動リトライ機能（出力が不正な場合の自己修正）
-- OpenAI Tool Callingを内部で活用
-
-#### コード例
-```typescript
-import Instructor from '@instructor-ai/instructor';
-import OpenAI from 'openai';
-import { z } from 'zod';
-
-const client = Instructor({ client: new OpenAI() });
-
-const result = await client.chat.completions.create({
-  model: 'gpt-4o-mini',
-  response_model: {
-    schema: z.object({
-      action: z.enum(['playCard', 'draw', 'pass', 'dobon']),
-      cardIds: z.array(z.string()).optional(),
-    }),
-    name: 'UnoAction',
-  },
-  messages: [{ role: 'user', content: 'ゲームの状況...' }],
-});
-```
-
-### 推奨: Vercel AI SDK
-
-以下の理由から **Vercel AI SDK** を推奨：
-
-1. **活発な開発**: AI SDK 6で大幅な機能強化
-2. **型安全性**: TypeScript + Zodによる完全な型推論
-3. **マルチプロバイダー**: OpenAI、Anthropic、Ollamaなど幅広く対応
-4. **サーバーサイド最適化**: Node.js環境での使用に最適化
-5. **シンプルなAPI**: generateText一つで構造化出力が可能
-
----
-
-## 2. 対応LLMモデル
-
-### 2.1 クラウドAPI
-
-| プロバイダー | モデル | 特徴 |
-|------------|-------|------|
-| **OpenAI** | gpt-4o-mini | コスパ良好、高速 |
-| **OpenAI** | gpt-4o | 高精度 |
-| **Anthropic** | claude-3-5-haiku | 高速、低コスト |
-| **Anthropic** | claude-3-5-sonnet | バランス良好 |
-| **Google** | gemini-2.0-flash | 高速 |
-
-### 2.2 ローカルLLM（Ollama）
-
-Ollamaを使用することで、APIコストなしでローカル環境でLLMを実行可能。
-
-```typescript
-import { ollama } from 'ollama-ai-provider';
-
-const result = await generateText({
-  model: ollama('llama3.2'),
-  // ...
-});
-```
-
-**推奨モデル**（2026年時点）:
-- `llama3.2` - Meta製、バランス良好
-- `qwen2.5` - 推論能力が高い
-- `mistral` - 軽量で高速
-
----
-
-## 3. アーキテクチャ設計
-
-### 3.1 全体構成
+### 2.1 全体構成
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -235,130 +82,29 @@ const result = await generateText({
                     └───────────────────────┘
 ```
 
-### 3.2 ディレクトリ構成
+### 2.2 ディレクトリ構成
 
 ```
 apps/server/src/
 ├── cpu/
-│   ├── LLMProvider.ts         # LLM API抽象化
-│   ├── CPUPlayerService.ts    # CPUプレイヤー管理
+│   ├── LLMProvider.ts           # LLM API抽象化
+│   ├── CPUPlayerService.ts      # CPUプレイヤー管理
+│   ├── RuleBasedCPU.ts          # フォールバック用ルールベースCPU
 │   ├── prompts/
-│   │   ├── systemPrompt.ts    # システムプロンプト
-│   │   └── gameStateFormatter.ts  # ゲーム状態のフォーマット
+│   │   ├── systemPrompt.ts      # システムプロンプト
+│   │   └── gameStateFormatter.ts # ゲーム状態のフォーマット
 │   └── schemas/
-│       └── actionSchema.ts    # アクション出力スキーマ
+│       └── actionSchema.ts      # アクション出力スキーマ
 ├── services/
 │   └── ...
 └── ...
 ```
 
-### 3.3 クラス設計
-
-#### LLMProvider
-
-LLM APIの抽象化レイヤー。プロバイダー切り替えを容易にする。
-
-```typescript
-// apps/server/src/cpu/LLMProvider.ts
-import { generateText, Output } from 'ai';
-import { openai } from '@ai-sdk/openai';
-import { anthropic } from '@ai-sdk/anthropic';
-import { ollama } from 'ollama-ai-provider';
-import { z } from 'zod';
-
-export type LLMProviderType = 'openai' | 'anthropic' | 'ollama';
-
-export interface LLMConfig {
-  provider: LLMProviderType;
-  model: string;
-  apiKey?: string;
-  baseUrl?: string; // Ollama用
-}
-
-export class LLMProvider {
-  private config: LLMConfig;
-
-  constructor(config: LLMConfig) {
-    this.config = config;
-  }
-
-  private getModel() {
-    switch (this.config.provider) {
-      case 'openai':
-        return openai(this.config.model);
-      case 'anthropic':
-        return anthropic(this.config.model);
-      case 'ollama':
-        return ollama(this.config.model);
-    }
-  }
-
-  async generateAction<T extends z.ZodType>(
-    prompt: string,
-    schema: T
-  ): Promise<z.infer<T>> {
-    const result = await generateText({
-      model: this.getModel(),
-      prompt,
-      output: Output.object({ schema }),
-    });
-    return result.object;
-  }
-}
-```
-
-#### CPUPlayerService
-
-CPUプレイヤーのゲームロジックを管理。
-
-```typescript
-// apps/server/src/cpu/CPUPlayerService.ts
-import type { GameState, Player } from '@dobon-uno/shared';
-import { LLMProvider } from './LLMProvider';
-import { ActionSchema, type CPUAction } from './schemas/actionSchema';
-import { formatGameStateForLLM } from './prompts/gameStateFormatter';
-import { SYSTEM_PROMPT } from './prompts/systemPrompt';
-
-export class CPUPlayerService {
-  private llmProvider: LLMProvider;
-  private thinkingDelay: number;
-
-  constructor(llmProvider: LLMProvider, thinkingDelay = 1500) {
-    this.llmProvider = llmProvider;
-    this.thinkingDelay = thinkingDelay;
-  }
-
-  async decideAction(
-    gameState: GameState,
-    player: Player
-  ): Promise<CPUAction> {
-    const prompt = this.buildPrompt(gameState, player);
-
-    // LLMに問い合わせ
-    const action = await this.llmProvider.generateAction(prompt, ActionSchema);
-
-    // 人間らしい遅延を追加
-    await this.delay(this.thinkingDelay);
-
-    return action;
-  }
-
-  private buildPrompt(gameState: GameState, player: Player): string {
-    const gameContext = formatGameStateForLLM(gameState, player);
-    return `${SYSTEM_PROMPT}\n\n${gameContext}`;
-  }
-
-  private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
-}
-```
-
 ---
 
-## 4. 出力スキーマ定義
+## 3. 出力スキーマ定義
 
-### 4.1 アクションスキーマ
+### 3.1 アクションスキーマ
 
 ```typescript
 // apps/server/src/cpu/schemas/actionSchema.ts
@@ -395,20 +141,194 @@ export const ActionSchema = z.object({
 export type CPUAction = z.infer<typeof ActionSchema>;
 ```
 
-### 4.2 色選択スキーマ（別途必要な場合）
+---
+
+## 4. クラス実装
+
+### 4.1 LLMProvider
 
 ```typescript
-// apps/server/src/cpu/schemas/colorChoiceSchema.ts
-import { z } from 'zod';
+// apps/server/src/cpu/LLMProvider.ts
+import { generateText, Output } from 'ai';
+import { openai } from '@ai-sdk/openai';
+import { anthropic } from '@ai-sdk/anthropic';
+import { ollama } from 'ollama-ai-provider';
+import type { z } from 'zod';
 
-export const ColorChoiceSchema = z.object({
-  color: z.enum(['red', 'blue', 'green', 'yellow'])
-    .describe('選択する色'),
-  reasoning: z.string()
-    .describe('この色を選んだ理由'),
-});
+export type LLMProviderType = 'openai' | 'anthropic' | 'ollama';
 
-export type ColorChoice = z.infer<typeof ColorChoiceSchema>;
+export interface LLMConfig {
+  provider: LLMProviderType;
+  model: string;
+  temperature?: number;
+}
+
+export class LLMProvider {
+  private config: LLMConfig;
+
+  constructor(config: LLMConfig) {
+    this.config = config;
+  }
+
+  private getModel() {
+    switch (this.config.provider) {
+      case 'openai':
+        return openai(this.config.model);
+      case 'anthropic':
+        return anthropic(this.config.model);
+      case 'ollama':
+        return ollama(this.config.model);
+    }
+  }
+
+  async generateAction<T extends z.ZodType>(
+    prompt: string,
+    schema: T
+  ): Promise<z.infer<T>> {
+    const result = await generateText({
+      model: this.getModel(),
+      prompt,
+      temperature: this.config.temperature ?? 0.7,
+      output: Output.object({ schema }),
+    });
+    return result.object;
+  }
+}
+```
+
+### 4.2 CPUPlayerService
+
+```typescript
+// apps/server/src/cpu/CPUPlayerService.ts
+import type { GameState, Player } from '@dobon-uno/shared';
+import { LLMProvider } from './LLMProvider';
+import { RuleBasedCPU } from './RuleBasedCPU';
+import { ActionSchema, type CPUAction } from './schemas/actionSchema';
+import { formatGameStateForLLM } from './prompts/gameStateFormatter';
+import { SYSTEM_PROMPT } from './prompts/systemPrompt';
+
+export class CPUPlayerService {
+  private llmProvider: LLMProvider;
+  private ruleBasedCPU: RuleBasedCPU;
+  private thinkingDelay: number;
+
+  constructor(llmProvider: LLMProvider, thinkingDelay = 1500) {
+    this.llmProvider = llmProvider;
+    this.ruleBasedCPU = new RuleBasedCPU();
+    this.thinkingDelay = thinkingDelay;
+  }
+
+  async decideAction(
+    gameState: GameState,
+    player: Player
+  ): Promise<CPUAction> {
+    const startTime = Date.now();
+
+    try {
+      const prompt = this.buildPrompt(gameState, player);
+      const action = await this.llmProvider.generateAction(prompt, ActionSchema);
+
+      // 最低限の思考時間を確保（人間らしさのため）
+      const elapsed = Date.now() - startTime;
+      if (elapsed < this.thinkingDelay) {
+        await this.delay(this.thinkingDelay - elapsed);
+      }
+
+      return action;
+    } catch (error) {
+      console.error('LLM error, falling back to rule-based:', error);
+      return this.ruleBasedCPU.decideAction(gameState, player);
+    }
+  }
+
+  private buildPrompt(gameState: GameState, player: Player): string {
+    const gameContext = formatGameStateForLLM(gameState, player);
+    return `${SYSTEM_PROMPT}\n\n${gameContext}`;
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+}
+```
+
+### 4.3 RuleBasedCPU（フォールバック）
+
+```typescript
+// apps/server/src/cpu/RuleBasedCPU.ts
+import type { GameState, Player, Card } from '@dobon-uno/shared';
+import type { CPUAction } from './schemas/actionSchema';
+
+export class RuleBasedCPU {
+  decideAction(gameState: GameState, player: Player): CPUAction {
+    // 1. ドボンできるならドボン
+    if (player.canDobon) {
+      return { action: 'dobon', reasoning: 'ドボン可能' };
+    }
+
+    // 2. ドボン返しできるならドボン返し
+    if (player.canDobonReturn) {
+      return { action: 'dobonReturn', reasoning: 'ドボン返し可能' };
+    }
+
+    // 3. 色選択が必要なら手札に多い色を選ぶ
+    if (player.canChooseColor) {
+      const color = this.selectBestColor(player);
+      return { action: 'chooseColor', color, reasoning: `手札に${color}が多い` };
+    }
+
+    // 4. 出せるカードがあれば出す（点数の高いものから）
+    if (player.canPlay) {
+      const playable = this.getPlayableCards(player);
+      if (playable.length > 0) {
+        const best = this.selectBestCard(playable);
+        return { action: 'playCard', cardIds: [best.id], reasoning: '高得点カードを出す' };
+      }
+    }
+
+    // 5. ドロースタックを引く
+    if (player.canDrawStack) {
+      return { action: 'drawStack', reasoning: '累積カードを引く' };
+    }
+
+    // 6. ドローできるならドロー
+    if (player.canDraw) {
+      return { action: 'draw', reasoning: 'カードを引く' };
+    }
+
+    // 7. パス
+    return { action: 'pass', reasoning: 'パス' };
+  }
+
+  private getPlayableCards(player: Player): Card[] {
+    const playable: Card[] = [];
+    for (const card of player.myHand) {
+      if (player.playableCards.get(card.id)) {
+        playable.push(card);
+      }
+    }
+    return playable;
+  }
+
+  private selectBestCard(cards: Card[]): Card {
+    // 点数の高いカードを優先
+    return cards.reduce((best, card) =>
+      (card.score || 0) > (best.score || 0) ? card : best
+    );
+  }
+
+  private selectBestColor(player: Player): 'red' | 'blue' | 'green' | 'yellow' {
+    const colorCount: Record<string, number> = { red: 0, blue: 0, green: 0, yellow: 0 };
+    for (const card of player.myHand) {
+      if (card.color && card.color in colorCount) {
+        colorCount[card.color]++;
+      }
+    }
+    return Object.entries(colorCount).reduce((a, b) =>
+      b[1] > a[1] ? b : a
+    )[0] as 'red' | 'blue' | 'green' | 'yellow';
+  }
+}
 ```
 
 ---
@@ -439,7 +359,8 @@ export const SYSTEM_PROMPT = `あなたはUNOゲームのCPUプレイヤーで�
 - 色選択時は手札に多い色を選ぶ
 
 ## 出力形式
-指定されたJSON形式で、実行するアクションと理由を出力してください。`;
+指定されたJSON形式で、実行するアクションと理由を出力してください。
+可能なアクションの中から必ず1つを選んでください。`;
 ```
 
 ### 5.2 ゲーム状態フォーマッター
@@ -473,12 +394,12 @@ export function formatGameStateForLLM(
   lines.push('## 可能なアクション');
   if (cpuPlayer.canPlay) {
     const playableCards = getPlayableCards(cpuPlayer);
-    lines.push(`- カードを出す: ${playableCards.join(', ')}`);
+    lines.push(`- カードを出す (playCard): ${playableCards.join(', ')}`);
   }
   if (cpuPlayer.canDraw) lines.push('- 山札から引く (draw)');
   if (cpuPlayer.canDrawStack) lines.push(`- 累積${gameState.drawStack}枚を引く (drawStack)`);
   if (cpuPlayer.canPass) lines.push('- パス (pass)');
-  if (cpuPlayer.canChooseColor) lines.push('- 色を選択 (chooseColor)');
+  if (cpuPlayer.canChooseColor) lines.push('- 色を選択 (chooseColor): red, blue, green, yellow');
   if (cpuPlayer.canDobon) lines.push('- ドボン宣言 (dobon)');
   if (cpuPlayer.canDobonReturn) lines.push('- ドボン返し (dobonReturn)');
 
@@ -528,12 +449,25 @@ function getPlayableCards(player: Player): string[] {
 
 ## 6. ゲームとの統合
 
-### 6.1 GameRoomへの統合
+### 6.1 Playerスキーマの拡張
+
+```typescript
+// packages/shared/src/schema/Player.ts（追加）
+export class Player extends Schema {
+  // ... 既存のプロパティ ...
+
+  @type('boolean')
+  isCPU: boolean = false;
+}
+```
+
+### 6.2 GameRoomへの統合
 
 ```typescript
 // apps/server/src/rooms/GameRoom.ts（追加部分）
 import { CPUPlayerService } from '../cpu/CPUPlayerService';
 import { LLMProvider } from '../cpu/LLMProvider';
+import type { CPUAction } from '../cpu/schemas/actionSchema';
 
 export class GameRoom extends Room<GameState> {
   private cpuService?: CPUPlayerService;
@@ -545,11 +479,16 @@ export class GameRoom extends Room<GameState> {
     // CPU設定がある場合は初期化
     if (options.enableCPU) {
       const llmProvider = new LLMProvider({
-        provider: options.llmProvider || 'openai',
-        model: options.llmModel || 'gpt-4o-mini',
+        provider: process.env.LLM_PROVIDER || 'openai',
+        model: process.env.LLM_MODEL || 'gpt-4o-mini',
       });
       this.cpuService = new CPUPlayerService(llmProvider);
     }
+
+    // CPUプレイヤー追加メッセージハンドラー
+    this.onMessage('addCPU', (client, data: { name: string }) => {
+      this.addCPUPlayer(data.name);
+    });
   }
 
   // CPUプレイヤーを追加
@@ -558,7 +497,7 @@ export class GameRoom extends Room<GameState> {
     const player = new Player();
     player.sessionId = sessionId;
     player.name = name;
-    player.isCPU = true; // Playerスキーマに追加が必要
+    player.isCPU = true;
 
     this.state.players.set(sessionId, player);
     this.cpuPlayers.set(sessionId, player);
@@ -567,7 +506,7 @@ export class GameRoom extends Room<GameState> {
   }
 
   // ターン変更時にCPUの行動をトリガー
-  private async onTurnChange(playerId: string) {
+  private async triggerCPUAction(playerId: string) {
     const player = this.state.players.get(playerId);
     if (!player || !this.cpuPlayers.has(playerId) || !this.cpuService) {
       return;
@@ -578,13 +517,11 @@ export class GameRoom extends Room<GameState> {
       await this.executeCPUAction(playerId, action);
     } catch (error) {
       console.error('CPU action error:', error);
-      // フォールバック: ドローしてパス
-      await this.executeFallbackAction(playerId);
     }
   }
 
   private async executeCPUAction(playerId: string, action: CPUAction) {
-    console.log(`CPU ${playerId} action:`, action.action, action.reasoning);
+    console.log(`CPU ${playerId}:`, action.action, '-', action.reasoning);
 
     switch (action.action) {
       case 'playCard':
@@ -623,26 +560,18 @@ export class GameRoom extends Room<GameState> {
 }
 ```
 
-### 6.2 Playerスキーマの拡張
-
-```typescript
-// packages/shared/src/schema/Player.ts（追加）
-export class Player extends Schema {
-  // ... 既存のプロパティ ...
-
-  @type('boolean')
-  isCPU: boolean = false;
-}
-```
-
 ---
 
-## 7. 設定とオプション
+## 7. 設定
 
 ### 7.1 環境変数
 
 ```bash
 # .env
+# LLM設定
+LLM_PROVIDER=openai    # openai | anthropic | ollama
+LLM_MODEL=gpt-4o-mini
+
 # OpenAI
 OPENAI_API_KEY=sk-xxx
 
@@ -651,20 +580,17 @@ ANTHROPIC_API_KEY=sk-ant-xxx
 
 # Ollama（ローカル）
 OLLAMA_BASE_URL=http://localhost:11434
-
-# デフォルトプロバイダー
-LLM_PROVIDER=openai
-LLM_MODEL=gpt-4o-mini
 ```
 
 ### 7.2 CPU難易度設定
 
 ```typescript
+// apps/server/src/cpu/config.ts
 export interface CPUDifficulty {
   name: string;
   model: string;
-  thinkingDelay: number;  // 思考時間（ms）
-  temperature: number;     // LLMのtemperature
+  thinkingDelay: number;
+  temperature: number;
 }
 
 export const CPU_DIFFICULTIES: Record<string, CPUDifficulty> = {
@@ -672,7 +598,7 @@ export const CPU_DIFFICULTIES: Record<string, CPUDifficulty> = {
     name: '初級',
     model: 'gpt-4o-mini',
     thinkingDelay: 1000,
-    temperature: 1.0, // ランダム性高め
+    temperature: 1.0,
   },
   normal: {
     name: '中級',
@@ -684,14 +610,12 @@ export const CPU_DIFFICULTIES: Record<string, CPUDifficulty> = {
     name: '上級',
     model: 'gpt-4o',
     thinkingDelay: 2000,
-    temperature: 0.3, // より最適な判断
+    temperature: 0.3,
   },
 };
 ```
 
----
-
-## 8. 依存パッケージ
+### 7.3 依存パッケージ
 
 ```bash
 # apps/serverに追加
@@ -700,55 +624,37 @@ pnpm add ai @ai-sdk/openai @ai-sdk/anthropic ollama-ai-provider zod
 
 ---
 
-## 9. 今後の拡張
+## 8. 対応LLMモデル
 
-### 9.1 検討事項
+### クラウドAPI
 
-1. **キャッシュ**: 類似の状況での判断をキャッシュしてAPI呼び出しを削減
-2. **バッチ処理**: 複数CPUの判断を並列実行
-3. **学習機能**: 過去のゲーム結果を元にプロンプトを調整
-4. **ストリーミング**: 思考過程をリアルタイムで表示（演出用）
+| プロバイダー | モデル | 特徴 |
+|------------|-------|------|
+| **OpenAI** | gpt-4o-mini | コスパ良好、高速 |
+| **OpenAI** | gpt-4o | 高精度 |
+| **Anthropic** | claude-3-5-haiku | 高速、低コスト |
+| **Anthropic** | claude-3-5-sonnet | バランス良好 |
 
-### 9.2 非LLM代替
-
-LLM APIが利用できない場合のフォールバックとして、ルールベースのシンプルなCPUも実装可能：
+### ローカルLLM（Ollama）
 
 ```typescript
-// apps/server/src/cpu/RuleBasedCPU.ts
-export class RuleBasedCPU {
-  decideAction(gameState: GameState, player: Player): CPUAction {
-    // 1. ドボンできるならドボン
-    if (player.canDobon) {
-      return { action: 'dobon', reasoning: 'ドボン可能' };
-    }
+import { ollama } from 'ollama-ai-provider';
 
-    // 2. 出せるカードがあれば出す（点数の高いものから）
-    const playable = this.getPlayableCards(player);
-    if (playable.length > 0) {
-      const best = this.selectBestCard(playable);
-      return { action: 'playCard', cardIds: [best.id], reasoning: '出せるカードを出す' };
-    }
-
-    // 3. ドローできるならドロー
-    if (player.canDraw) {
-      return { action: 'draw', reasoning: 'カードを引く' };
-    }
-
-    // 4. パス
-    return { action: 'pass', reasoning: 'パス' };
-  }
-}
+const result = await generateText({
+  model: ollama('llama3.2'),
+  // ...
+});
 ```
+
+**推奨ローカルモデル**:
+- `llama3.2` - Meta製、バランス良好
+- `qwen2.5` - 推論能力が高い
+- `mistral` - 軽量で高速
 
 ---
 
 ## 参考リンク
 
 - [Vercel AI SDK](https://ai-sdk.dev/)
-- [AI SDK 6 リリースノート](https://vercel.com/blog/ai-sdk-6)
 - [AI SDK 構造化出力](https://ai-sdk.dev/docs/ai-sdk-core/generating-structured-data)
 - [Ollama AI Provider](https://ai-sdk.dev/providers/community-providers/ollama)
-- [OpenCode SDK](https://opencode.ai/docs/sdk/)
-- [OpenCode GitHub](https://github.com/opencode-ai/opencode)
-- [LangChain.js](https://js.langchain.com/)
-- [Instructor-JS](https://js.useinstructor.com/)
