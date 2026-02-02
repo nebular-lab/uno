@@ -10,6 +10,7 @@ type Props = {
   displayIndex?: number; // 表示位置（回転後の位置）
   isPlaying?: boolean; // ゲーム中かどうか（trueの場合はカード枚数を表示）
   isChoosingColor?: boolean; // 色を選択中かどうか
+  isWinner?: boolean; // 勝者かどうか（resultフェーズで表示）
 };
 
 // 6人の位置定義（0:上中央 → 時計回り）
@@ -216,12 +217,28 @@ const PlayerNamePlate = ({
   );
 };
 
+// 勝者ラベル
+const WinnerLabel = ({ displayIndex }: { displayIndex: number }) => {
+  const labelPos = labelPositions[displayIndex] ?? labelPositions[0];
+  return (
+    <div
+      className={cn(
+        "absolute -top-5 -translate-x-1/2 whitespace-nowrap rounded-full bg-yellow-500 px-3 py-1 text-sm font-bold text-black shadow-lg z-20 animate-bounce",
+        labelPos,
+      )}
+    >
+      上がり！
+    </div>
+  );
+};
+
 export const PlayerSeat = ({
   player,
   isCurrentPlayer,
   displayIndex,
   isPlaying,
   isChoosingColor,
+  isWinner,
 }: Props) => {
   const ref = useRef<HTMLDivElement>(null);
   const setPlayerSeatPositions = useSetAtom(playerSeatPositionsAtom);
@@ -265,8 +282,10 @@ export const PlayerSeat = ({
           <div className="turn-pulse-ring" />
         </div>
       )}
+      {/* 勝者ラベル（上がり！） */}
+      {isWinner && <WinnerLabel displayIndex={posIndex} />}
       {/* 色選択中ラベル */}
-      {isChoosingColor && (
+      {isChoosingColor && !isWinner && (
         <div
           className={cn(
             "absolute -top-5 -translate-x-1/2 whitespace-nowrap rounded-full bg-amber-500 px-2 py-0.5 text-xs font-bold text-black shadow z-20",
