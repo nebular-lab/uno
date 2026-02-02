@@ -84,6 +84,12 @@ export const useGameRoom = () => {
     gameRoomState.room.send("pass");
   }, [gameRoomState]);
 
+  // 最新のゲーム結果を取得
+  const latestGameResult =
+    gamePlayState.gameHistory.length > 0
+      ? gamePlayState.gameHistory[gamePlayState.gameHistory.length - 1]
+      : null;
+
   return {
     // 待機画面用
     players: gamePlayState.players,
@@ -106,6 +112,9 @@ export const useGameRoom = () => {
     deckCount: gamePlayState.deckCount,
     drawStackCount: gamePlayState.drawStack,
     turnDirection: gamePlayState.turnDirection,
+    // ゲーム履歴
+    gameHistory: gamePlayState.gameHistory,
+    latestGameResult,
     // アクションフラグ
     canDraw: myPlayerInfo?.canDraw ?? false,
     canDrawStack: myPlayerInfo?.canDrawStack ?? false,
