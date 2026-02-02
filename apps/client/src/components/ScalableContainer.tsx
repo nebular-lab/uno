@@ -1,5 +1,12 @@
 import type React from "react";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import {
+  createContext,
+  type ReactNode,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 interface ScalableContainerProps {
   children: ReactNode;
@@ -10,10 +17,24 @@ const BASE_WIDTH = 1250;
 const ASPECT_RATIO = 19 / 9;
 const BASE_HEIGHT = BASE_WIDTH / ASPECT_RATIO;
 
+// Context for portal and scale
+interface ScalableContainerContextValue {
+  portalContainer: HTMLDivElement | null;
+  scale: number;
+}
+
+const ScalableContainerContext = createContext<ScalableContainerContextValue>({
+  portalContainer: null,
+  scale: 1,
+});
+
+export const useScalableContainer = () => useContext(ScalableContainerContext);
+
 export const ScalableContainer: React.FC<ScalableContainerProps> = ({
   children,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const scaledContentRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const [isInitialized, setIsInitialized] = useState(false);
 
@@ -39,34 +60,39 @@ export const ScalableContainer: React.FC<ScalableContainerProps> = ({
   }, []);
 
   return (
-    <div
-      className="flex h-dvh w-screen items-center justify-center"
-      ref={containerRef}
+    <ScalableContainerContext.Provider
+      value={{ portalContainer: scaledContentRef.current, scale }}
     >
-      {isInitialized && (
-        <div
-          className="relative bg-card"
-          style={{
-            width: BASE_WIDTH * scale,
-            height: BASE_HEIGHT * scale,
-          }}
-        >
+      <div
+        className="flex h-dvh w-screen items-center justify-center"
+        ref={containerRef}
+      >
+        {isInitialized && (
           <div
-            className="relative overflow-auto"
-            style={
-              {
-                width: BASE_WIDTH,
-                height: BASE_HEIGHT,
-                transform: `scale(${scale})`,
-                transformOrigin: "top left",
-                "--container-scale": scale,
-              } as React.CSSProperties
-            }
+            className="relative bg-card"
+            style={{
+              width: BASE_WIDTH * scale,
+              height: BASE_HEIGHT * scale,
+            }}
           >
-            {children}
+            <div
+              className="relative overflow-auto"
+              ref={scaledContentRef}
+              style={
+                {
+                  width: BASE_WIDTH,
+                  height: BASE_HEIGHT,
+                  transform: `scale(${scale})`,
+                  transformOrigin: "top left",
+                  "--container-scale": scale,
+                } as React.CSSProperties
+              }
+            >
+              {children}
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </ScalableContainerContext.Provider>
   );
 };

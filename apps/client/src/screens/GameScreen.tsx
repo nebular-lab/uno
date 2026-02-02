@@ -13,6 +13,14 @@ import { Table } from "@/components/game/Table";
 import { TableContainer } from "@/components/game/TableContainer";
 import { TurnDirectionIndicator } from "@/components/game/TurnDirectionIndicator";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useGameRoom } from "@/hooks/useGameRoom";
 import type { ClientCard } from "@/types/connection";
 
@@ -379,34 +387,36 @@ export const GameScreen = () => {
       <ScoreButton onClick={() => setShowScorePanel(true)} />
 
       {/* 退席確認ダイアログ */}
-      {showLeaveDialog && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="w-[480px] rounded-xl border border-slate-600 bg-slate-800 p-9 shadow-xl">
-            <h2 className="text-2xl font-semibold text-white">退席確認</h2>
-            <p className="mt-3 text-base text-slate-300">
+      <Dialog onOpenChange={setShowLeaveDialog} open={showLeaveDialog}>
+        <DialogContent className="w-[480px] p-9">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-semibold text-white">
+              退席確認
+            </DialogTitle>
+            <DialogDescription className="mt-3 text-base text-slate-300">
               ゲームから退席しますか？
-            </p>
-            <div className="mt-8 flex justify-end gap-4">
-              <Button
-                className="h-20 px-6 text-base border-slate-500 bg-gray-600 text-slate-200 hover:bg-gray-500"
-                onClick={() => setShowLeaveDialog(false)}
-                variant="outline"
-              >
-                キャンセル
-              </Button>
-              <Button
-                className="h-20 px-6 text-base bg-blue-600 text-white hover:bg-blue-500"
-                onClick={() => {
-                  leaveRoom();
-                  setShowLeaveDialog(false);
-                }}
-              >
-                OK
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-8 grid grid-cols-2 gap-4">
+            <Button
+              className="h-20 text-2xl font-semibold border-slate-500 bg-gray-600 text-slate-200 hover:bg-gray-500"
+              onClick={() => setShowLeaveDialog(false)}
+              variant="outline"
+            >
+              キャンセル
+            </Button>
+            <Button
+              className="h-20 text-2xl font-semibold bg-blue-600 text-white hover:bg-blue-500"
+              onClick={() => {
+                leaveRoom();
+                setShowLeaveDialog(false);
+              }}
+            >
+              OK
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* スコアパネル */}
       <ScorePanel

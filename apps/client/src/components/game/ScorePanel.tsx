@@ -1,6 +1,6 @@
-import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ClientGameResult, ClientPlayer } from "@/types/connection";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 
 type Props = {
   isOpen: boolean;
@@ -15,8 +15,6 @@ export const ScorePanel = ({
   gameHistory,
   players,
 }: Props) => {
-  if (!isOpen) return null;
-
   // 参加しているプレイヤーのみ（null除外）
   const activePlayers = players.filter((p): p is ClientPlayer => p !== null);
 
@@ -42,19 +40,14 @@ export const ScorePanel = ({
   );
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="relative max-h-[80vh] w-[90%] max-w-[800px] overflow-hidden rounded-xl border border-slate-600 bg-slate-800 shadow-xl">
+    <Dialog onOpenChange={onClose} open={isOpen}>
+      <DialogContent className="max-h-[80vh] w-[90%] max-w-[800px] overflow-hidden p-0">
         {/* ヘッダー */}
-        <div className="flex items-center justify-between border-b border-slate-600 px-6 py-4">
-          <h2 className="text-xl font-semibold text-white">スコアボード</h2>
-          <button
-            className="rounded-full p-1 text-slate-400 hover:bg-slate-700 hover:text-white"
-            onClick={onClose}
-            type="button"
-          >
-            <X className="h-6 w-6" />
-          </button>
-        </div>
+        <DialogHeader className="border-b border-slate-600 px-6 py-4">
+          <DialogTitle className="text-xl font-semibold text-white">
+            スコアボード
+          </DialogTitle>
+        </DialogHeader>
 
         {/* テーブル */}
         <div className="overflow-auto p-6">
@@ -108,7 +101,7 @@ export const ScorePanel = ({
             </table>
           )}
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
