@@ -41,6 +41,13 @@ export class DobonCommand extends Command<GameRoom, Payload> {
     // タイマー停止
     this.room.turnTimerService.stopTimer(this.state.currentTurnPlayerId);
 
+    // 色選択状態をキャンセル（ドボンが優先）
+    this.state.waitingForColorChoice = false;
+    // 色選択中のプレイヤーのcanChooseColorもfalseにする
+    for (const p of this.state.players.values()) {
+      p.canChooseColor = false;
+    }
+
     // ドボンしたプレイヤーを記録
     this.state.dobonPlayerIds.push(sessionId);
     player.canDobon = false;
@@ -50,18 +57,17 @@ export class DobonCommand extends Command<GameRoom, Payload> {
       this.state.dobonTargetId = this.state.currentTurnPlayerId;
     }
 
+    // ドボン返し判定（他にドボン可能なプレイヤーがいても判定する）
+    if (this.checkCanDobonReturn()) {
+      // ドボン返し待ち状態に
+      this.setupDobonReturnWait();
+      return;
+    }
+
     // 他にドボン可能なプレイヤーがいるかチェック
     const othersCanDobon = this.checkOthersCanDobon();
     if (othersCanDobon) {
       // 他のドボン待ち（タイマー継続）
-      // TODO: ドボン待ちタイマーを実装（TimeoutHandler統合時）
-      return;
-    }
-
-    // ドボン返し判定
-    if (this.checkCanDobonReturn()) {
-      // ドボン返し待ち状態に
-      this.setupDobonReturnWait();
       return;
     }
 
