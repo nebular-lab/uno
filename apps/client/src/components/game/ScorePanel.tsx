@@ -25,82 +25,102 @@ export const ScorePanel = ({
     }, 0);
   };
 
-  // スコアの表示（プラスは緑、マイナスは赤）
-  const ScoreCell = ({ score }: { score: number }) => (
-    <td
-      className={cn(
-        "px-3 py-2 text-center font-mono",
-        score > 0 && "text-green-400",
-        score < 0 && "text-red-400",
-        score === 0 && "text-slate-400",
-      )}
-    >
-      {score > 0 ? `+${score}` : score}
-    </td>
-  );
-
   return (
     <Dialog onOpenChange={onClose} open={isOpen}>
-      <DialogContent className="max-h-[80vh] w-[90%] max-w-[800px] overflow-hidden p-0">
-        {/* ヘッダー */}
-        <DialogHeader className="border-b border-slate-600 px-6 py-4">
-          <DialogTitle className="text-xl font-semibold text-white">
-            スコアボード
-          </DialogTitle>
+      <DialogContent
+        className="flex w-[90%] max-w-[800px] flex-col overflow-hidden p-8"
+        style={{ height: "460px" }}
+      >
+        {/* スクリーンリーダー用の非表示タイトル */}
+        <DialogHeader className="sr-only">
+          <DialogTitle>スコアボード</DialogTitle>
         </DialogHeader>
 
         {/* テーブル */}
-        <div className="overflow-auto p-6">
-          {gameHistory.length === 0 ? (
-            <div className="py-8 text-center text-slate-400">
-              まだゲーム結果がありません
+        {gameHistory.length === 0 ? (
+          <div className="flex h-full items-center justify-center text-slate-400">
+            まだゲーム結果がありません
+          </div>
+        ) : (
+          <div className="flex min-h-0 flex-1 flex-col">
+            {/* 固定ヘッダー */}
+            <div
+              className="grid border-b border-slate-600"
+              style={{
+                gridTemplateColumns: `80px repeat(${activePlayers.length}, 1fr)`,
+              }}
+            >
+              <div className="px-3 py-3 text-left text-slate-300">ゲーム</div>
+              {activePlayers.map((player) => (
+                <div
+                  className="px-3 py-3 text-center text-slate-300"
+                  key={player.sessionId}
+                >
+                  {player.name}
+                </div>
+              ))}
             </div>
-          ) : (
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="border-b border-slate-600">
-                  <th className="px-3 py-2 text-left text-slate-300">ゲーム</th>
-                  {activePlayers.map((player) => (
-                    <th
-                      className="px-3 py-2 text-center text-slate-300"
-                      key={player.sessionId}
-                    >
-                      {player.name}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {gameHistory.map((result) => (
-                  <tr
-                    className="border-b border-slate-700"
-                    key={result.gameNumber}
-                  >
-                    <td className="px-3 py-2 text-slate-400">
-                      #{result.gameNumber}
-                    </td>
-                    {activePlayers.map((player) => (
-                      <ScoreCell
+
+            {/* スクロール領域 */}
+            <div className="min-h-0 flex-1 overflow-y-auto scrollbar-hide">
+              {gameHistory.map((result) => (
+                <div
+                  className="grid border-b border-slate-700"
+                  key={result.gameNumber}
+                  style={{
+                    gridTemplateColumns: `80px repeat(${activePlayers.length}, 1fr)`,
+                  }}
+                >
+                  <div className="px-3 py-2 text-slate-400">
+                    #{result.gameNumber}
+                  </div>
+                  {activePlayers.map((player) => {
+                    const score = result.scoreChanges[player.sessionId] ?? 0;
+                    return (
+                      <div
+                        className={cn(
+                          "px-3 py-2 text-center font-mono",
+                          score > 0 && "text-green-400",
+                          score < 0 && "text-red-400",
+                          score === 0 && "text-slate-400",
+                        )}
                         key={player.sessionId}
-                        score={result.scoreChanges[player.sessionId] ?? 0}
-                      />
-                    ))}
-                  </tr>
-                ))}
-                {/* 累計行 */}
-                <tr className="bg-slate-700/50 font-bold">
-                  <td className="px-3 py-2 text-white">累計</td>
-                  {activePlayers.map((player) => (
-                    <ScoreCell
-                      key={player.sessionId}
-                      score={getTotalScore(player.sessionId)}
-                    />
-                  ))}
-                </tr>
-              </tbody>
-            </table>
-          )}
-        </div>
+                      >
+                        {score > 0 ? `+${score}` : score}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+
+            {/* 固定フッター */}
+            <div
+              className="grid border-t border-slate-600 font-bold"
+              style={{
+                gridTemplateColumns: `80px repeat(${activePlayers.length}, 1fr)`,
+              }}
+            >
+              <div className="px-3 py-3 text-white">累計</div>
+              {activePlayers.map((player) => {
+                const score = getTotalScore(player.sessionId);
+                return (
+                  <div
+                    className={cn(
+                      "px-3 py-3 text-center font-mono",
+                      score > 0 && "text-green-400",
+                      score < 0 && "text-red-400",
+                      score === 0 && "text-slate-400",
+                    )}
+                    key={player.sessionId}
+                  >
+                    {score > 0 ? `+${score}` : score}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

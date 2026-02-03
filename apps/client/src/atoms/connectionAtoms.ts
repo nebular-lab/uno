@@ -43,6 +43,7 @@ const initialGamePlayState: GamePlayState = {
   deckCount: 0,
   drawStack: 0,
   turnDirection: 1,
+  dobonPlayerIds: [],
   gameHistory: [],
 };
 
@@ -151,6 +152,9 @@ const setupRoomStateSync = (
       deckCount: state.deckCount ?? 0,
       drawStack: state.drawStack ?? 0,
       turnDirection: state.turnDirection ?? 1,
+      dobonPlayerIds: state.dobonPlayerIds
+        ? Array.from(state.dobonPlayerIds)
+        : [],
       gameHistory,
     });
   };

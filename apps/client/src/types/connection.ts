@@ -76,6 +76,9 @@ export type GamePlayState = {
   drawStack: number; // ドロー累積枚数
   turnDirection: number; // 1=時計回り, -1=反時計回り
 
+  // ドボン状態
+  dobonPlayerIds: string[]; // ドボンしたプレイヤーのsessionIdリスト
+
   // ゲーム履歴
   gameHistory: ClientGameResult[];
 };
