@@ -143,6 +143,9 @@ export class DobonCommand extends Command<GameRoom, Payload> {
         this.finalizeDobonFinish();
       }
     });
+
+    // CPUプレイヤーのドボン返しをチェック
+    this.room.checkCPUTurn();
   }
 
   /**

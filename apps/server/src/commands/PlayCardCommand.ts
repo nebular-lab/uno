@@ -256,8 +256,11 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
       this.room.dispatcher.dispatch(new NormalFinishCommand(), {
         sessionId: finishingPlayerId,
       });
+    } else {
+      // ドボン可能なプレイヤーがいる場合
+      // CPUプレイヤーのドボンをチェック
+      this.room.checkCPUTurn();
     }
-    // ドボン可能なプレイヤーがいる場合はタイマーで待機（別途実装）
   }
 
   /**
