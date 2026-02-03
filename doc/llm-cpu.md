@@ -125,7 +125,7 @@ export const cpuTools = {
 ```typescript
 // apps/server/src/cpu/CPUActionDecider.ts
 import { generateText } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
+import { openai } from "@ai-sdk/openai";
 import type { GameState } from "@dobon-uno/shared/schema";
 import type { Player } from "@dobon-uno/shared/schema";
 import { cpuTools } from "./tools";
@@ -136,7 +136,7 @@ export interface CPUDecision {
 }
 
 export class CPUActionDecider {
-  private model = anthropic("claude-sonnet-4-20250514");
+  private model = openai("gpt-4o-mini");
 
   async decide(
     state: GameState,
@@ -644,7 +644,7 @@ function SeatSlot({ seatId, player, isHost, onAddCpu, onRemoveCpu }: SeatSlotPro
 
 ```env
 # .env
-ANTHROPIC_API_KEY=sk-ant-...
+OPENAI_API_KEY=sk-...
 ```
 
 ## パッケージ依存関係
@@ -654,7 +654,7 @@ ANTHROPIC_API_KEY=sk-ant-...
 {
   "dependencies": {
     "ai": "^4.0.0",
-    "@ai-sdk/anthropic": "^1.0.0",
+    "@ai-sdk/openai": "^1.0.0",
     "zod": "^3.23.0"
   }
 }
@@ -715,7 +715,10 @@ type CPUPersonality =
 
 ### コスト
 
-- Haiku を使用してコストを抑制（1回のリクエストあたり約0.1円以下）
+- GPT-4o mini を使用してコストを抑制
+- 価格: $0.15/1M input, $0.60/1M output
+- 1回のリクエストあたり約$0.00014（約0.02円）
+- 1000回のアクションで約$0.14（約20円）
 - ツール呼び出しのみを使用し、レスポンス生成は最小限に
 
 ### エラーハンドリング
