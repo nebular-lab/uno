@@ -195,7 +195,7 @@ ${playableCardIds.length > 0 ? playableCardIds.join(", ") : "なし"}
 ### 他のプレイヤーの状況
 ${Array.from(state.players.values())
   .filter((p) => p.sessionId !== cpuPlayer.sessionId && !p.isSpectator)
-  .map((p) => `- ${p.name}: 手札${p.handCount}枚`)
+  .map((p) => `- ${p.name}: 手札${p.handCount}枚, カードを引いた: ${p.hasDrawnCard ? "はい" : "いいえ"}`)
   .join("\n")}
 
 最適なアクションを1つ選んでください。
@@ -256,7 +256,11 @@ ${Array.from(state.players.values())
 - 記号カード（Skip, Reverse, Draw2, Wild, Draw4）は優先して早めに切る
 
 ### ドボンへの警戒（相手にドボンされないためのルール）
-相手の手札枚数によって「危険な点数」が異なる：
+
+**重要: 相手の`hasDrawnCard`がtrueの場合は、ドボンを全く警戒しなくてよい。**
+（カードを引いた直後は手札の合計点数が変わっているため、ドボンの危険性は低い）
+
+相手の手札枚数によって「危険な点数」が異なる（`hasDrawnCard`がfalseの場合）：
 - **1枚、3枚、4枚**: 20を警戒
 - **2枚**: 20はあまり警戒しなくて良い
 - **4枚、5枚、6枚**: 30を警戒
