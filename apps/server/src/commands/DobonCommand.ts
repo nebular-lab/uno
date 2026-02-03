@@ -127,9 +127,16 @@ export class DobonCommand extends Command<GameRoom, Payload> {
     // ドボンされた人のcanDobonReturnをtrueに
     target.canDobonReturn = true;
 
-    // TODO: DobonReturnCommand実装後、タイマーを開始してドボン返しを待つ
-    // 現時点では即座にドボン確定
-    this.finalizeDobonFinish();
+    // タイマーを開始してドボン返しを待つ
+    // タイムアウト時はドボン確定
+    this.room.turnTimerService.startTimer(this.state.dobonTargetId, () => {
+      // タイムアウト時、まだcanDobonReturnがtrueなら（ドボン返ししなかった）
+      const targetPlayer = this.state.players.get(this.state.dobonTargetId);
+      if (targetPlayer?.canDobonReturn) {
+        targetPlayer.canDobonReturn = false;
+        this.finalizeDobonFinish();
+      }
+    });
   }
 
   /**
