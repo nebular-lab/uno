@@ -189,6 +189,7 @@ export const GameScreen = () => {
         return player ? (
           <PlayerSeat
             displayIndex={displayIndex}
+            finishType={latestGameResult?.finishType}
             isChoosingColor={isOtherPlayerChoosingColor}
             isCurrentPlayer={isCurrentTurn}
             isPlaying={phase !== "waiting"}

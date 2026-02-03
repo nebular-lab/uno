@@ -11,6 +11,7 @@ type Props = {
   isPlaying?: boolean; // ゲーム中かどうか（trueの場合はカード枚数を表示）
   isChoosingColor?: boolean; // 色を選択中かどうか
   isWinner?: boolean; // 勝者かどうか（resultフェーズで表示）
+  finishType?: string; // "normal" | "dobon" | "dobonReturn"
 };
 
 // 6人の位置定義（0:上中央 → 時計回り）
@@ -218,16 +219,31 @@ const PlayerNamePlate = ({
 };
 
 // 勝者ラベル
-const WinnerLabel = ({ displayIndex }: { displayIndex: number }) => {
+const WinnerLabel = ({
+  displayIndex,
+  finishType,
+}: {
+  displayIndex: number;
+  finishType?: string;
+}) => {
   const labelPos = labelPositions[displayIndex] ?? labelPositions[0];
+
+  // finishTypeに応じたラベルと色を決定
+  const isDobon = finishType === "dobon" || finishType === "dobonReturn";
+  const labelText = isDobon ? "ドボン！" : "上がり！";
+  const bgColor = isDobon ? "bg-purple-500" : "bg-yellow-500";
+  const textColor = isDobon ? "text-white" : "text-black";
+
   return (
     <div
       className={cn(
-        "absolute -top-5 -translate-x-1/2 whitespace-nowrap rounded-full bg-yellow-500 px-3 py-1 text-sm font-bold text-black shadow-lg z-20 animate-bounce",
+        "absolute -top-5 -translate-x-1/2 whitespace-nowrap rounded-full px-3 py-1 text-sm font-bold shadow-lg z-20 animate-bounce",
         labelPos,
+        bgColor,
+        textColor,
       )}
     >
-      上がり！
+      {labelText}
     </div>
   );
 };
@@ -239,6 +255,7 @@ export const PlayerSeat = ({
   isPlaying,
   isChoosingColor,
   isWinner,
+  finishType,
 }: Props) => {
   const ref = useRef<HTMLDivElement>(null);
   const setPlayerSeatPositions = useSetAtom(playerSeatPositionsAtom);
@@ -282,8 +299,10 @@ export const PlayerSeat = ({
           <div className="turn-pulse-ring" />
         </div>
       )}
-      {/* 勝者ラベル（上がり！） */}
-      {isWinner && <WinnerLabel displayIndex={posIndex} />}
+      {/* 勝者ラベル（上がり！/ドボン！） */}
+      {isWinner && (
+        <WinnerLabel displayIndex={posIndex} finishType={finishType} />
+      )}
       {/* 色選択中ラベル */}
       {isChoosingColor && !isWinner && (
         <div
