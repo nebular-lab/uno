@@ -84,6 +84,24 @@ export const useGameRoom = () => {
     gameRoomState.room.send("pass");
   }, [gameRoomState]);
 
+  // CPU追加（seatIdは1-6）
+  const addCpu = useCallback(
+    (seatId: number) => {
+      if (gameRoomState.status !== "connected") return;
+      gameRoomState.room.send("addCpu", { seatId });
+    },
+    [gameRoomState],
+  );
+
+  // CPU削除
+  const removeCpu = useCallback(
+    (sessionId: string) => {
+      if (gameRoomState.status !== "connected") return;
+      gameRoomState.room.send("removeCpu", { sessionId });
+    },
+    [gameRoomState],
+  );
+
   // 最新のゲーム結果を取得
   const latestGameResult =
     gamePlayState.gameHistory.length > 0
@@ -133,5 +151,8 @@ export const useGameRoom = () => {
     chooseColor,
     playCard,
     pass,
+    // CPU関連
+    addCpu,
+    removeCpu,
   };
 };

@@ -10,8 +10,16 @@ type Props = {
 };
 
 export const WaitingRoomScreen = ({ roomId }: Props) => {
-  const { players, mySeatIndex, isHost, playerCount, leaveRoom, startGame } =
-    useGameRoom();
+  const {
+    players,
+    mySeatIndex,
+    isHost,
+    playerCount,
+    leaveRoom,
+    startGame,
+    addCpu,
+    removeCpu,
+  } = useGameRoom();
 
   // ゲーム開始可能かどうか（3人以上のプレイヤー）
   const canStartGame = playerCount >= 3;
@@ -35,13 +43,47 @@ export const WaitingRoomScreen = ({ roomId }: Props) => {
       {[0, 1, 2, 3, 4, 5].map((displayIndex) => {
         const actualIndex = getActualIndex(displayIndex);
         const player = players[actualIndex];
-        return player ? (
-          <PlayerSeat
-            displayIndex={displayIndex}
-            key={`seat-${actualIndex}`}
-            player={player}
-          />
-        ) : (
+        const seatId = actualIndex + 1; // seatIdは1-6
+
+        if (player) {
+          // CPUプレイヤーの場合、ホストはクリックで削除可能
+          if (player.isCpu && isHost) {
+            return (
+              <button
+                className="cursor-pointer bg-transparent border-0 p-0"
+                key={`seat-${actualIndex}`}
+                onClick={() => removeCpu(player.sessionId)}
+                title="クリックでCPUを削除"
+                type="button"
+              >
+                <PlayerSeat displayIndex={displayIndex} player={player} />
+              </button>
+            );
+          }
+          return (
+            <PlayerSeat
+              displayIndex={displayIndex}
+              key={`seat-${actualIndex}`}
+              player={player}
+            />
+          );
+        }
+
+        // 空席の場合、ホストはクリックでCPU追加可能
+        if (isHost) {
+          return (
+            <button
+              className="cursor-pointer bg-transparent border-0 p-0"
+              key={`empty-seat-${actualIndex}`}
+              onClick={() => addCpu(seatId)}
+              title="クリックでCPUを追加"
+              type="button"
+            >
+              <EmptySeat displayIndex={displayIndex} seatIndex={actualIndex} />
+            </button>
+          );
+        }
+        return (
           <EmptySeat
             displayIndex={displayIndex}
             key={`empty-seat-${actualIndex}`}
