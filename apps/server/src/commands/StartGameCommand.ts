@@ -44,6 +44,9 @@ export class StartGameCommand extends Command<GameRoom, Payload> {
     // 4. 全プレイヤーに7枚ずつ一気に配布
     this.dealAllCards();
 
+    // 4.5. テスト用シナリオが設定されていれば適用（手札を上書き）
+    this.room.applyTestScenarioIfSet();
+
     // 5. 最初の場札を決定
     const firstCard = this.room.deck.pop();
     if (firstCard) {
