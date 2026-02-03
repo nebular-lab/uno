@@ -466,6 +466,180 @@ export class GameRoom extends Room<GameState> {
 }
 ```
 
+## CPU追加・削除UI
+
+### 概要
+
+ホストプレイヤーがロビー画面で空席をクリックすることでCPUを追加・削除できる。
+
+### フロー
+
+#### CPU追加
+1. ホストが空席（Empty）をクリック
+2. 確認ダイアログを表示: 「CPUを追加しますか？」
+3. OKを押すと、サーバーにCPU追加リクエストを送信
+4. サーバーがCPUプレイヤーを作成し、その席に配置
+
+#### CPU削除
+1. ホストがCPU席をクリック
+2. 確認ダイアログを表示: 「CPUを削除しますか？」
+3. OKを押すと、サーバーにCPU削除リクエストを送信
+4. サーバーがCPUプレイヤーを削除
+
+### アクション定義
+
+```typescript
+// packages/shared/src/action.ts に追加
+
+// クライアント → サーバー
+export type AddCpuAction = {
+  type: "addCpu";
+  seatId: number;  // CPUを追加する席番号
+};
+
+export type RemoveCpuAction = {
+  type: "removeCpu";
+  sessionId: string;  // 削除するCPUのセッションID
+};
+```
+
+### サーバー実装
+
+```typescript
+// apps/server/src/rooms/GameRoom.ts
+
+// メッセージハンドラ追加
+this.onMessage("addCpu", (client, message: { seatId: number }) => {
+  // ホストのみ実行可能
+  const player = this.state.players.get(client.sessionId);
+  if (!player?.isOwner) return;
+
+  // 指定された席が空いているか確認
+  const seatOccupied = Array.from(this.state.players.values())
+    .some((p) => p.seatId === message.seatId);
+  if (seatOccupied) return;
+
+  // CPUプレイヤーを追加
+  this.addCPUPlayer(`CPU ${message.seatId}`, message.seatId);
+});
+
+this.onMessage("removeCpu", (client, message: { sessionId: string }) => {
+  // ホストのみ実行可能
+  const player = this.state.players.get(client.sessionId);
+  if (!player?.isOwner) return;
+
+  // 対象がCPUプレイヤーか確認
+  const cpuPlayer = this.state.players.get(message.sessionId);
+  if (!cpuPlayer?.isCpu) return;
+
+  // CPUプレイヤーを削除
+  this.state.players.delete(message.sessionId);
+});
+
+// addCPUPlayer を更新
+private addCPUPlayer(name: string, seatId: number): void {
+  const sessionId = `cpu-${crypto.randomUUID()}`;
+  const player = new Player();
+  player.sessionId = sessionId;
+  player.name = name;
+  player.isCpu = true;
+  player.seatId = seatId;
+  this.state.players.set(sessionId, player);
+}
+```
+
+### クライアント実装
+
+```typescript
+// apps/client/src/hooks/useGameRoom.ts に追加
+
+const addCpu = useCallback((seatId: number) => {
+  gameRoomState.room?.send("addCpu", { seatId });
+}, [gameRoomState.room]);
+
+const removeCpu = useCallback((sessionId: string) => {
+  gameRoomState.room?.send("removeCpu", { sessionId });
+}, [gameRoomState.room]);
+```
+
+### UIコンポーネント
+
+```tsx
+// apps/client/src/components/Lobby/SeatSlot.tsx
+
+interface SeatSlotProps {
+  seatId: number;
+  player?: Player;
+  isHost: boolean;
+  onAddCpu: (seatId: number) => void;
+  onRemoveCpu: (sessionId: string) => void;
+}
+
+function SeatSlot({ seatId, player, isHost, onAddCpu, onRemoveCpu }: SeatSlotProps) {
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const handleClick = () => {
+    if (!isHost) return;
+    setDialogOpen(true);
+  };
+
+  const handleConfirm = () => {
+    if (player?.isCpu) {
+      onRemoveCpu(player.sessionId);
+    } else if (!player) {
+      onAddCpu(seatId);
+    }
+    setDialogOpen(false);
+  };
+
+  const isEmpty = !player;
+  const isCpu = player?.isCpu;
+
+  return (
+    <>
+      <div onClick={handleClick} className={isHost ? "cursor-pointer" : ""}>
+        {isEmpty ? (
+          <EmptySeat />
+        ) : isCpu ? (
+          <CpuSeat player={player} />
+        ) : (
+          <PlayerSeat player={player} />
+        )}
+      </div>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {isCpu ? "CPUを削除" : "CPUを追加"}
+            </DialogTitle>
+            <DialogDescription>
+              {isCpu
+                ? `${player.name}を削除しますか？`
+                : `席${seatId}にCPUを追加しますか？`}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              キャンセル
+            </Button>
+            <Button onClick={handleConfirm}>
+              OK
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+```
+
+### 制約事項
+
+- CPU追加・削除はホストのみ可能
+- ゲーム中（phase !== "waiting"）は追加・削除不可
+- 最大プレイヤー数（6人）を超えて追加不可
+
 ## 環境変数
 
 ```env
