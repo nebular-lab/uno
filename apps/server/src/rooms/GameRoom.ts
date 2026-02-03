@@ -50,10 +50,6 @@ export class GameRoom extends Room<GameState, RoomMetadata> {
   // CPUプレイヤーサービス
   private cpuService = new CPUPlayerService();
 
-  // テスト用シナリオ（動作確認用: シナリオ2を適用、テスト環境では無効）
-  private testScenario: number | null =
-    process.env.NODE_ENV === "test" ? null : 2;
-
   onCreate(_options: CreateRoomOptions) {
     this.state = new GameState();
     this.state.roomId = this.roomId;
@@ -253,125 +249,6 @@ export class GameRoom extends Room<GameState, RoomMetadata> {
         }
       },
     );
-
-    // テスト用: シナリオを設定（ドボン/ドボン返しの動作確認用）
-    this.onMessage("__setScenario", (_client, scenario: number) => {
-      this.setupTestScenario(scenario);
-    });
-  }
-
-  /**
-   * テスト用シナリオが設定されていれば適用する
-   * StartGameCommandから呼び出される
-   */
-  applyTestScenarioIfSet() {
-    if (this.testScenario !== null) {
-      this.setupTestScenario(this.testScenario);
-    }
-  }
-
-  /**
-   * テスト用シナリオを設定
-   * シナリオ1: ドボンの確認（a:+4, b:50点, c:50点）
-   * シナリオ2: ドボン返しの確認（a:+4x2=100点, b:50点, c:50点）
-   * シナリオ3: 上がりへのドボン（a:赤9, b:9点, c:適当）
-   */
-  private setupTestScenario(scenario: number) {
-    // seatIdでソートしてプレイヤーを取得
-    const players = Array.from(this.state.players.values()).sort(
-      (a, b) => a.seatId - b.seatId,
-    );
-
-    if (players.length < 2) {
-      console.log("シナリオ設定には2人以上のプレイヤーが必要です");
-      return;
-    }
-
-    const playerA = players[0];
-    const playerB = players[1];
-    const playerC = players[2]; // 3人目がいない場合はundefined
-
-    // 手札をクリア
-    for (const p of players) {
-      p.myHand.splice(0, p.myHand.length);
-    }
-
-    switch (scenario) {
-      case 1:
-        // シナリオ1: ドボンの確認
-        // a: +4 と赤5（記号上がり制限があるため2枚必要）
-        playerA.myHand.push(
-          new Card("draw4-a1", "wild", "draw4", 50),
-          new Card("red5-a1", "red", "5", 5),
-        );
-        // b: 50点（+4）
-        playerB.myHand.push(new Card("draw4-b1", "wild", "draw4", 50));
-        // c: 50点（+4）
-        if (playerC) {
-          playerC.myHand.push(new Card("draw4-c1", "wild", "draw4", 50));
-        }
-        break;
-
-      case 2:
-        // シナリオ2: ドボン返しの確認
-        // a: +4 を2枚 = 100点（1枚出すと残り50点でドボン返し可能）
-        playerA.myHand.push(
-          new Card("draw4-a1", "wild", "draw4", 50),
-          new Card("draw4-a2", "wild", "draw4", 50),
-        );
-        // b: 50点（+4）
-        playerB.myHand.push(new Card("draw4-b1", "wild", "draw4", 50));
-        // c: 50点（+4）
-        if (playerC) {
-          playerC.myHand.push(new Card("draw4-c1", "wild", "draw4", 50));
-        }
-        break;
-
-      case 3:
-        // シナリオ3: 上がりへのドボン
-        // a: 赤9（上がり用）
-        playerA.myHand.push(new Card("red9-a1", "red", "9", 9));
-        // b: 9点（赤4 + 赤5）
-        playerB.myHand.push(
-          new Card("red4-b1", "red", "4", 4),
-          new Card("red5-b1", "red", "5", 5),
-        );
-        // c: 適当（1点）
-        if (playerC) {
-          playerC.myHand.push(new Card("blue1-c1", "blue", "1", 1));
-        }
-        // 場札を赤に設定
-        this.state.fieldCards.splice(0, this.state.fieldCards.length);
-        this.state.fieldCards.push(new Card("red5-field", "red", "5", 5));
-        this.state.currentColor = "red";
-        break;
-
-      default:
-        console.log(`未知のシナリオ: ${scenario}`);
-        return;
-    }
-
-    // handCountを更新
-    for (const p of players) {
-      p.handCount = p.myHand.length;
-    }
-
-    // アクション可否を更新
-    if (this.state.phase === "playing") {
-      this.updateAllPlayerActions();
-    }
-
-    console.log(`シナリオ${scenario}を設定しました`);
-  }
-
-  /**
-   * 全プレイヤーのアクション可否を更新する（テスト用）
-   */
-  private updateAllPlayerActions() {
-    // 色が未決定（最初のカードがwild/draw4で引いた場合等）なら何でも出せる
-    const isColorNotSet = this.state.currentColor === "";
-    const actionUpdater = new PlayerActionUpdater(this.state);
-    actionUpdater.update({ isFirstCardWild: isColorNotSet });
   }
 
   /**
@@ -386,6 +263,16 @@ export class GameRoom extends Room<GameState, RoomMetadata> {
    */
   setDeckProvider(provider: DeckProvider) {
     this.deckProvider = provider;
+  }
+
+  /**
+   * 全プレイヤーのアクション可否を更新する（テスト用）
+   */
+  private updateAllPlayerActions() {
+    // 色が未決定（最初のカードがwild/draw4で引いた場合等）なら何でも出せる
+    const isColorNotSet = this.state.currentColor === "";
+    const actionUpdater = new PlayerActionUpdater(this.state);
+    actionUpdater.update({ isFirstCardWild: isColorNotSet });
   }
 
   // 席の配置優先順（1, 3, 5, 2, 4, 6 の順）
