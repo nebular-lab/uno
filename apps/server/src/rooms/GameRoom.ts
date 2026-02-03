@@ -421,6 +421,7 @@ export class GameRoom extends Room<GameState, RoomMetadata> {
       player.canDrawStack = false;
       player.playableCards.clear();
       player.timeRemaining = 0;
+      player.drewCardSinceLastPlay = false;
     }
 
     // ゲーム状態のリセット

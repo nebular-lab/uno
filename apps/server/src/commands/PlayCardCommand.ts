@@ -74,6 +74,12 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
     // カードを出したのでフラグをリセット
     player.hasDrawnCard = false;
 
+    // カードが出されたので全プレイヤーのdrewCardSinceLastPlayをリセット
+    // （カードを引いた後でも、誰かがカードを出したらドボン可能になる）
+    for (const p of this.state.players.values()) {
+      p.drewCardSinceLastPlay = false;
+    }
+
     // 重ね出し表示用に出したカード枚数を記録
     this.state.lastPlayedCount = playedCards.length;
 

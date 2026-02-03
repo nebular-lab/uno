@@ -51,6 +51,7 @@ export class DrawStackCommand extends Command<GameRoom, Payload> {
 
     // カードを引いたのでフラグを設定
     player.hasDrawnCard = true;
+    player.drewCardSinceLastPlay = true; // ドボン判定用
 
     // 累積リセット
     this.state.drawStack = 0;
