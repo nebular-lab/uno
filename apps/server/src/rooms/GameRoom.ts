@@ -16,6 +16,7 @@ import { PassCommand } from "../commands/PassCommand";
 // Commands
 import { PlayCardCommand } from "../commands/PlayCardCommand";
 import { StartGameCommand } from "../commands/StartGameCommand";
+import { CPUPlayerService } from "../cpu/CPUPlayerService";
 import { PlayerActionUpdater } from "../services/PlayerActionUpdater";
 import { TurnTimerService } from "../services/TurnTimerService";
 import { createDeck, shuffleDeck } from "../utils/deck";
@@ -45,6 +46,9 @@ export class GameRoom extends Room<GameState, RoomMetadata> {
 
   // ターンタイマーサービス
   turnTimerService!: TurnTimerService;
+
+  // CPUプレイヤーサービス
+  private cpuService = new CPUPlayerService();
 
   // テスト用シナリオ（動作確認用: シナリオ2を適用、テスト環境では無効）
   private testScenario: number | null =
@@ -128,6 +132,46 @@ export class GameRoom extends Room<GameState, RoomMetadata> {
         startPlayerId: this.state.nextGameStartPlayerId || undefined,
         rateMultiplier: this.state.rateMultiplier,
       });
+    });
+
+    // CPUを追加
+    this.onMessage("addCpu", (client, message: { seatId: number }) => {
+      // ホストのみ実行可能
+      const player = this.state.players.get(client.sessionId);
+      if (!player?.isOwner) return;
+
+      // ゲーム中は追加不可
+      if (this.state.phase !== "waiting") return;
+
+      // 最大プレイヤー数チェック
+      if (this.state.players.size >= this.maxClients) return;
+
+      // 指定された席が空いているか確認
+      let seatOccupied = false;
+      this.state.players.forEach((p) => {
+        if (p.seatId === message.seatId) seatOccupied = true;
+      });
+      if (seatOccupied) return;
+
+      // CPUプレイヤーを追加
+      this.addCPUPlayer(`CPU ${message.seatId}`, message.seatId);
+    });
+
+    // CPUを削除
+    this.onMessage("removeCpu", (client, message: { sessionId: string }) => {
+      // ホストのみ実行可能
+      const player = this.state.players.get(client.sessionId);
+      if (!player?.isOwner) return;
+
+      // ゲーム中は削除不可
+      if (this.state.phase !== "waiting") return;
+
+      // 対象がCPUプレイヤーか確認
+      const cpuPlayer = this.state.players.get(message.sessionId);
+      if (!cpuPlayer?.isCpu) return;
+
+      // CPUプレイヤーを削除
+      this.state.players.delete(message.sessionId);
     });
 
     // テスト用: 山札を設定（カードデータの配列を受け取る）
@@ -437,6 +481,37 @@ export class GameRoom extends Room<GameState, RoomMetadata> {
 
     // Dispatcherの停止
     this.dispatcher.stop();
+  }
+
+  /**
+   * CPUプレイヤーを追加する
+   */
+  private addCPUPlayer(name: string, seatId: number): void {
+    const sessionId = `cpu-${crypto.randomUUID()}`;
+    const player = new Player();
+    player.sessionId = sessionId;
+    player.name = name;
+    player.isCpu = true;
+    player.seatId = seatId;
+    this.state.players.set(sessionId, player);
+  }
+
+  /**
+   * CPUターンをチェックして実行する
+   * PlayerActionUpdater.update() 後に呼び出す
+   */
+  async checkCPUTurn(): Promise<void> {
+    const currentPlayer = this.state.players.get(
+      this.state.currentTurnPlayerId,
+    );
+
+    if (currentPlayer?.isCpu && this.state.phase === "playing") {
+      await this.cpuService.handleTurn(
+        this.state,
+        currentPlayer,
+        this.dispatcher,
+      );
+    }
   }
 
   /**

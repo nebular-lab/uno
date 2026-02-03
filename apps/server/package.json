@@ -26,11 +26,14 @@
     "vitest": "4.0.17"
   },
   "dependencies": {
+    "@ai-sdk/openai": "1.3.24",
     "@colyseus/command": "0.3.2",
     "@colyseus/monitor": "0.16.7",
     "@colyseus/playground": "0.16.4",
     "@colyseus/tools": "0.16.18",
     "@dobon-uno/shared": "workspace:*",
-    "colyseus": "0.16.5"
+    "ai": "4.3.19",
+    "colyseus": "0.16.5",
+    "zod": "3.25.76"
   }
 }
