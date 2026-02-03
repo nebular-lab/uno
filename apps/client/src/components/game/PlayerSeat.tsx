@@ -11,6 +11,7 @@ type Props = {
   isPlaying?: boolean; // ゲーム中かどうか（trueの場合はカード枚数を表示）
   isChoosingColor?: boolean; // 色を選択中かどうか
   isWinner?: boolean; // 勝者かどうか（resultフェーズで表示）
+  isDoboner?: boolean; // ドボンしたプレイヤーかどうか（playingフェーズで表示）
   finishType?: string; // "normal" | "dobon" | "dobonReturn"
 };
 
@@ -229,10 +230,22 @@ const WinnerLabel = ({
   const labelPos = labelPositions[displayIndex] ?? labelPositions[0];
 
   // finishTypeに応じたラベルと色を決定
-  const isDobon = finishType === "dobon" || finishType === "dobonReturn";
-  const labelText = isDobon ? "ドボン！" : "上がり！";
-  const bgColor = isDobon ? "bg-purple-500" : "bg-yellow-500";
-  const textColor = isDobon ? "text-white" : "text-black";
+  const labelText =
+    finishType === "dobonReturn"
+      ? "ドボン返し！"
+      : finishType === "dobon"
+        ? "ドボン！"
+        : "上がり！";
+  const bgColor =
+    finishType === "dobonReturn"
+      ? "bg-orange-500"
+      : finishType === "dobon"
+        ? "bg-purple-500"
+        : "bg-yellow-500";
+  const textColor =
+    finishType === "dobonReturn" || finishType === "dobon"
+      ? "text-white"
+      : "text-black";
 
   return (
     <div
@@ -255,6 +268,7 @@ export const PlayerSeat = ({
   isPlaying,
   isChoosingColor,
   isWinner,
+  isDoboner,
   finishType,
 }: Props) => {
   const ref = useRef<HTMLDivElement>(null);
@@ -304,7 +318,7 @@ export const PlayerSeat = ({
         <WinnerLabel displayIndex={posIndex} finishType={finishType} />
       )}
       {/* 色選択中ラベル */}
-      {isChoosingColor && !isWinner && (
+      {isChoosingColor && !isWinner && !isDoboner && (
         <div
           className={cn(
             "absolute -top-5 -translate-x-1/2 whitespace-nowrap rounded-full bg-amber-500 px-2 py-0.5 text-xs font-bold text-black shadow z-20",
@@ -312,6 +326,17 @@ export const PlayerSeat = ({
           )}
         >
           色を選択中
+        </div>
+      )}
+      {/* ドボンラベル（playingフェーズ中） */}
+      {isDoboner && !isWinner && (
+        <div
+          className={cn(
+            "absolute -top-5 -translate-x-1/2 whitespace-nowrap rounded-full bg-purple-500 px-3 py-1 text-sm font-bold text-white shadow-lg z-20 animate-bounce",
+            labelPos,
+          )}
+        >
+          ドボン！
         </div>
       )}
       <PlayerNamePlate
