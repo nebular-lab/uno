@@ -56,6 +56,9 @@ export class DrawCardCommand extends Command<GameRoom, Payload> {
 
     // タイマー再開
     this.startCurrentPlayerTimer();
+
+    // CPUプレイヤーのターンをチェック
+    this.room.checkCPUTurn();
   }
 
   private handleDeckOut(): void {

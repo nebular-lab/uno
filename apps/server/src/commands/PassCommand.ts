@@ -32,6 +32,9 @@ export class PassCommand extends Command<GameRoom, Payload> {
 
     // 次のプレイヤーのタイマーを開始
     this.startCurrentPlayerTimer();
+
+    // CPUプレイヤーのターンをチェック
+    this.room.checkCPUTurn();
   }
 
   /**

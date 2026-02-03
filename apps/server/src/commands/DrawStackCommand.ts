@@ -72,6 +72,9 @@ export class DrawStackCommand extends Command<GameRoom, Payload> {
 
     // タイマー再開（次のプレイヤー）
     this.startCurrentPlayerTimer();
+
+    // CPUプレイヤーのターンをチェック
+    this.room.checkCPUTurn();
   }
 
   private handleDeckOut(): void {

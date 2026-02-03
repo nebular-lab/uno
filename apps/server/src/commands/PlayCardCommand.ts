@@ -129,6 +129,9 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
 
     // タイマー開始
     this.startCurrentPlayerTimer();
+
+    // CPUプレイヤーのターンをチェック（色選択待ちの場合も含む）
+    this.room.checkCPUTurn();
   }
 
   /**
