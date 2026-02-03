@@ -66,6 +66,7 @@ export const GameScreen = () => {
     isHost,
     startGame,
     playerCount,
+    dobonPlayerIds,
   } = useGameRoom();
 
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
@@ -186,12 +187,18 @@ export const GameScreen = () => {
           phase === "result" &&
           showWinnerLabel &&
           latestGameResult?.winnerId === player?.sessionId;
+        // ドボンしたプレイヤーかどうか（スコアパネル表示前まで）
+        const isDoboner =
+          player !== null &&
+          dobonPlayerIds.includes(player.sessionId) &&
+          !showScorePanel;
         return player ? (
           <PlayerSeat
             displayIndex={displayIndex}
             finishType={latestGameResult?.finishType}
             isChoosingColor={isOtherPlayerChoosingColor}
             isCurrentPlayer={isCurrentTurn}
+            isDoboner={isDoboner}
             isPlaying={phase !== "waiting"}
             isWinner={isWinner}
             key={`seat-${actualIndex}`}
@@ -218,8 +225,13 @@ export const GameScreen = () => {
           const isAnyoneChoosingColor = players.some(
             (p) => p?.canChooseColor === true,
           );
+          // ドボン中は色インジケータを非表示
+          const isDobonInProgress = dobonPlayerIds.length > 0;
           const showColorIndicator =
-            isWildOrDraw4 && currentColor && !isAnyoneChoosingColor;
+            isWildOrDraw4 &&
+            currentColor &&
+            !isAnyoneChoosingColor &&
+            !isDobonInProgress;
 
           return (
             <div className="absolute left-1/2 top-[38%] z-10 -translate-x-1/2 -translate-y-1/2">

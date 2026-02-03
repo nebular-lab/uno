@@ -112,6 +112,8 @@ export const useGameRoom = () => {
     deckCount: gamePlayState.deckCount,
     drawStackCount: gamePlayState.drawStack,
     turnDirection: gamePlayState.turnDirection,
+    // ドボン状態
+    dobonPlayerIds: gamePlayState.dobonPlayerIds,
     // ゲーム履歴
     gameHistory: gamePlayState.gameHistory,
     latestGameResult,
