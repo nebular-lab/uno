@@ -49,6 +49,9 @@ export class DrawStackCommand extends Command<GameRoom, Payload> {
     player.handCount = player.myHand.length;
     this.state.deckCount = this.room.deck.length;
 
+    // カードを引いたのでフラグを設定
+    player.hasDrawnCard = true;
+
     // 累積リセット
     this.state.drawStack = 0;
 

@@ -71,6 +71,9 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
     }
     player.handCount = player.myHand.length;
 
+    // カードを出したのでフラグをリセット
+    player.hasDrawnCard = false;
+
     // 重ね出し表示用に出したカード枚数を記録
     this.state.lastPlayedCount = playedCards.length;
 
