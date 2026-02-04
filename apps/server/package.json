@@ -3,7 +3,7 @@
   "name": "server",
   "version": "1.0.0",
   "description": "Dobon UNO game server",
-  "main": "build/index.js",
+  "main": "build/index.mjs",
   "engines": {
     "node": ">= 20.9.0"
   },
