@@ -10,8 +10,7 @@
   "scripts": {
     "start": "tsx watch src/index.ts",
     "dev": "tsx watch src/index.ts",
-    "build": "npm run clean && tsc",
-    "clean": "rimraf build",
+    "build": "vite build",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -20,20 +19,21 @@
   "devDependencies": {
     "@colyseus/testing": "0.16.3",
     "@types/express": "5.0.6",
-    "rimraf": "6.1.2",
     "tsx": "4.21.0",
     "typescript": "5.9.3",
-    "vitest": "4.0.17"
+    "vite": "7.3.1",
+    "vitest": "4.0.18"
   },
   "dependencies": {
-    "@ai-sdk/openai": "1.3.24",
+    "@ai-sdk/groq": "3.0.21",
+    "@ai-sdk/openai": "3.0.25",
     "@colyseus/command": "0.3.2",
     "@colyseus/monitor": "0.16.7",
     "@colyseus/playground": "0.16.4",
     "@colyseus/tools": "0.16.18",
     "@dobon-uno/shared": "workspace:*",
-    "ai": "4.3.19",
+    "ai": "6.0.69",
     "colyseus": "0.16.5",
-    "zod": "3.25.76"
+    "zod": "4.3.6"
   }
 }
