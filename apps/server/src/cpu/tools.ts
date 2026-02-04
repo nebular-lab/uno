@@ -3,11 +3,9 @@ import { z } from "zod";
 
 export const cpuTools = {
   playCard: tool({
-    description: "手札からカードを出す。重ね出しも可能。",
+    description: "手札からカードを1枚出す",
     inputSchema: z.object({
-      cardIds: z
-        .array(z.string())
-        .describe("出すカードのID配列（重ね出しの場合は複数）"),
+      cardId: z.string(),
     }),
   }),
 
@@ -42,7 +40,7 @@ export const cpuTools = {
     description:
       "ワイルドカードやドロー4を出した後に、次の有効な色を選択する。",
     inputSchema: z.object({
-      color: z.enum(["red", "blue", "green", "yellow"]).describe("選択する色"),
+      color: z.enum(["red", "blue", "green", "yellow"]),
     }),
   }),
 };

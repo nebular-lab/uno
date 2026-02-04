@@ -15,14 +15,6 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-// paramsから文字列配列を取得
-function getStringArray(params: unknown, key: string): string[] {
-  if (!isObject(params)) return [];
-  const value = params[key];
-  if (!Array.isArray(value)) return [];
-  return value.filter((item): item is string => typeof item === "string");
-}
-
 // paramsから文字列を取得
 function getString(params: unknown, key: string): string | undefined {
   if (!isObject(params)) return undefined;
@@ -81,11 +73,13 @@ export class CPUPlayerService {
   ): Promise<void> {
     switch (decision.action) {
       case "playCard": {
-        const cardIds = getStringArray(decision.params, "cardIds");
-        await dispatcher.dispatch(new PlayCardCommand(), {
-          sessionId,
-          cardIds,
-        });
+        const cardId = getString(decision.params, "cardId");
+        if (cardId) {
+          await dispatcher.dispatch(new PlayCardCommand(), {
+            sessionId,
+            cardIds: [cardId],
+          });
+        }
         break;
       }
 
