@@ -65,8 +65,16 @@ export class DrawCardCommand extends Command<GameRoom, Payload> {
     // 全プレイヤーのアクション可否を更新
     // 色が未決定（最初のカードがwild/draw4で引いた場合等）なら何でも出せる
     const isColorNotSet = this.state.currentColor === "";
+    const fieldCard = this.state.fieldCards[this.state.fieldCards.length - 1];
+    const totalPlayedPoints = fieldCard
+      ? fieldCard.points * this.state.lastPlayedCount
+      : undefined;
     const actionUpdater = new PlayerActionUpdater(this.state);
-    actionUpdater.update({ isFirstCardWild: isColorNotSet });
+    actionUpdater.update({
+      isFirstCardWild: isColorNotSet,
+      cardPlayerId: this.state.dobonTargetId || undefined,
+      totalPlayedPoints,
+    });
 
     // タイマー再開
     this.startCurrentPlayerTimer();
