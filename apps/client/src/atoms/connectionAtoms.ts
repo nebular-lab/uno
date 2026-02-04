@@ -81,6 +81,7 @@ const convertPlayer = (serverPlayer: ServerPlayer): ClientPlayer => {
     cardCount: serverPlayer.handCount,
     isHost: serverPlayer.isOwner,
     isSpectator: serverPlayer.isSpectator,
+    isCpu: serverPlayer.isCpu,
     timeRemaining: serverPlayer.timeRemaining,
     // アクションフラグ
     canPass: serverPlayer.canPass,

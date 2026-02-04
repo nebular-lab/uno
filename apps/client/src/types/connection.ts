@@ -37,6 +37,7 @@ export type ClientPlayer = {
   cardCount: number;
   isHost: boolean;
   isSpectator: boolean;
+  isCpu: boolean; // CPUプレイヤーかどうか
   timeRemaining: number; // タイマー残り秒数（0なら非アクティブ）
   // アクションフラグ
   canPass: boolean;

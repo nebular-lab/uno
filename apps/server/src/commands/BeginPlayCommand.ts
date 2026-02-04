@@ -32,6 +32,9 @@ export class BeginPlayCommand extends Command<GameRoom> {
 
     // タイマー開始
     this.startCurrentPlayerTimer();
+
+    // CPUプレイヤーのターンをチェック
+    this.room.checkCPUTurn();
   }
 
   /**

@@ -62,6 +62,10 @@ export class DrawStackCommand extends Command<GameRoom, Payload> {
     };
     this.room.broadcast("drawCardAnimation", animationEvent);
 
+    // カードを引いたのでフラグを設定
+    player.hasDrawnCard = true;
+    player.drewCardSinceLastPlay = true; // ドボン判定用
+
     // 累積リセット
     this.state.drawStack = 0;
 
@@ -82,6 +86,9 @@ export class DrawStackCommand extends Command<GameRoom, Payload> {
 
     // タイマー再開（次のプレイヤー）
     this.startCurrentPlayerTimer();
+
+    // CPUプレイヤーのターンをチェック
+    this.room.checkCPUTurn();
   }
 
   private handleDeckOut(): void {

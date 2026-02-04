@@ -53,6 +53,8 @@ export class DrawCardCommand extends Command<GameRoom, Payload> {
 
     // 状態更新
     this.state.hasDrawnThisTurn = true;
+    player.hasDrawnCard = true;
+    player.drewCardSinceLastPlay = true; // ドボン判定用
 
     // 山札が0枚になった場合 → ゲーム終了
     if (this.room.deck.length === 0) {
@@ -68,6 +70,9 @@ export class DrawCardCommand extends Command<GameRoom, Payload> {
 
     // タイマー再開
     this.startCurrentPlayerTimer();
+
+    // CPUプレイヤーのターンをチェック
+    this.room.checkCPUTurn();
   }
 
   private handleDeckOut(): void {

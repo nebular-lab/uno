@@ -71,6 +71,15 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
     }
     player.handCount = player.myHand.length;
 
+    // カードを出したのでフラグをリセット
+    player.hasDrawnCard = false;
+
+    // カードが出されたので全プレイヤーのdrewCardSinceLastPlayをリセット
+    // （カードを引いた後でも、誰かがカードを出したらドボン可能になる）
+    for (const p of this.state.players.values()) {
+      p.drewCardSinceLastPlay = false;
+    }
+
     // 重ね出し表示用に出したカード枚数を記録
     this.state.lastPlayedCount = playedCards.length;
 
@@ -126,6 +135,9 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
 
     // タイマー開始
     this.startCurrentPlayerTimer();
+
+    // CPUプレイヤーのターンをチェック（色選択待ちの場合も含む）
+    this.room.checkCPUTurn();
   }
 
   /**
@@ -250,8 +262,11 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
       this.room.dispatcher.dispatch(new NormalFinishCommand(), {
         sessionId: finishingPlayerId,
       });
+    } else {
+      // ドボン可能なプレイヤーがいる場合
+      // CPUプレイヤーのドボンをチェック
+      this.room.checkCPUTurn();
     }
-    // ドボン可能なプレイヤーがいる場合はタイマーで待機（別途実装）
   }
 
   /**

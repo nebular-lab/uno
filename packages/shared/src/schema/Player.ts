@@ -22,4 +22,7 @@ export class Player extends Schema {
   @type("boolean") canDobonReturn: boolean = false;
   @type("boolean") canDrawStack: boolean = false;
   @type({ map: "boolean" }) playableCards = new MapSchema<boolean>(); // cardId -> 出せるか
+  @type("boolean") hasDrawnCard: boolean = true; // カードを引いたか（初期状態: true）
+  @type("boolean") isCpu: boolean = false; // CPUプレイヤーかどうか
+  @type("boolean") drewCardSinceLastPlay: boolean = false; // 最後にカードが出されてからカードを引いたか（ドボン判定用）
 }

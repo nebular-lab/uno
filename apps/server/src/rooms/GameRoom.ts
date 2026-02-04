@@ -16,6 +16,7 @@ import { PassCommand } from "../commands/PassCommand";
 // Commands
 import { PlayCardCommand } from "../commands/PlayCardCommand";
 import { StartGameCommand } from "../commands/StartGameCommand";
+import { CPUPlayerService } from "../cpu/CPUPlayerService";
 import { PlayerActionUpdater } from "../services/PlayerActionUpdater";
 import { TurnTimerService } from "../services/TurnTimerService";
 import { createDeck, shuffleDeck } from "../utils/deck";
@@ -46,9 +47,8 @@ export class GameRoom extends Room<GameState, RoomMetadata> {
   // ターンタイマーサービス
   turnTimerService!: TurnTimerService;
 
-  // テスト用シナリオ（動作確認用: シナリオ2を適用、テスト環境では無効）
-  private testScenario: number | null =
-    process.env.NODE_ENV === "test" ? null : 2;
+  // CPUプレイヤーサービス
+  private cpuService = new CPUPlayerService();
 
   onCreate(_options: CreateRoomOptions) {
     this.state = new GameState();
@@ -130,6 +130,46 @@ export class GameRoom extends Room<GameState, RoomMetadata> {
       });
     });
 
+    // CPUを追加
+    this.onMessage("addCpu", (client, message: { seatId: number }) => {
+      // ホストのみ実行可能
+      const player = this.state.players.get(client.sessionId);
+      if (!player?.isOwner) return;
+
+      // ゲーム中は追加不可
+      if (this.state.phase !== "waiting") return;
+
+      // 最大プレイヤー数チェック
+      if (this.state.players.size >= this.maxClients) return;
+
+      // 指定された席が空いているか確認
+      let seatOccupied = false;
+      this.state.players.forEach((p) => {
+        if (p.seatId === message.seatId) seatOccupied = true;
+      });
+      if (seatOccupied) return;
+
+      // CPUプレイヤーを追加
+      this.addCPUPlayer(`cpu${message.seatId}`, message.seatId);
+    });
+
+    // CPUを削除
+    this.onMessage("removeCpu", (client, message: { sessionId: string }) => {
+      // ホストのみ実行可能
+      const player = this.state.players.get(client.sessionId);
+      if (!player?.isOwner) return;
+
+      // ゲーム中は削除不可
+      if (this.state.phase !== "waiting") return;
+
+      // 対象がCPUプレイヤーか確認
+      const cpuPlayer = this.state.players.get(message.sessionId);
+      if (!cpuPlayer?.isCpu) return;
+
+      // CPUプレイヤーを削除
+      this.state.players.delete(message.sessionId);
+    });
+
     // テスト用: 山札を設定（カードデータの配列を受け取る）
     this.onMessage(
       "__setDeck",
@@ -209,125 +249,6 @@ export class GameRoom extends Room<GameState, RoomMetadata> {
         }
       },
     );
-
-    // テスト用: シナリオを設定（ドボン/ドボン返しの動作確認用）
-    this.onMessage("__setScenario", (_client, scenario: number) => {
-      this.setupTestScenario(scenario);
-    });
-  }
-
-  /**
-   * テスト用シナリオが設定されていれば適用する
-   * StartGameCommandから呼び出される
-   */
-  applyTestScenarioIfSet() {
-    if (this.testScenario !== null) {
-      this.setupTestScenario(this.testScenario);
-    }
-  }
-
-  /**
-   * テスト用シナリオを設定
-   * シナリオ1: ドボンの確認（a:+4, b:50点, c:50点）
-   * シナリオ2: ドボン返しの確認（a:+4x2=100点, b:50点, c:50点）
-   * シナリオ3: 上がりへのドボン（a:赤9, b:9点, c:適当）
-   */
-  private setupTestScenario(scenario: number) {
-    // seatIdでソートしてプレイヤーを取得
-    const players = Array.from(this.state.players.values()).sort(
-      (a, b) => a.seatId - b.seatId,
-    );
-
-    if (players.length < 2) {
-      console.log("シナリオ設定には2人以上のプレイヤーが必要です");
-      return;
-    }
-
-    const playerA = players[0];
-    const playerB = players[1];
-    const playerC = players[2]; // 3人目がいない場合はundefined
-
-    // 手札をクリア
-    for (const p of players) {
-      p.myHand.splice(0, p.myHand.length);
-    }
-
-    switch (scenario) {
-      case 1:
-        // シナリオ1: ドボンの確認
-        // a: +4 と赤5（記号上がり制限があるため2枚必要）
-        playerA.myHand.push(
-          new Card("draw4-a1", "wild", "draw4", 50),
-          new Card("red5-a1", "red", "5", 5),
-        );
-        // b: 50点（+4）
-        playerB.myHand.push(new Card("draw4-b1", "wild", "draw4", 50));
-        // c: 50点（+4）
-        if (playerC) {
-          playerC.myHand.push(new Card("draw4-c1", "wild", "draw4", 50));
-        }
-        break;
-
-      case 2:
-        // シナリオ2: ドボン返しの確認
-        // a: +4 を2枚 = 100点（1枚出すと残り50点でドボン返し可能）
-        playerA.myHand.push(
-          new Card("draw4-a1", "wild", "draw4", 50),
-          new Card("draw4-a2", "wild", "draw4", 50),
-        );
-        // b: 50点（+4）
-        playerB.myHand.push(new Card("draw4-b1", "wild", "draw4", 50));
-        // c: 50点（+4）
-        if (playerC) {
-          playerC.myHand.push(new Card("draw4-c1", "wild", "draw4", 50));
-        }
-        break;
-
-      case 3:
-        // シナリオ3: 上がりへのドボン
-        // a: 赤9（上がり用）
-        playerA.myHand.push(new Card("red9-a1", "red", "9", 9));
-        // b: 9点（赤4 + 赤5）
-        playerB.myHand.push(
-          new Card("red4-b1", "red", "4", 4),
-          new Card("red5-b1", "red", "5", 5),
-        );
-        // c: 適当（1点）
-        if (playerC) {
-          playerC.myHand.push(new Card("blue1-c1", "blue", "1", 1));
-        }
-        // 場札を赤に設定
-        this.state.fieldCards.splice(0, this.state.fieldCards.length);
-        this.state.fieldCards.push(new Card("red5-field", "red", "5", 5));
-        this.state.currentColor = "red";
-        break;
-
-      default:
-        console.log(`未知のシナリオ: ${scenario}`);
-        return;
-    }
-
-    // handCountを更新
-    for (const p of players) {
-      p.handCount = p.myHand.length;
-    }
-
-    // アクション可否を更新
-    if (this.state.phase === "playing") {
-      this.updateAllPlayerActions();
-    }
-
-    console.log(`シナリオ${scenario}を設定しました`);
-  }
-
-  /**
-   * 全プレイヤーのアクション可否を更新する（テスト用）
-   */
-  private updateAllPlayerActions() {
-    // 色が未決定（最初のカードがwild/draw4で引いた場合等）なら何でも出せる
-    const isColorNotSet = this.state.currentColor === "";
-    const actionUpdater = new PlayerActionUpdater(this.state);
-    actionUpdater.update({ isFirstCardWild: isColorNotSet });
   }
 
   /**
@@ -342,6 +263,16 @@ export class GameRoom extends Room<GameState, RoomMetadata> {
    */
   setDeckProvider(provider: DeckProvider) {
     this.deckProvider = provider;
+  }
+
+  /**
+   * 全プレイヤーのアクション可否を更新する（テスト用）
+   */
+  private updateAllPlayerActions() {
+    // 色が未決定（最初のカードがwild/draw4で引いた場合等）なら何でも出せる
+    const isColorNotSet = this.state.currentColor === "";
+    const actionUpdater = new PlayerActionUpdater(this.state);
+    actionUpdater.update({ isFirstCardWild: isColorNotSet });
   }
 
   // 席の配置優先順（1, 3, 5, 2, 4, 6 の順）
@@ -440,6 +371,37 @@ export class GameRoom extends Room<GameState, RoomMetadata> {
   }
 
   /**
+   * CPUプレイヤーを追加する
+   */
+  private addCPUPlayer(name: string, seatId: number): void {
+    const sessionId = `cpu-${crypto.randomUUID()}`;
+    const player = new Player();
+    player.sessionId = sessionId;
+    player.name = name;
+    player.isCpu = true;
+    player.seatId = seatId;
+    this.state.players.set(sessionId, player);
+  }
+
+  /**
+   * CPUターンをチェックして実行する
+   * PlayerActionUpdater.update() 後に呼び出す
+   */
+  async checkCPUTurn(): Promise<void> {
+    const currentPlayer = this.state.players.get(
+      this.state.currentTurnPlayerId,
+    );
+
+    if (currentPlayer?.isCpu && this.state.phase === "playing") {
+      await this.cpuService.handleTurn(
+        this.state,
+        currentPlayer,
+        this.dispatcher,
+      );
+    }
+  }
+
+  /**
    * ゲーム状態をリセットする（次のゲーム開始前の状態に戻す）
    * NormalFinishCommand、DobonCommand、DobonReturnCommandから呼び出される
    */
@@ -459,6 +421,7 @@ export class GameRoom extends Room<GameState, RoomMetadata> {
       player.canDrawStack = false;
       player.playableCards.clear();
       player.timeRemaining = 0;
+      player.drewCardSinceLastPlay = false;
     }
 
     // ゲーム状態のリセット

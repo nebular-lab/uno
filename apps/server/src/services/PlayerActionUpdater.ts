@@ -108,6 +108,12 @@ export class PlayerActionUpdater {
       return;
     }
 
+    // カードを引いた後、まだ誰もカードを出していない場合はドボン不可
+    if (player.drewCardSinceLastPlay) {
+      player.canDobon = false;
+      return;
+    }
+
     // 合計点数が指定されている場合（カードが出された後）
     if (totalPlayedPoints !== undefined) {
       const handTotal = player.myHand.reduce(
