@@ -8,11 +8,32 @@ import { DrawStackCommand } from "../commands/DrawStackCommand";
 import { PassCommand } from "../commands/PassCommand";
 import { PlayCardCommand } from "../commands/PlayCardCommand";
 import type { GameRoom } from "../rooms/GameRoom";
-import { CPUActionDecider } from "./CPUActionDecider";
+import { CPUActionDecider, type CPUDecision } from "./CPUActionDecider";
+
+// 型ガード: paramsがオブジェクトかどうか
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+// paramsから文字列配列を取得
+function getStringArray(params: unknown, key: string): string[] {
+  if (!isObject(params)) return [];
+  const value = params[key];
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === "string");
+}
+
+// paramsから文字列を取得
+function getString(params: unknown, key: string): string | undefined {
+  if (!isObject(params)) return undefined;
+  const value = params[key];
+  return typeof value === "string" ? value : undefined;
+}
 
 export class CPUPlayerService {
   private decider = new CPUActionDecider();
   private thinkingDelay = 1000; // 思考時間の演出（ms）
+  private quickActionDelay = 200; // 即決アクションの遅延（ms）
 
   async handleTurn(
     state: GameState,
@@ -21,6 +42,24 @@ export class CPUPlayerService {
   ): Promise<void> {
     // CPUプレイヤーでない場合は何もしない
     if (!cpuPlayer.isCpu) return;
+
+    // ドボン返しが可能な場合は即座に実行（LLM不要）
+    if (cpuPlayer.canDobonReturn) {
+      await this.delay(this.quickActionDelay);
+      await dispatcher.dispatch(new DobonReturnCommand(), {
+        sessionId: cpuPlayer.sessionId,
+      });
+      return;
+    }
+
+    // ドボンが可能な場合は即座に実行（LLM不要）
+    if (cpuPlayer.canDobon) {
+      await this.delay(this.quickActionDelay);
+      await dispatcher.dispatch(new DobonCommand(), {
+        sessionId: cpuPlayer.sessionId,
+      });
+      return;
+    }
 
     // 思考時間の演出
     await this.delay(this.thinkingDelay);
@@ -36,17 +75,19 @@ export class CPUPlayerService {
   }
 
   private async executeAction(
-    decision: { action: string; params?: Record<string, unknown> },
+    decision: CPUDecision,
     sessionId: string,
     dispatcher: Dispatcher<GameRoom>,
   ): Promise<void> {
     switch (decision.action) {
-      case "playCard":
+      case "playCard": {
+        const cardIds = getStringArray(decision.params, "cardIds");
         await dispatcher.dispatch(new PlayCardCommand(), {
           sessionId,
-          cardIds: decision.params?.cardIds as string[],
+          cardIds,
         });
         break;
+      }
 
       case "drawCard":
         await dispatcher.dispatch(new DrawCardCommand(), {
@@ -78,12 +119,14 @@ export class CPUPlayerService {
         });
         break;
 
-      case "chooseColor":
+      case "chooseColor": {
+        const color = getString(decision.params, "color") ?? "red";
         await dispatcher.dispatch(new ChooseColorCommand(), {
           sessionId,
-          color: decision.params?.color as string,
+          color,
         });
         break;
+      }
 
       default:
         console.warn(`Unknown CPU action: ${decision.action}`);
