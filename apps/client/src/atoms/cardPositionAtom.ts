@@ -34,6 +34,9 @@ export const fieldCardPositionAtom = atom<{ x: number; y: number } | null>(
   null,
 );
 
+// 山札の画面上の位置を記録
+export const deckPositionAtom = atom<{ x: number; y: number } | null>(null);
+
 // プレイヤーシートの位置を記録（displayIndex -> 位置）
 export const playerSeatPositionsAtom = atom<
   Record<number, { x: number; y: number }>

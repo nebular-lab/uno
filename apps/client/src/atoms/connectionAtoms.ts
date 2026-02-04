@@ -1,4 +1,5 @@
 import type {
+  DrawCardAnimationEvent,
   GameState,
   PlayCardAnimationEvent,
   RoomMetadata,
@@ -15,7 +16,12 @@ import type {
   GameRoomState,
   LobbyState,
 } from "../types/connection";
-import { type CardAnimation, currentAnimationAtom } from "./animationAtoms";
+import {
+  type CardAnimation,
+  currentAnimationAtom,
+  currentDrawAnimationAtom,
+  type DrawCardAnimation,
+} from "./animationAtoms";
 import { playerAtom, screenAtom } from "./appAtoms";
 import { cardPositionsAtom, playerSeatPositionsAtom } from "./cardPositionAtom";
 
@@ -223,6 +229,35 @@ const setupRoomStateSync = (
     // アニメーション完了後にクリア
     setTimeout(() => {
       store.set(currentAnimationAtom, null);
+    }, event.animationDuration);
+  });
+
+  // ドローアニメーションイベントを購読
+  room.onMessage("drawCardAnimation", (event: DrawCardAnimationEvent) => {
+    // displayIndexを計算
+    const gamePlayState = store.get(gamePlayStateAtom);
+    const mySeatIndex = gamePlayState.players.findIndex(
+      (p) => p !== null && p.sessionId === room.sessionId,
+    );
+    const seatIndex = event.seatId - 1;
+    const displayIndex =
+      mySeatIndex === -1 ? seatIndex : (seatIndex - mySeatIndex + 3 + 6) % 6;
+
+    const animation: DrawCardAnimation = {
+      id: `draw-${Date.now()}`,
+      playerId: event.playerId,
+      seatId: event.seatId,
+      cardCount: event.cardCount,
+      displayIndex,
+      startTime: Date.now(),
+      duration: event.animationDuration,
+    };
+
+    store.set(currentDrawAnimationAtom, animation);
+
+    // アニメーション完了後にクリア
+    setTimeout(() => {
+      store.set(currentDrawAnimationAtom, null);
     }, event.animationDuration);
   });
 };

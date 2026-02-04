@@ -1,4 +1,5 @@
 import { Command } from "@colyseus/command";
+import type { DrawCardAnimationEvent } from "@dobon-uno/shared";
 import type { GameRoom } from "../rooms/GameRoom";
 import { PlayerActionUpdater } from "../services/PlayerActionUpdater";
 import { TimeoutHandler } from "../services/TimeoutHandler";
@@ -8,6 +9,8 @@ import { DeckOutCommand } from "./DeckOutCommand";
 interface Payload {
   sessionId: string;
 }
+
+const DRAW_ANIMATION_DURATION = 300;
 
 /**
  * 累積カードを引くCommand
@@ -48,6 +51,16 @@ export class DrawStackCommand extends Command<GameRoom, Payload> {
     // カウント更新
     player.handCount = player.myHand.length;
     this.state.deckCount = this.room.deck.length;
+
+    // ドローアニメーションイベントを送信
+    const animationEvent: DrawCardAnimationEvent = {
+      type: "drawCardAnimation",
+      playerId: sessionId,
+      seatId: player.seatId,
+      cardCount: drawCount,
+      animationDuration: DRAW_ANIMATION_DURATION,
+    };
+    this.room.broadcast("drawCardAnimation", animationEvent);
 
     // 累積リセット
     this.state.drawStack = 0;

@@ -17,8 +17,24 @@ export interface CardAnimation {
   startPosition: { x: number; y: number; width: number; height: number } | null;
 }
 
+/**
+ * カードドローアニメーションの状態
+ */
+export interface DrawCardAnimation {
+  id: string; // アニメーションID（ユニーク）
+  playerId: string;
+  seatId: number;
+  cardCount: number;
+  displayIndex: number; // 表示位置（回転後の位置）
+  startTime: number;
+  duration: number;
+}
+
 // 現在再生中のアニメーション
 export const currentAnimationAtom = atom<CardAnimation | null>(null);
+
+// 現在再生中のドローアニメーション
+export const currentDrawAnimationAtom = atom<DrawCardAnimation | null>(null);
 
 // アニメーション中かどうか
 export const isAnimatingAtom = atom(

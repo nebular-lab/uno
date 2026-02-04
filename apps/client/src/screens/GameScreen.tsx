@@ -1,9 +1,12 @@
-import { useAtom, useAtomValue } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { currentAnimationAtom } from "@/atoms/animationAtoms";
+import { deckPositionAtom } from "@/atoms/cardPositionAtom";
 import { selectedCardIdsAtom } from "@/atoms/selectedCardAtom";
 import { ActionButtons } from "@/components/game/ActionButtons";
+import { CardDrawAnimation } from "@/components/game/CardDrawAnimation";
 import { CountdownOverlay } from "@/components/game/CountdownOverlay";
+import { DrawCountIndicator } from "@/components/game/DrawCountIndicator";
 import { FieldCard } from "@/components/game/FieldCard";
 import { MyHand } from "@/components/game/MyHand";
 import { EmptySeat, PlayerSeat } from "@/components/game/PlayerSeat";
@@ -97,6 +100,25 @@ export const GameScreen = () => {
   }, [phase]);
   const [selectedCardIds, setSelectedCardIds] = useAtom(selectedCardIdsAtom);
   const currentAnimation = useAtomValue(currentAnimationAtom);
+  const setDeckPosition = useSetAtom(deckPositionAtom);
+  const deckRef = useRef<HTMLDivElement>(null);
+
+  // 山札の位置を報告
+  useEffect(() => {
+    const updateDeckPosition = () => {
+      if (deckRef.current) {
+        const rect = deckRef.current.getBoundingClientRect();
+        setDeckPosition({
+          x: rect.left + rect.width / 2,
+          y: rect.top + rect.height / 2,
+        });
+      }
+    };
+
+    updateDeckPosition();
+    window.addEventListener("resize", updateDeckPosition);
+    return () => window.removeEventListener("resize", updateDeckPosition);
+  }, [setDeckPosition]);
 
   // アニメーション中は前の状態を保持するための参照
   const displayedFieldCardsRef = useRef<{
@@ -270,7 +292,10 @@ export const GameScreen = () => {
 
       {/* 山札の残り枚数（テーブル左寄り、waitingフェーズでは非表示） */}
       {phase !== "waiting" && (
-        <div className="absolute left-[calc(50%-120px)] top-[38%] z-10 -translate-x-1/2 -translate-y-1/2">
+        <div
+          className="absolute left-[calc(50%-120px)] top-[38%] z-10 -translate-x-1/2 -translate-y-1/2"
+          ref={deckRef}
+        >
           <div className="flex size-16 items-center justify-center rounded-full bg-slate-700 border-2 border-slate-500 shadow-lg">
             <span className="font-bold text-white text-xl">{deckCount}</span>
           </div>
@@ -438,6 +463,10 @@ export const GameScreen = () => {
         onClose={() => setShowScorePanel(false)}
         players={players}
       />
+
+      {/* カードドローアニメーション */}
+      <CardDrawAnimation />
+      <DrawCountIndicator />
     </TableContainer>
   );
 };

@@ -20,3 +20,14 @@ export interface PlayCardAnimationEvent {
   isCurrentTurn: boolean; // 手番プレイヤーかどうか（カットインの場合false）
   animationDuration: number; // アニメーション時間（ms）
 }
+
+/**
+ * カードを引いた時のアニメーションイベント
+ */
+export interface DrawCardAnimationEvent {
+  type: "drawCardAnimation";
+  playerId: string; // カードを引いたプレイヤーのsessionId
+  seatId: number; // 座席番号（1-6）
+  cardCount: number; // 引いた枚数
+  animationDuration: number; // アニメーション時間（ms）
+}
