@@ -236,7 +236,7 @@ export const GameScreen = () => {
       })}
 
       {/* 場のカード（テーブル中央、重ね出し対応） */}
-      {(phase === "revealing" || phase === "playing") &&
+      {(phase === "revealing" || phase === "playing" || phase === "result") &&
         displayedFieldCards.cards.length > 0 &&
         (() => {
           const topCard =
