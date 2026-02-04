@@ -27,6 +27,7 @@ export class CPUPlayerService {
   private thinkingDelay = 1000; // 思考時間の演出（ms）
   private quickActionDelay = 200; // 即決アクションの遅延（ms）
   private dobonReturnDelay = 3000; // ドボン返しの遅延（ms）
+  private dobonWaitDelay = 5000; // 他プレイヤーのドボン待ち時間（ms）
 
   async handleTurn(
     state: GameState,
@@ -52,6 +53,17 @@ export class CPUPlayerService {
         sessionId: cpuPlayer.sessionId,
       });
       return;
+    }
+
+    // 他のプレイヤーがドボン可能かチェック
+    const otherPlayersCanDobon = this.checkOtherPlayersCanDobon(
+      state,
+      cpuPlayer.sessionId,
+    );
+
+    // 他のプレイヤーがドボン可能な場合は5秒待つ
+    if (otherPlayersCanDobon) {
+      await this.delay(this.dobonWaitDelay);
     }
 
     // 思考時間の演出
@@ -203,6 +215,18 @@ export class CPUPlayerService {
     }
 
     return maxColor;
+  }
+
+  private checkOtherPlayersCanDobon(
+    state: GameState,
+    cpuSessionId: string,
+  ): boolean {
+    for (const [sessionId, player] of state.players.entries()) {
+      if (sessionId !== cpuSessionId && player.canDobon) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private delay(ms: number): Promise<void> {
