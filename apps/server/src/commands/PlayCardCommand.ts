@@ -205,7 +205,11 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
     const context = contextFactory.create(card);
 
     // ゲーム中のカード効果を適用（Skip: スキップ、Reverse: 方向反転）
-    effect.applyOnPlay(context);
+    // 重ね出しの場合は枚数分だけ効果を適用
+    // （例: リバース2枚→2回反転で元に戻る、スキップ2枚→2回スキップで3人飛ばす）
+    for (let i = 0; i < stackCount; i++) {
+      effect.applyOnPlay(context);
+    }
 
     // ドロー累積の処理（単発・重ね出し両対応）
     if (card.value === "draw2") {
