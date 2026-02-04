@@ -26,6 +26,7 @@ export class CPUPlayerService {
   private decider = new CPUActionDecider();
   private thinkingDelay = 1000; // 思考時間の演出（ms）
   private quickActionDelay = 200; // 即決アクションの遅延（ms）
+  private dobonReturnDelay = 3000; // ドボン返しの遅延（ms）
 
   async handleTurn(
     state: GameState,
@@ -35,9 +36,9 @@ export class CPUPlayerService {
     // CPUプレイヤーでない場合は何もしない
     if (!cpuPlayer.isCpu) return;
 
-    // ドボン返しが可能な場合は即座に実行（LLM不要）
+    // ドボン返しが可能な場合は3秒後に実行（LLM不要）
     if (cpuPlayer.canDobonReturn) {
-      await this.delay(this.quickActionDelay);
+      await this.delay(this.dobonReturnDelay);
       await dispatcher.dispatch(new DobonReturnCommand(), {
         sessionId: cpuPlayer.sessionId,
       });
