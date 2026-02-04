@@ -9,7 +9,7 @@ export default defineConfig({
     lib: {
       entry: resolve(__dirname, "src/index.ts"),
       formats: ["es"],
-      fileName: () => "index.mjs",
+      fileName: () => "index.js",
     },
     rollupOptions: {
       external: [

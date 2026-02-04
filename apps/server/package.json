@@ -2,8 +2,9 @@
   "private": true,
   "name": "server",
   "version": "1.0.0",
+  "type": "module",
   "description": "Dobon UNO game server",
-  "main": "build/index.mjs",
+  "main": "build/index.js",
   "engines": {
     "node": ">= 20.9.0"
   },
