@@ -350,9 +350,34 @@ export class GameRoom extends Room<GameState, RoomMetadata> {
     const wasOwner = player.isOwner;
     this.state.players.delete(client.sessionId);
 
-    // オーナーが退出した場合、次のプレイヤーをオーナーに
+    // 人間プレイヤーがいなくなったらCPUも削除（ルーム自動破棄のため）
+    const hasHumanPlayer = Array.from(this.state.players.values()).some(
+      (p) => !p.isCpu,
+    );
+    if (!hasHumanPlayer) {
+      // CPUプレイヤーをすべて削除
+      for (const [sessionId, p] of this.state.players.entries()) {
+        if (p.isCpu) {
+          this.state.players.delete(sessionId);
+        }
+      }
+      return; // ルームは自動破棄される
+    }
+
+    // オーナーが退出した場合、次の人間プレイヤーをオーナーに
     if (wasOwner && this.state.players.size > 0) {
-      const nextOwner = this.state.players.values().next().value;
+      // 人間プレイヤーを優先してオーナーにする
+      let nextOwner: Player | undefined;
+      for (const p of this.state.players.values()) {
+        if (!p.isCpu) {
+          nextOwner = p;
+          break;
+        }
+      }
+      // 人間プレイヤーがいない場合は最初のプレイヤー（上で処理済みなので通常到達しない）
+      if (!nextOwner) {
+        nextOwner = this.state.players.values().next().value;
+      }
       if (nextOwner) {
         nextOwner.isOwner = true;
       }
