@@ -107,6 +107,14 @@ export const WaitingRoomScreen = ({ roomId }: Props) => {
         </Button>
       </div>
 
+      {/* CPU追加の説明（下中央、ホストのみ表示） */}
+      {isHost && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-center text-sm text-slate-400">
+          <p>空席のエリアをクリックするとCPUを追加できます。</p>
+          <p>もう一度クリックすると削除できます。</p>
+        </div>
+      )}
+
       {/* ゲーム開始ボタン（右下、ホストのみ表示） */}
       {isHost && (
         <div className="absolute bottom-4 right-4 flex items-center gap-4">
