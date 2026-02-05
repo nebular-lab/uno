@@ -24,7 +24,7 @@
 
 | 状況                   | 自動処理           |
 | ---------------------- | ------------------ |
-| 手番（未ドロー）       | 1枚引いてパス     |
+| 手番（未ドロー）       | 1枚引く           |
 | 手番（ドロー済み）     | パス               |
 | 色選択中               | ランダムに色を選択 |
 | ドロー累積を受ける状況 | 累積分を引く       |
@@ -168,9 +168,8 @@ timerService.startTimer(currentPlayerId, () => {
     // パス
     dispatcher.dispatch(new PassCommand());
   } else {
-    // 1枚引いてパス
+    // 1枚引く
     dispatcher.dispatch(new DrawCardCommand());
-    dispatcher.dispatch(new PassCommand());
   }
 });
 ```
@@ -313,7 +312,7 @@ export function TurnTimer() {
   - タイマー開始でdeadlineが設定される
   - タイマー停止でdeadlineが0になる
   - タイムアウトで適切な処理が実行される
-    - 未ドロー → 1枚引いてパス
+    - 未ドロー → 1枚引く
     - ドロー済み → パス
     - 色選択中 → ランダム色選択
     - ドロー累積中 → 累積分を引く
