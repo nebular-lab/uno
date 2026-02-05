@@ -13,6 +13,7 @@ type Props = {
   isWinner?: boolean; // 勝者かどうか（resultフェーズで表示）
   isDoboner?: boolean; // ドボンしたプレイヤーかどうか（playingフェーズで表示）
   finishType?: string; // "normal" | "dobon" | "dobonReturn"
+  drawCount?: number; // カードを引いた枚数（+N表示用）
 };
 
 // 6人の位置定義（0:上中央 → 時計回り）
@@ -270,6 +271,7 @@ export const PlayerSeat = ({
   isWinner,
   isDoboner,
   finishType,
+  drawCount,
 }: Props) => {
   const ref = useRef<HTMLDivElement>(null);
   const setPlayerSeatPositions = useSetAtom(playerSeatPositionsAtom);
@@ -337,6 +339,17 @@ export const PlayerSeat = ({
           )}
         >
           ドボン！
+        </div>
+      )}
+      {/* カードを引いた枚数（+N） */}
+      {drawCount !== undefined && drawCount > 0 && (
+        <div
+          className={cn(
+            "absolute -top-5 -translate-x-1/2 whitespace-nowrap rounded-full bg-blue-500 px-3 py-1 text-sm font-bold text-white shadow-lg z-20",
+            labelPos,
+          )}
+        >
+          +{drawCount}
         </div>
       )}
       <PlayerNamePlate

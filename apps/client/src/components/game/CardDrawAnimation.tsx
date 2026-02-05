@@ -1,28 +1,22 @@
 import { useAtomValue } from "jotai";
 import { AnimatePresence, motion } from "motion/react";
 import { currentDrawAnimationAtom } from "@/atoms/animationAtoms";
-import {
-  deckPositionAtom,
-  playerSeatPositionsAtom,
-} from "@/atoms/cardPositionAtom";
 
 /**
  * 山札からプレイヤーシートへのカード移動アニメーション
  */
 export const CardDrawAnimation = () => {
   const animation = useAtomValue(currentDrawAnimationAtom);
-  const deckPosition = useAtomValue(deckPositionAtom);
-  const seatPositions = useAtomValue(playerSeatPositionsAtom);
 
   if (!animation) return null;
-  if (!deckPosition) return null;
 
-  const targetPosition = seatPositions[animation.displayIndex];
-  if (!targetPosition) return null;
+  // スナップショットとして保存された位置を使用
+  const { startPosition, endPosition } = animation;
+  if (!startPosition || !endPosition) return null;
 
   // 差分を計算
-  const deltaX = targetPosition.x - deckPosition.x;
-  const deltaY = targetPosition.y - deckPosition.y;
+  const deltaX = endPosition.x - startPosition.x;
+  const deltaY = endPosition.y - startPosition.y;
 
   // カードサイズ
   const cardWidth = 40;
@@ -38,14 +32,14 @@ export const CardDrawAnimation = () => {
             x: [0, deltaX],
             y: [0, deltaY],
             scale: [1, 0.8],
-            opacity: [1, 0],
+            opacity: [1, 0.6],
           }}
           className="absolute"
           exit={{ opacity: 0 }}
           key={animation.id}
           style={{
-            left: deckPosition.x - cardWidth / 2,
-            top: deckPosition.y - cardHeight / 2,
+            left: startPosition.x - cardWidth / 2,
+            top: startPosition.y - cardHeight / 2,
             transformOrigin: "center center",
           }}
           transition={{

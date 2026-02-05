@@ -4,9 +4,7 @@ import { currentAnimationAtom } from "@/atoms/animationAtoms";
 import { deckPositionAtom } from "@/atoms/cardPositionAtom";
 import { selectedCardIdsAtom } from "@/atoms/selectedCardAtom";
 import { ActionButtons } from "@/components/game/ActionButtons";
-import { CardDrawAnimation } from "@/components/game/CardDrawAnimation";
 import { CountdownOverlay } from "@/components/game/CountdownOverlay";
-import { DrawCountIndicator } from "@/components/game/DrawCountIndicator";
 import { FieldCard } from "@/components/game/FieldCard";
 import { MyHand } from "@/components/game/MyHand";
 import { EmptySeat, PlayerSeat } from "@/components/game/PlayerSeat";
@@ -463,10 +461,6 @@ export const GameScreen = () => {
         onClose={() => setShowScorePanel(false)}
         players={players}
       />
-
-      {/* カードドローアニメーション */}
-      <CardDrawAnimation />
-      <DrawCountIndicator />
     </TableContainer>
   );
 };

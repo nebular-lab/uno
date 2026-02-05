@@ -9,7 +9,7 @@ interface Payload {
   sessionId: string;
 }
 
-const DRAW_ANIMATION_DURATION = 300;
+const DRAW_ANIMATION_DURATION = 1000;
 
 /**
  * 山札からカードを引くCommand

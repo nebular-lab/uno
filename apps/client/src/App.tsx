@@ -10,7 +10,9 @@ import {
   lobbyStateAtom,
   resetDisconnectedAtom,
 } from "./atoms/connectionAtoms";
+import { CardDrawAnimation } from "./components/game/CardDrawAnimation";
 import { CardPlayAnimation } from "./components/game/CardPlayAnimation";
+import { DrawCountIndicator } from "./components/game/DrawCountIndicator";
 import { ScalableContainer } from "./components/ScalableContainer";
 import { Button } from "./components/ui/button";
 import {
@@ -122,8 +124,10 @@ function App() {
         </Dialog>
       </ScalableContainer>
 
-      {/* カード出しアニメーション（ScalableContainerの外でビューポート基準で表示） */}
+      {/* カードアニメーション（ScalableContainerの外でビューポート基準で表示） */}
       {screen.screen === "game" && <CardPlayAnimation />}
+      {screen.screen === "game" && <CardDrawAnimation />}
+      {screen.screen === "game" && <DrawCountIndicator />}
     </>
   );
 }

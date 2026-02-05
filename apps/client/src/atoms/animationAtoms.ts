@@ -25,9 +25,12 @@ export interface DrawCardAnimation {
   playerId: string;
   seatId: number;
   cardCount: number;
-  displayIndex: number; // 表示位置（回転後の位置）
   startTime: number;
   duration: number;
+  // アニメーション開始位置のスナップショット（山札位置）
+  startPosition: { x: number; y: number } | null;
+  // アニメーション終了位置のスナップショット（プレイヤーシート位置）
+  endPosition: { x: number; y: number } | null;
 }
 
 // 現在再生中のアニメーション

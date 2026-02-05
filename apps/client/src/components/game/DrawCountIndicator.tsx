@@ -1,19 +1,18 @@
 import { useAtomValue } from "jotai";
 import { AnimatePresence, motion } from "motion/react";
 import { currentDrawAnimationAtom } from "@/atoms/animationAtoms";
-import { playerSeatPositionsAtom } from "@/atoms/cardPositionAtom";
 
 /**
  * プレイヤーシート上の「+N」表示
- * フェードイン→上に移動→フェードアウト
+ * 上に移動（フェードなし）
  */
 export const DrawCountIndicator = () => {
   const animation = useAtomValue(currentDrawAnimationAtom);
-  const seatPositions = useAtomValue(playerSeatPositionsAtom);
 
   if (!animation) return null;
 
-  const targetPosition = seatPositions[animation.displayIndex];
+  // スナップショットとして保存された終了位置を使用
+  const targetPosition = animation.endPosition;
   if (!targetPosition) return null;
 
   const totalDuration = animation.duration / 1000;
@@ -24,7 +23,6 @@ export const DrawCountIndicator = () => {
         <motion.div
           animate={{
             y: [0, -30],
-            opacity: [0, 1, 1, 0],
           }}
           className="absolute"
           exit={{ opacity: 0 }}
@@ -38,7 +36,6 @@ export const DrawCountIndicator = () => {
           transition={{
             duration: totalDuration,
             ease: "easeOut",
-            times: [0, 0.2, 0.7, 1],
           }}
         >
           <span className="rounded-full bg-blue-500 px-3 py-1 text-lg font-bold text-white shadow-lg">

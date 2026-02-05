@@ -23,7 +23,11 @@ import {
   type DrawCardAnimation,
 } from "./animationAtoms";
 import { playerAtom, screenAtom } from "./appAtoms";
-import { cardPositionsAtom, playerSeatPositionsAtom } from "./cardPositionAtom";
+import {
+  cardPositionsAtom,
+  deckPositionAtom,
+  playerSeatPositionsAtom,
+} from "./cardPositionAtom";
 
 // Jotaiのデフォルトストア（アニメーション用）
 const store = getDefaultStore();
@@ -244,14 +248,24 @@ const setupRoomStateSync = (
     const displayIndex =
       mySeatIndex === -1 ? seatIndex : (seatIndex - mySeatIndex + 3 + 6) % 6;
 
+    // 開始位置（山札）をスナップショット
+    const deckPosition = store.get(deckPositionAtom);
+    const startPosition = deckPosition ? { ...deckPosition } : null;
+
+    // 終了位置（プレイヤーシート）をスナップショット
+    const seatPositions = store.get(playerSeatPositionsAtom);
+    const seatPos = seatPositions[displayIndex];
+    const endPosition = seatPos ? { ...seatPos } : null;
+
     const animation: DrawCardAnimation = {
       id: `draw-${Date.now()}`,
       playerId: event.playerId,
       seatId: event.seatId,
       cardCount: event.cardCount,
-      displayIndex,
       startTime: Date.now(),
       duration: event.animationDuration,
+      startPosition,
+      endPosition,
     };
 
     store.set(currentDrawAnimationAtom, animation);
