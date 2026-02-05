@@ -28,7 +28,6 @@ import { CreateRoomScreen } from "./screens/CreateRoomScreen";
 import { GameScreen } from "./screens/GameScreen";
 import { LobbyScreen } from "./screens/LobbyScreen";
 import { TitleScreen } from "./screens/TitleScreen";
-import { WaitingRoomScreen } from "./screens/WaitingRoomScreen";
 
 function App() {
   const screen = useAtomValue(screenAtom);
@@ -88,7 +87,7 @@ function App() {
       case "createRoom":
         return <CreateRoomScreen />;
       case "waitingRoom":
-        return <WaitingRoomScreen roomId={screen.roomId} />;
+        return <GameScreen />;
       case "game":
         return <GameScreen />;
       default:
@@ -125,9 +124,15 @@ function App() {
       </ScalableContainer>
 
       {/* カードアニメーション（ScalableContainerの外でビューポート基準で表示） */}
-      {screen.screen === "game" && <CardPlayAnimation />}
-      {screen.screen === "game" && <CardDrawAnimation />}
-      {screen.screen === "game" && <DrawCountIndicator />}
+      {(screen.screen === "game" || screen.screen === "waitingRoom") && (
+        <CardPlayAnimation />
+      )}
+      {(screen.screen === "game" || screen.screen === "waitingRoom") && (
+        <CardDrawAnimation />
+      )}
+      {(screen.screen === "game" || screen.screen === "waitingRoom") && (
+        <DrawCountIndicator />
+      )}
     </>
   );
 }

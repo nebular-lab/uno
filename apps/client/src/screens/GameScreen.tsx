@@ -1,4 +1,5 @@
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { LogOut } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { currentAnimationAtom } from "@/atoms/animationAtoms";
 import { deckPositionAtom } from "@/atoms/cardPositionAtom";
@@ -68,6 +69,8 @@ export const GameScreen = () => {
     startGame,
     playerCount,
     dobonPlayerIds,
+    addCpu,
+    removeCpu,
   } = useGameRoom();
 
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
@@ -197,6 +200,7 @@ export const GameScreen = () => {
       {[0, 1, 2, 3, 4, 5].map((displayIndex) => {
         const actualIndex = getActualIndex(displayIndex);
         const player = players[actualIndex];
+        const seatId = actualIndex + 1; // seatIdは1-6
         const isCurrentTurn =
           player !== null && player.sessionId === currentTurnPlayerId;
         // 自分以外のプレイヤーが色を選択中かどうか
@@ -212,19 +216,61 @@ export const GameScreen = () => {
           player !== null &&
           dobonPlayerIds.includes(player.sessionId) &&
           !showScorePanel;
-        return player ? (
-          <PlayerSeat
-            displayIndex={displayIndex}
-            finishType={latestGameResult?.finishType}
-            isChoosingColor={isOtherPlayerChoosingColor}
-            isCurrentPlayer={isCurrentTurn}
-            isDoboner={isDoboner}
-            isPlaying={phase !== "waiting"}
-            isWinner={isWinner}
-            key={`seat-${actualIndex}`}
-            player={player}
-          />
-        ) : (
+
+        if (player) {
+          // waitingフェーズでCPUプレイヤーの場合、ホストはクリックで削除可能
+          if (phase === "waiting" && player.isCpu && isHost) {
+            return (
+              <button
+                className="cursor-pointer bg-transparent border-0 p-0"
+                key={`seat-${actualIndex}`}
+                onClick={() => removeCpu(player.sessionId)}
+                title="クリックでCPUを削除"
+                type="button"
+              >
+                <PlayerSeat
+                  displayIndex={displayIndex}
+                  finishType={latestGameResult?.finishType}
+                  isChoosingColor={isOtherPlayerChoosingColor}
+                  isCurrentPlayer={isCurrentTurn}
+                  isDoboner={isDoboner}
+                  isPlaying={phase !== "waiting"}
+                  isWinner={isWinner}
+                  player={player}
+                />
+              </button>
+            );
+          }
+          return (
+            <PlayerSeat
+              displayIndex={displayIndex}
+              finishType={latestGameResult?.finishType}
+              isChoosingColor={isOtherPlayerChoosingColor}
+              isCurrentPlayer={isCurrentTurn}
+              isDoboner={isDoboner}
+              isPlaying={phase !== "waiting"}
+              isWinner={isWinner}
+              key={`seat-${actualIndex}`}
+              player={player}
+            />
+          );
+        }
+
+        // 空席の場合、waitingフェーズでホストはクリックでCPU追加可能
+        if (phase === "waiting" && isHost) {
+          return (
+            <button
+              className="cursor-pointer bg-transparent border-0 p-0"
+              key={`empty-seat-${actualIndex}`}
+              onClick={() => addCpu(seatId)}
+              title="クリックでCPUを追加"
+              type="button"
+            >
+              <EmptySeat displayIndex={displayIndex} seatIndex={actualIndex} />
+            </button>
+          );
+        }
+        return (
           <EmptySeat
             displayIndex={displayIndex}
             key={`empty-seat-${actualIndex}`}
@@ -376,6 +422,13 @@ export const GameScreen = () => {
       {/* waitingフェーズ用UI */}
       {phase === "waiting" && (
         <>
+          {/* CPU追加の説明（下中央、ホストのみ表示） */}
+          {isHost && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-center text-sm text-slate-400">
+              <p>空席のエリアをクリックするとCPUを追加できます。</p>
+              <p>もう一度クリックすると削除できます。</p>
+            </div>
+          )}
           {/* ホストにはゲーム開始ボタン */}
           {isHost && (
             <div className="absolute bottom-4 right-4 flex items-center gap-4">
@@ -414,9 +467,10 @@ export const GameScreen = () => {
       <Button
         className="absolute left-4 top-4 size-[80px] bg-slate-700 text-white hover:bg-slate-600"
         onClick={() => setShowLeaveDialog(true)}
+        size="icon"
         variant="ghost"
       >
-        退席
+        <LogOut className="size-6" />
       </Button>
 
       {/* スコアボタン */}
