@@ -1,4 +1,5 @@
 import { Command } from "@colyseus/command";
+import type { PassEvent } from "@dobon-uno/shared";
 import type { GameRoom } from "../rooms/GameRoom";
 import { PlayerActionUpdater } from "../services/PlayerActionUpdater";
 import { TimeoutHandler } from "../services/TimeoutHandler";
@@ -15,6 +16,18 @@ export class PassCommand extends Command<GameRoom, Payload> {
   }
 
   execute({ sessionId }: Payload) {
+    const player = this.state.players.get(sessionId);
+
+    // パスイベントを全クライアントに送信
+    if (player) {
+      const passEvent: PassEvent = {
+        type: "pass",
+        playerId: sessionId,
+        seatId: player.seatId,
+      };
+      this.room.broadcast("pass", passEvent);
+    }
+
     // タイマー停止
     this.room.turnTimerService.stopTimer(sessionId);
 

@@ -153,6 +153,28 @@ export class GameRoom extends Room<GameState, RoomMetadata> {
       this.addCPUPlayer(`cpu${message.seatId}`, message.seatId);
     });
 
+    // ゲーム全体設定を更新
+    this.onMessage(
+      "updateGameSettings",
+      (
+        client,
+        message: {
+          showTotalPoints?: boolean;
+          highlightPlayableCards?: boolean;
+        },
+      ) => {
+        const player = this.state.players.get(client.sessionId);
+        if (!player?.isOwner) return;
+
+        if (typeof message.showTotalPoints === "boolean") {
+          this.state.showTotalPoints = message.showTotalPoints;
+        }
+        if (typeof message.highlightPlayableCards === "boolean") {
+          this.state.highlightPlayableCards = message.highlightPlayableCards;
+        }
+      },
+    );
+
     // CPUを削除
     this.onMessage("removeCpu", (client, message: { sessionId: string }) => {
       // ホストのみ実行可能

@@ -39,6 +39,10 @@ export class GameState extends Schema {
   @type("string") dobonTargetId: string = ""; // ドボンされた人のsessionId
   @type(["string"]) dobonPlayerIds = new ArraySchema<string>(); // ドボンした人のsessionIdリスト
 
+  // ホスト設定
+  @type("boolean") showTotalPoints: boolean = true; // 合計ポイント表示
+  @type("boolean") highlightPlayableCards: boolean = true; // 出せるカードハイライト
+
   // 履歴
   @type([GameResult]) gameHistory = new ArraySchema<GameResult>(); // ゲーム結果の履歴
 }

@@ -80,6 +80,10 @@ export type GamePlayState = {
   // ドボン状態
   dobonPlayerIds: string[]; // ドボンしたプレイヤーのsessionIdリスト
 
+  // ホスト設定
+  showTotalPoints: boolean;
+  highlightPlayableCards: boolean;
+
   // ゲーム履歴
   gameHistory: ClientGameResult[];
 };

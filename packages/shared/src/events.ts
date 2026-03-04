@@ -31,3 +31,12 @@ export interface DrawCardAnimationEvent {
   cardCount: number; // 引いた枚数
   animationDuration: number; // アニメーション時間（ms）
 }
+
+/**
+ * パスした時のイベント
+ */
+export interface PassEvent {
+  type: "pass";
+  playerId: string; // パスしたプレイヤーのsessionId
+  seatId: number; // 座席番号（1-6）
+}

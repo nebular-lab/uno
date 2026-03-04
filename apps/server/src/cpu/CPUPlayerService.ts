@@ -24,7 +24,7 @@ function getString(params: unknown, key: string): string | undefined {
 
 export class CPUPlayerService {
   private decider = new CPUActionDecider();
-  private thinkingDelay = 2000; // 思考時間の演出（ms）
+  private thinkingDelay = 3500;
   private quickActionDelay = 200; // 即決アクションの遅延（ms）
   private dobonReturnDelay = 3000; // ドボン返しの遅延（ms）
   private dobonWaitDelay = 5000; // 他プレイヤーのドボン待ち時間（ms）

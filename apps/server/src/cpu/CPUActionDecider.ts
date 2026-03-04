@@ -28,7 +28,7 @@ interface CPULog {
 }
 
 export class CPUActionDecider {
-  private model = groq("llama-3.1-8b-instant");
+  private model = groq("llama-3.3-70b-versatile");
   private logDir = join(process.cwd(), "logs", "cpu");
 
   constructor() {

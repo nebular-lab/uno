@@ -64,7 +64,11 @@ export class DrawStackCommand extends Command<GameRoom, Payload> {
 
     // カードを引いたのでフラグを設定
     player.hasDrawnCard = true;
-    player.drewCardSinceLastPlay = true; // ドボン判定用
+
+    // 誰かがカードを引いたら全員ドボン不可にする
+    for (const p of this.state.players.values()) {
+      p.drewCardSinceLastPlay = true;
+    }
 
     // 累積リセット
     this.state.drawStack = 0;

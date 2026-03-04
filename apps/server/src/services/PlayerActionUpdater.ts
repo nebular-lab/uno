@@ -42,7 +42,12 @@ export class PlayerActionUpdater {
       if (isCurrentTurn) {
         this.updateCurrentTurnPlayer(player, fieldCard, isFirstCardWild);
       } else {
-        this.updateNonCurrentTurnPlayer(player, fieldCard);
+        this.updateNonCurrentTurnPlayer(
+          sessionId,
+          player,
+          fieldCard,
+          cardPlayerId,
+        );
       }
 
       // ドボン判定
@@ -82,12 +87,29 @@ export class PlayerActionUpdater {
   /**
    * 非手番プレイヤーのアクション可否を更新
    */
-  private updateNonCurrentTurnPlayer(player: Player, fieldCard: Card): void {
+  private updateNonCurrentTurnPlayer(
+    sessionId: string,
+    player: Player,
+    fieldCard: Card,
+    cardPlayerId?: string,
+  ): void {
     player.canDraw = false;
     player.canDrawStack = false;
     player.canChooseColor = false;
     player.canPass = false;
     player.canDobonReturn = false;
+
+    // 自分が出したカードに対してはカットイン不可
+    if (cardPlayerId && sessionId === cardPlayerId) {
+      player.playableCards.clear();
+      return;
+    }
+
+    // 誰かがカードを引いた後はカットイン不可（ドロースタック消化後など）
+    if (player.drewCardSinceLastPlay) {
+      player.playableCards.clear();
+      return;
+    }
 
     calculatePlayableCardsForCutIn(player, fieldCard);
   }

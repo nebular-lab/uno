@@ -7,6 +7,7 @@ export { CARD_DECK_CONFIG, CARD_POINTS, compareCards, sortCards } from "./card";
 export type {
   CardData,
   DrawCardAnimationEvent,
+  PassEvent,
   PlayCardAnimationEvent,
 } from "./events";
 export { Card } from "./schema/Card";

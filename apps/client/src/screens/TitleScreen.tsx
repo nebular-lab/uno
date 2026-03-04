@@ -38,7 +38,6 @@ export function TitleScreen() {
         <h1 className="text-7xl font-black tracking-wider text-white drop-shadow-lg">
           ドボンUNO
         </h1>
-        <p className="text-slate-400 mt-2 text-sm tracking-widest">CARD GAME</p>
       </div>
 
       {/* 入力フォーム */}
@@ -67,9 +66,6 @@ export function TitleScreen() {
           START GAME
         </Button>
       </div>
-
-      {/* フッター */}
-      <p className="absolute bottom-4 text-slate-600 text-xs">v1.0</p>
     </div>
   );
 }

@@ -11,6 +11,7 @@ export interface CardAnimation {
   seatId: number;
   cards: ClientCard[];
   isSelf: boolean; // 自分が出したカードかどうか
+  isCutIn: boolean; // カットインかどうか
   startTime: number;
   duration: number;
   // アニメーション開始位置とサイズのスナップショット（カード削除前に取得）
@@ -38,6 +39,15 @@ export const currentAnimationAtom = atom<CardAnimation | null>(null);
 
 // 現在再生中のドローアニメーション
 export const currentDrawAnimationAtom = atom<DrawCardAnimation | null>(null);
+
+// パスイベント（playerId と seatId）
+export interface PassEventData {
+  playerId: string;
+  seatId: number;
+}
+
+// 最新のパスイベント
+export const passEventAtom = atom<PassEventData | null>(null);
 
 // アニメーション中かどうか
 export const isAnimatingAtom = atom(

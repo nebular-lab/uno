@@ -102,6 +102,18 @@ export const useGameRoom = () => {
     [gameRoomState],
   );
 
+  // ゲーム全体設定を更新
+  const updateGameSettings = useCallback(
+    (settings: {
+      showTotalPoints?: boolean;
+      highlightPlayableCards?: boolean;
+    }) => {
+      if (gameRoomState.status !== "connected") return;
+      gameRoomState.room.send("updateGameSettings", settings);
+    },
+    [gameRoomState],
+  );
+
   // 最新のゲーム結果を取得
   const latestGameResult =
     gamePlayState.gameHistory.length > 0
@@ -132,6 +144,10 @@ export const useGameRoom = () => {
     turnDirection: gamePlayState.turnDirection,
     // ドボン状態
     dobonPlayerIds: gamePlayState.dobonPlayerIds,
+    // ホスト設定
+    showTotalPoints: gamePlayState.showTotalPoints,
+    highlightPlayableCards: gamePlayState.highlightPlayableCards,
+    updateGameSettings,
     // ゲーム履歴
     gameHistory: gamePlayState.gameHistory,
     latestGameResult,

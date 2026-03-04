@@ -8,6 +8,7 @@ type Props = {
   playable?: boolean;
   selected?: boolean;
   selectionOrder?: number; // 選択順番（1から始まる、force-change用）
+  showPoints?: boolean;
   onClick?: () => void;
 };
 
@@ -54,6 +55,7 @@ export const Card = ({
   playable = true,
   selected,
   selectionOrder,
+  showPoints,
   onClick,
 }: Props) => {
   const isDraw4 = card.value === "draw4";
@@ -98,6 +100,13 @@ export const Card = ({
     >
       {/* 中央の値 */}
       <span className="text-5xl">{displayValue}</span>
+
+      {/* ポイント表示（数字カード以外のみ） */}
+      {showPoints && !/^\d$/.test(card.value) && (
+        <span className="absolute right-1 bottom-0.5 text-sm font-semibold opacity-80">
+          {card.points}
+        </span>
+      )}
 
       {/* 選択順番バッジ（force-change用） */}
       {selectionOrder !== undefined && selectionOrder > 0 && (

@@ -160,7 +160,7 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
         points: c.points,
       })),
       isCurrentTurn,
-      animationDuration: 500,
+      animationDuration: 700,
     };
     this.room.broadcast("playCardAnimation", event);
   }

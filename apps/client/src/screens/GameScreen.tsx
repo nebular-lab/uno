@@ -1,7 +1,7 @@
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { LogOut } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { currentAnimationAtom } from "@/atoms/animationAtoms";
+import { LogOut, Settings } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { currentAnimationAtom, passEventAtom } from "@/atoms/animationAtoms";
 import { deckPositionAtom } from "@/atoms/cardPositionAtom";
 import { selectedCardIdsAtom } from "@/atoms/selectedCardAtom";
 import { ActionButtons } from "@/components/game/ActionButtons";
@@ -11,6 +11,7 @@ import { MyHand } from "@/components/game/MyHand";
 import { EmptySeat, PlayerSeat } from "@/components/game/PlayerSeat";
 import { ScoreButton } from "@/components/game/ScoreButton";
 import { ScorePanel } from "@/components/game/ScorePanel";
+import { SettingsDialog } from "@/components/game/SettingsDialog";
 import { Table } from "@/components/game/Table";
 import { TableContainer } from "@/components/game/TableContainer";
 import { TurnDirectionIndicator } from "@/components/game/TurnDirectionIndicator";
@@ -71,11 +72,43 @@ export const GameScreen = () => {
     dobonPlayerIds,
     addCpu,
     removeCpu,
+    showTotalPoints,
+    highlightPlayableCards,
   } = useGameRoom();
 
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+  const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const [showScorePanel, setShowScorePanel] = useState(false);
   const [showWinnerLabel, setShowWinnerLabel] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showToast = useCallback((message: string) => {
+    setToastMessage(message);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setToastMessage(null), 3000);
+  }, []);
+
+  // ゲーム全体設定の変更を検知してトースト表示
+  const prevSettingsRef = useRef({ showTotalPoints, highlightPlayableCards });
+  useEffect(() => {
+    const prev = prevSettingsRef.current;
+    if (prev.showTotalPoints !== showTotalPoints) {
+      showToast(
+        showTotalPoints
+          ? "合計ポイントの表示がONになりました"
+          : "合計ポイントの表示がOFFになりました",
+      );
+    }
+    if (prev.highlightPlayableCards !== highlightPlayableCards) {
+      showToast(
+        highlightPlayableCards
+          ? "出せるカードのハイライトがONになりました"
+          : "出せるカードのハイライトがOFFになりました",
+      );
+    }
+    prevSettingsRef.current = { showTotalPoints, highlightPlayableCards };
+  }, [showTotalPoints, highlightPlayableCards, showToast]);
 
   // resultフェーズになったら、最初3秒は「上がり！」表示、その後スコアパネルを開く
   useEffect(() => {
@@ -176,11 +209,84 @@ export const GameScreen = () => {
     setSelectedCardIds([]);
   };
 
+  // UNO表示（残り1枚になったプレイヤー）
+  const [unoPlayerIds, setUnoPlayerIds] = useState<Set<string>>(new Set());
+  const prevCardCountsRef = useRef<Record<string, number>>({});
+  const unoTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
+    new Map(),
+  );
+  useEffect(() => {
+    const prevCounts = prevCardCountsRef.current;
+
+    for (const player of players) {
+      if (!player) continue;
+      const prev = prevCounts[player.sessionId];
+      // カード枚数が2以上→1に減った場合（カードを出して1枚になった）
+      if (prev !== undefined && prev >= 2 && player.cardCount === 1) {
+        const id = player.sessionId;
+        setUnoPlayerIds((s) => new Set(s).add(id));
+
+        // 既存タイマーをクリアして新規作成
+        const existing = unoTimersRef.current.get(id);
+        if (existing) clearTimeout(existing);
+        unoTimersRef.current.set(
+          id,
+          setTimeout(() => {
+            setUnoPlayerIds((s) => {
+              const next = new Set(s);
+              next.delete(id);
+              return next;
+            });
+            unoTimersRef.current.delete(id);
+          }, 2000),
+        );
+      }
+      prevCounts[player.sessionId] = player.cardCount;
+    }
+  }, [players]);
+
+  // パス表示
+  const [passPlayerIds, setPassPlayerIds] = useState<Set<string>>(new Set());
+  const passTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
+    new Map(),
+  );
+  const passEvent = useAtomValue(passEventAtom);
+  const prevPassEventRef = useRef(passEvent);
+  useEffect(() => {
+    if (passEvent && passEvent !== prevPassEventRef.current) {
+      const id = passEvent.playerId;
+      setPassPlayerIds((s) => new Set(s).add(id));
+
+      const existing = passTimersRef.current.get(id);
+      if (existing) clearTimeout(existing);
+      passTimersRef.current.set(
+        id,
+        setTimeout(() => {
+          setPassPlayerIds((s) => {
+            const next = new Set(s);
+            next.delete(id);
+            return next;
+          });
+          passTimersRef.current.delete(id);
+        }, 2000),
+      );
+    }
+    prevPassEventRef.current = passEvent;
+  }, [passEvent]);
+
   // 自分が下中央（position 3）に来るように回転
   const getActualIndex = (displayIndex: number): number => {
     if (mySeatIndex === -1) return displayIndex;
     return (displayIndex + mySeatIndex - 3 + 6) % 6;
   };
+
+  // カットインしたプレイヤーのseatIndex（displayIndex）を計算
+  const cutInSeatIndex =
+    currentAnimation?.isCutIn === true
+      ? mySeatIndex === -1
+        ? currentAnimation.seatId - 1
+        : (currentAnimation.seatId - 1 - mySeatIndex + 3 + 6) % 6
+      : -1;
 
   return (
     <TableContainer>
@@ -233,8 +339,11 @@ export const GameScreen = () => {
                   finishType={latestGameResult?.finishType}
                   isChoosingColor={isOtherPlayerChoosingColor}
                   isCurrentPlayer={isCurrentTurn}
+                  isCutIn={cutInSeatIndex === displayIndex}
                   isDoboner={isDoboner}
+                  isPass={passPlayerIds.has(player.sessionId)}
                   isPlaying={phase !== "waiting"}
+                  isUno={unoPlayerIds.has(player.sessionId)}
                   isWinner={isWinner}
                   player={player}
                 />
@@ -247,8 +356,11 @@ export const GameScreen = () => {
               finishType={latestGameResult?.finishType}
               isChoosingColor={isOtherPlayerChoosingColor}
               isCurrentPlayer={isCurrentTurn}
+              isCutIn={cutInSeatIndex === displayIndex}
               isDoboner={isDoboner}
+              isPass={passPlayerIds.has(player.sessionId)}
               isPlaying={phase !== "waiting"}
+              isUno={unoPlayerIds.has(player.sessionId)}
               isWinner={isWinner}
               key={`seat-${actualIndex}`}
               player={player}
@@ -463,15 +575,25 @@ export const GameScreen = () => {
         </>
       )}
 
-      {/* 退席ボタン */}
-      <Button
-        className="absolute left-4 top-4 size-[80px] bg-slate-700 text-white hover:bg-slate-600"
-        onClick={() => setShowLeaveDialog(true)}
-        size="icon"
-        variant="ghost"
-      >
-        <LogOut className="size-6" />
-      </Button>
+      {/* 退席ボタン・設定ボタン */}
+      <div className="absolute left-4 top-4 flex gap-2">
+        <Button
+          className="size-[80px] bg-slate-700 text-white hover:bg-slate-600"
+          onClick={() => setShowLeaveDialog(true)}
+          size="icon"
+          variant="ghost"
+        >
+          <LogOut className="size-6" />
+        </Button>
+        <Button
+          className="size-[80px] bg-slate-700 text-white hover:bg-slate-600"
+          onClick={() => setShowSettingsDialog(true)}
+          size="icon"
+          variant="ghost"
+        >
+          <Settings className="size-6" />
+        </Button>
+      </div>
 
       {/* スコアボタン */}
       <ScoreButton onClick={() => setShowScorePanel(true)} />
@@ -507,6 +629,21 @@ export const GameScreen = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* 設定ダイアログ */}
+      <SettingsDialog
+        onOpenChange={setShowSettingsDialog}
+        open={showSettingsDialog}
+      />
+
+      {/* 設定変更トースト */}
+      {toastMessage && (
+        <div className="absolute top-6 left-1/2 z-50 -translate-x-1/2 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="rounded-lg bg-slate-800/90 px-6 py-3 text-sm font-medium text-white shadow-lg backdrop-blur-sm border border-slate-600">
+            {toastMessage}
+          </div>
+        </div>
+      )}
 
       {/* スコアパネル */}
       <ScorePanel

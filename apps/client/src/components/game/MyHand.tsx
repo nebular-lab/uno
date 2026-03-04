@@ -27,6 +27,7 @@ import {
   sortHandAtom,
   updateHandOrderAtom,
 } from "@/atoms/handOrderAtom";
+import { playerSettingsAtom } from "@/atoms/playerSettingsAtom";
 import { selectedCardIdsAtom } from "@/atoms/selectedCardAtom";
 import { Button } from "@/components/ui/button";
 import { useGameRoom } from "@/hooks/useGameRoom";
@@ -40,6 +41,7 @@ type SortableCardProps = {
   scale: number;
   selected: boolean;
   selectionOrder?: number;
+  showPoints?: boolean;
   onCardClick: () => void;
   onPositionUpdate: (
     cardId: string,
@@ -57,6 +59,7 @@ const SortableCard = ({
   scale,
   selected,
   selectionOrder,
+  showPoints,
   onCardClick,
   onPositionUpdate,
 }: SortableCardProps) => {
@@ -132,6 +135,7 @@ const SortableCard = ({
         playable={playable}
         selected={selected}
         selectionOrder={selectionOrder}
+        showPoints={showPoints}
       />
     </div>
   );
@@ -147,7 +151,15 @@ export const MyHand = ({ disabled }: Props) => {
   const updateHandOrder = useSetAtom(updateHandOrderAtom);
   const setCardPosition = useSetAtom(setCardPositionAtom);
   const [selectedCardIds, setSelectedCardIds] = useAtom(selectedCardIdsAtom);
-  const { playCard, playableCards } = useGameRoom();
+  const {
+    playCard,
+    playableCards,
+    canDobon,
+    dobon,
+    showTotalPoints,
+    highlightPlayableCards,
+  } = useGameRoom();
+  const playerSettings = useAtomValue(playerSettingsAtom);
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
@@ -332,10 +344,12 @@ export const MyHand = ({ disabled }: Props) => {
   return (
     <>
       <div className="fixed bottom-[150px] left-4 flex gap-2">
-        <div className="flex size-[80px] flex-col items-center justify-center rounded-md bg-black/50 text-white">
-          <span className="text-xs text-zinc-400">合計</span>
-          <span className="text-2xl font-bold">{totalPoints}</span>
-        </div>
+        {showTotalPoints && (
+          <div className="flex size-[80px] flex-col items-center justify-center rounded-md bg-black/50 text-white">
+            <span className="text-xs text-zinc-400">合計</span>
+            <span className="text-2xl font-bold">{totalPoints}</span>
+          </div>
+        )}
         <Button
           className="size-[80px] bg-slate-700 border-2 border-slate-500 text-white hover:bg-slate-600"
           disabled={disabled || cards.length === 0}
@@ -343,6 +357,14 @@ export const MyHand = ({ disabled }: Props) => {
           variant="ghost"
         >
           <ArrowUpDown className="size-5" />
+        </Button>
+        <Button
+          className="size-[80px] bg-purple-500/80 text-white hover:bg-purple-600 disabled:bg-gray-600/50 disabled:text-gray-400"
+          disabled={!canDobon}
+          onClick={dobon}
+          variant="ghost"
+        >
+          <span className="text-lg font-bold">ドボン</span>
         </Button>
       </div>
       <div
@@ -395,6 +417,13 @@ export const MyHand = ({ disabled }: Props) => {
                       firstSelectedCard?.value === "force-change" &&
                       selectedCardIds.length > 1;
 
+                    // ハイライトOFFの場合、全カードを playable=true で表示
+                    const cardPlayable = highlightPlayableCards
+                      ? selectedCardIds.length > 0
+                        ? isStackSelectable(card)
+                        : isPlayable(card.id)
+                      : true;
+
                     return (
                       <SortableCard
                         card={card}
@@ -402,16 +431,13 @@ export const MyHand = ({ disabled }: Props) => {
                         key={card.id}
                         onCardClick={() => handleCardClick(card.id)}
                         onPositionUpdate={handlePositionUpdate}
-                        playable={
-                          selectedCardIds.length > 0
-                            ? isStackSelectable(card)
-                            : isPlayable(card.id)
-                        }
+                        playable={cardPlayable}
                         scale={scale}
                         selected={isSelected}
                         selectionOrder={
                           showOrder ? selectionIndex + 1 : undefined
                         }
+                        showPoints={playerSettings.showCardPoints}
                       />
                     );
                   })}

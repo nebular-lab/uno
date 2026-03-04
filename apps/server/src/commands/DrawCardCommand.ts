@@ -54,7 +54,11 @@ export class DrawCardCommand extends Command<GameRoom, Payload> {
     // 状態更新
     this.state.hasDrawnThisTurn = true;
     player.hasDrawnCard = true;
-    player.drewCardSinceLastPlay = true; // ドボン判定用
+
+    // 誰かがカードを引いたら全員ドボン不可にする
+    for (const p of this.state.players.values()) {
+      p.drewCardSinceLastPlay = true;
+    }
 
     // 山札が0枚になった場合 → ゲーム終了
     if (this.room.deck.length === 0) {

@@ -14,6 +14,9 @@ type Props = {
   isDoboner?: boolean; // ドボンしたプレイヤーかどうか（playingフェーズで表示）
   finishType?: string; // "normal" | "dobon" | "dobonReturn"
   drawCount?: number; // カードを引いた枚数（+N表示用）
+  isCutIn?: boolean; // カットイン中かどうか
+  isUno?: boolean; // UNO（残り1枚）表示
+  isPass?: boolean; // パス表示
 };
 
 // 6人の位置定義（0:上中央 → 時計回り）
@@ -272,6 +275,9 @@ export const PlayerSeat = ({
   isDoboner,
   finishType,
   drawCount,
+  isCutIn,
+  isUno,
+  isPass,
 }: Props) => {
   const ref = useRef<HTMLDivElement>(null);
   const setPlayerSeatPositions = useSetAtom(playerSeatPositionsAtom);
@@ -352,6 +358,50 @@ export const PlayerSeat = ({
           +{drawCount}
         </div>
       )}
+      {/* カットインラベル */}
+      {isCutIn && !isWinner && !isDoboner && (
+        <div
+          className={cn(
+            "absolute -top-5 -translate-x-1/2 whitespace-nowrap rounded-full bg-orange-500 px-3 py-1 text-sm font-bold text-white shadow-lg z-20 animate-bounce",
+            labelPos,
+          )}
+        >
+          カットイン！
+        </div>
+      )}
+      {/* パスラベル */}
+      {isPass && !isWinner && !isDoboner && !isCutIn && (
+        <div
+          className={cn(
+            "absolute -top-5 -translate-x-1/2 whitespace-nowrap rounded-full bg-slate-500 px-3 py-1 text-sm font-bold text-white shadow-lg z-20",
+            labelPos,
+          )}
+        >
+          パス
+        </div>
+      )}
+      {/* UNOラベル（他のラベルと被る場合は上段に配置） */}
+      {isUno &&
+        (() => {
+          const hasOtherLabel =
+            isWinner ||
+            isDoboner ||
+            isCutIn ||
+            isChoosingColor ||
+            isPass ||
+            (drawCount !== undefined && drawCount > 0);
+          return (
+            <div
+              className={cn(
+                "absolute -translate-x-1/2 whitespace-nowrap rounded-full bg-red-500 px-3 py-1 text-sm font-bold text-white shadow-lg z-20 animate-bounce",
+                hasOtherLabel ? "-top-12" : "-top-5",
+                labelPos,
+              )}
+            >
+              UNO
+            </div>
+          );
+        })()}
       <PlayerNamePlate
         displayIndex={posIndex}
         isCurrentPlayer={isCurrentPlayer}

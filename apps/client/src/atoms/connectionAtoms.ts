@@ -1,6 +1,7 @@
 import type {
   DrawCardAnimationEvent,
   GameState,
+  PassEvent,
   PlayCardAnimationEvent,
   RoomMetadata,
   Card as ServerCard,
@@ -21,6 +22,7 @@ import {
   currentAnimationAtom,
   currentDrawAnimationAtom,
   type DrawCardAnimation,
+  passEventAtom,
 } from "./animationAtoms";
 import { playerAtom, screenAtom } from "./appAtoms";
 import {
@@ -54,6 +56,8 @@ const initialGamePlayState: GamePlayState = {
   drawStack: 0,
   turnDirection: 1,
   dobonPlayerIds: [],
+  showTotalPoints: true,
+  highlightPlayableCards: true,
   gameHistory: [],
 };
 
@@ -166,6 +170,8 @@ const setupRoomStateSync = (
       dobonPlayerIds: state.dobonPlayerIds
         ? Array.from(state.dobonPlayerIds)
         : [],
+      showTotalPoints: state.showTotalPoints ?? true,
+      highlightPlayableCards: state.highlightPlayableCards ?? true,
       gameHistory,
     });
   };
@@ -223,6 +229,7 @@ const setupRoomStateSync = (
         points: c.points,
       })),
       isSelf,
+      isCutIn: !event.isCurrentTurn,
       startTime: Date.now(),
       duration: event.animationDuration,
       startPosition,
@@ -274,6 +281,14 @@ const setupRoomStateSync = (
     setTimeout(() => {
       store.set(currentDrawAnimationAtom, null);
     }, event.animationDuration);
+  });
+
+  // パスイベントを購読
+  room.onMessage("pass", (event: PassEvent) => {
+    store.set(passEventAtom, {
+      playerId: event.playerId,
+      seatId: event.seatId,
+    });
   });
 };
 
