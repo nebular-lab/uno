@@ -155,6 +155,20 @@ export class DobonCommand extends Command<GameRoom, Payload> {
     // フェーズをresultに変更
     this.state.phase = "result";
 
+    // 全プレイヤーのアクションフラグをリセット（result中にアクションが実行されないようにする）
+    for (const p of this.state.players.values()) {
+      p.canDraw = false;
+      p.canDrawStack = false;
+      p.canChooseColor = false;
+      p.canPass = false;
+      p.canDobon = false;
+      p.canDobonReturn = false;
+      p.playableCards.clear();
+    }
+
+    // ドロースタックをリセット（Draw2/4へのドボン時に残っている場合がある）
+    this.state.drawStack = 0;
+
     // 点数計算
     const rateMultiplier = this.state.rateMultiplier;
 

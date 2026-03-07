@@ -17,6 +17,8 @@ const DRAW_ANIMATION_DURATION = 1000;
  */
 export class DrawStackCommand extends Command<GameRoom, Payload> {
   validate({ sessionId }: Payload): boolean {
+    if (this.state.phase !== "playing") return false;
+
     const player = this.state.players.get(sessionId);
     if (!player) return false;
 

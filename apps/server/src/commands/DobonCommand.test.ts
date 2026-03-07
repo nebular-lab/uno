@@ -460,6 +460,111 @@ describe("DobonCommand", () => {
     });
   });
 
+  describe("Draw2/Draw4へのドボン", () => {
+    const redDraw2: CardData = {
+      id: "r-draw2",
+      color: "red",
+      value: "draw2",
+      points: 20,
+    };
+
+    it("Draw2に対してドボンするとphaseがresultになりdrawStackが0にリセットされる", async () => {
+      const { room, client1, client2, client3, setHand } = await setupGame(
+        testCards.red5,
+      );
+
+      expect(room.state.phase).toBe("playing");
+
+      // Player1の手札にDraw2を含める
+      await setHand(client1, [
+        redDraw2,
+        testCards.red1,
+        testCards.red1,
+        testCards.red1,
+        testCards.red1,
+        testCards.red1,
+        testCards.red1,
+      ]);
+
+      // Player2の手札を合計20点に設定（Draw2のドボン用）
+      await setHand(client2, [
+        testCards.yellow8,
+        testCards.yellow8,
+        { id: "r4", color: "red", value: "4", points: 4 },
+      ]);
+
+      // Player3の手札（ドボン不可）
+      await setHand(client3, [testCards.blue7]);
+
+      // Player1がDraw2を出す
+      client1.send("playCard", { cardIds: [redDraw2.id] });
+      await new Promise((r) => setTimeout(r, 100));
+
+      // drawStackが2になっていること
+      expect(room.state.drawStack).toBe(2);
+
+      // Player2がドボン可能か確認
+      const player2 = room.state.players.get(client2.sessionId);
+      expect(player2?.canDobon).toBe(true);
+
+      // Player2がドボン
+      client2.send("dobon");
+      await new Promise((r) => setTimeout(r, 100));
+
+      // ゲームがresultフェーズになること
+      expect(room.state.phase).toBe("result");
+      // drawStackが0にリセットされていること
+      expect(room.state.drawStack).toBe(0);
+    });
+
+    it("Draw2に対してドボン後、全プレイヤーのアクションフラグがリセットされる", async () => {
+      const { room, client1, client2, client3, setHand } = await setupGame(
+        testCards.red5,
+      );
+
+      // Player1の手札にDraw2を含める
+      await setHand(client1, [
+        redDraw2,
+        testCards.red1,
+        testCards.red1,
+        testCards.red1,
+        testCards.red1,
+        testCards.red1,
+        testCards.red1,
+      ]);
+
+      // Player2の手札を合計20点に設定
+      await setHand(client2, [
+        testCards.yellow8,
+        testCards.yellow8,
+        { id: "r4", color: "red", value: "4", points: 4 },
+      ]);
+
+      // Player3の手札
+      await setHand(client3, [testCards.blue7]);
+
+      // Player1がDraw2を出す
+      client1.send("playCard", { cardIds: [redDraw2.id] });
+      await new Promise((r) => setTimeout(r, 100));
+
+      // Player2がドボン
+      client2.send("dobon");
+      await new Promise((r) => setTimeout(r, 100));
+
+      expect(room.state.phase).toBe("result");
+
+      // 全プレイヤーのアクションフラグがfalseであること
+      for (const player of room.state.players.values()) {
+        expect(player.canDrawStack).toBe(false);
+        expect(player.canDraw).toBe(false);
+        expect(player.canPass).toBe(false);
+        expect(player.canDobon).toBe(false);
+        expect(player.canDobonReturn).toBe(false);
+        expect(player.canChooseColor).toBe(false);
+      }
+    });
+  });
+
   // ドボン返し待ちのテストはDobonReturnCommand実装後にコメントアウトを外す
   // describe("ドボン返し待ち", () => {
   //   it("ドボンされた人がドボン返し可能な場合、canDobonReturn=trueになる", async () => {
