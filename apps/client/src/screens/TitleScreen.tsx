@@ -1,8 +1,20 @@
 import { useSetAtom } from "jotai";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { navigateToLobbyAtom, setPlayerNameAtom } from "../atoms/appAtoms";
+
+const TutorialPlayer = lazy(() =>
+  import("@/components/tutorial/TutorialPlayer").then((m) => ({
+    default: m.TutorialPlayer,
+  })),
+);
 
 const MAX_NAME_LENGTH = 8;
 
@@ -10,6 +22,7 @@ export function TitleScreen() {
   const setPlayerName = useSetAtom(setPlayerNameAtom);
   const navigateToLobby = useSetAtom(navigateToLobbyAtom);
   const [inputName, setInputName] = useState("");
+  const [showTutorial, setShowTutorial] = useState(false);
 
   const handleStart = () => {
     const trimmedName = inputName.trim();
@@ -65,7 +78,30 @@ export function TitleScreen() {
         >
           START GAME
         </Button>
+        <Button
+          className="text-lg h-12 mt-1 bg-slate-700 hover:bg-slate-600 border-0 font-medium tracking-wider shadow transition-all hover:scale-[1.02] text-slate-200"
+          onClick={() => setShowTutorial(true)}
+        >
+          ルール説明
+        </Button>
       </div>
+
+      <Dialog onOpenChange={setShowTutorial} open={showTutorial}>
+        <DialogContent className="max-w-[1024px] p-4">
+          <DialogHeader>
+            <DialogTitle>ルール説明</DialogTitle>
+          </DialogHeader>
+          <Suspense
+            fallback={
+              <div className="flex items-center justify-center h-64 text-slate-400">
+                読み込み中...
+              </div>
+            }
+          >
+            <TutorialPlayer />
+          </Suspense>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
