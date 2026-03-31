@@ -5,6 +5,7 @@
 **参照ドキュメント:**
 
 - `doc/spec/game-rule.md` - ゲームルール全体
+- `apps/client/src/components/tutorial/data/script.ts` - 台本データ
 
 ---
 
@@ -29,7 +30,7 @@
 │                                         │
 │ 🟢キャラA              キャラB🔵        │
 ├─────────────────────────────────────────┤
-│ A: 場のカードと同じ色か数字を出せるよ！  │
+│ A: 場が赤の5なら、赤か5を出す           │
 └─────────────────────────────────────────┘
 ```
 
@@ -39,74 +40,28 @@
 
 ### 動画スペック
 
-| 項目   | 値                    |
-| ------ | --------------------- |
-| 解像度 | 960×540               |
-| FPS    | 30                    |
-| 長さ   | 約 2〜3 分（8 シーン） |
+| 項目   | 値                     |
+| ------ | ---------------------- |
+| 解像度 | 960×540                |
+| FPS    | 30                     |
+| 長さ   | 約 2〜3 分（8 シーン）  |
 
 ---
 
 ## シーン構成（台本）
 
-### シーン 1: 導入
+台本の詳細は `apps/client/src/components/tutorial/data/script.ts` を参照。
 
-- A「今日はドボン UNO のルールを説明するよ！」
-- B「ドボン UNO？普通の UNO と何が違うの？」
-- A「基本は同じだけど、"ドボン" っていう特別なルールがあるんだ」
-- デモ: タイトルロゴ表示
-
-### シーン 2: カードを出す（基本ルール）
-
-- A「場のカードと同じ色か同じ数字のカードを出せるよ」
-- B「赤の 5 なら、赤のカードか 5 のカードを出せばいいんだね」
-- A「そう！出せるカードがなければ山札から 1 枚引いてね」
-- デモ: 場に赤 5 → 手札から赤 3 や青 5 がハイライトされる
-
-### シーン 3: 記号カードの効果
-
-- A「スキップは次の人を飛ばす、リバースは順番が逆になるよ」
-- B「ドロー 2 は？」
-- A「次の人が 2 枚引く。でもドロー 2 やドロー 4 を重ねて返せるよ」
-- デモ: スキップ→次の人が飛ばされる / ドロー 2 の連鎖
-
-### シーン 4: ワイルドカード
-
-- A「ワイルドカードはいつでも出せて、好きな色を選べるよ」
-- B「ドロー 4 は？」
-- A「同じくいつでも出せて、次の人が 4 枚引く。色も選べるよ」
-- A「強制色変えカードは色が自動で決まるワイルドだよ」
-- デモ: ワイルドカードを出す → 色選択パネル表示
-
-### シーン 5: 重ね出し
-
-- A「同じカードを持っていたら、まとめて出せるよ」
-- B「赤の 5 が 2 枚あったら同時に出せるってこと？」
-- A「その通り！数字カードの重ね出しなら上がることもできるよ」
-- デモ: 同じカード 2 枚を同時に出す
-
-### シーン 6: カットイン
-
-- A「自分の番じゃなくても、場と全く同じカードなら割り込めるよ」
-- B「え、それはずるくない？」
-- A「戦略だよ！割り込んだ人の次から順番が続くんだ」
-- デモ: 他プレイヤーのターン中にカットイン
-
-### シーン 7: ドボン（メイン機能）
-
-- A「これが一番大事！手札の合計点数が場のカードの点数と同じなら "ドボン" で上がれるよ」
-- B「例えば場に 5 が出てて、手札が 2 と 3 なら...合計 5 でドボン！」
-- A「そう！ドボンが成功すると、ドボンされた人が全員の手札分の点数を払うんだ」
-- B「ドボン返しっていうのもあるんでしょ？」
-- A「ドボンされた人の手札の合計と、ドボンした人の手札の合計が同じなら返せるよ」
-- デモ: 場に 5 → 手札 2+3=5 → ドボンボタンが光る → ドボン成立
-
-### シーン 8: まとめ
-
-- A「カードの点数も覚えておこう。数字はそのまま、スキップ・リバース・ドロー 2 は 20 点、ワイルドは 30 点、ドロー 4 は 50 点」
-- B「ドボンを狙いつつ、点数も意識するのが大事なんだね」
-- A「それじゃあ、楽しんでね！」
-- デモ: 点数表を表示
+| シーン | ID           | 内容                                       |
+| ------ | ------------ | ------------------------------------------ |
+| 1      | intro        | 導入（ドボン UNO とは）                     |
+| 2      | basic        | 基本ルール（7 枚配る、色/数字を合わせる）   |
+| 3      | special      | 記号カード（ドロー、スキップ等）と任意ドロー |
+| 4      | stack-cutin  | 重ね出し・記号上がり禁止・カットイン         |
+| 5      | scoring      | 点数計算（上がり時の得点）                   |
+| 6      | dobon        | ドボン（メイン機能）                         |
+| 7      | dobon-return | ドボン返し                                   |
+| 8      | strategy     | 戦略まとめ                                   |
 
 ---
 
@@ -115,27 +70,18 @@
 ```
 apps/client/src/
 ├── components/tutorial/
-│   ├── TutorialPlayer.tsx        # @remotion/player ラッパー + ダイアログ
-│   ├── TutorialVideo.tsx         # Remotion Composition ルート
+│   ├── TutorialPlayer.tsx        # @remotion/player ラッパー（実装済み）
+│   ├── TutorialVideo.tsx         # Remotion Composition ルート（実装済み・仮実装）
 │   ├── Subtitle.tsx              # 字幕バーコンポーネント
 │   ├── characters/
 │   │   ├── Character.tsx         # キャラクター立ち絵コンポーネント
 │   │   └── assets/              # キャラクター画像（2体分）
-│   ├── scenes/
-│   │   ├── IntroScene.tsx        # シーン1: 導入
-│   │   ├── BasicRuleScene.tsx    # シーン2: カードを出す
-│   │   ├── SpecialCardScene.tsx  # シーン3: 記号カード
-│   │   ├── WildCardScene.tsx     # シーン4: ワイルドカード
-│   │   ├── StackScene.tsx        # シーン5: 重ね出し
-│   │   ├── CutInScene.tsx        # シーン6: カットイン
-│   │   ├── DobonScene.tsx        # シーン7: ドボン
-│   │   └── SummaryScene.tsx      # シーン8: まとめ
 │   ├── demo/
 │   │   └── DemoCards.tsx         # デモ領域のカードアニメーション
 │   └── data/
-│       └── script.ts            # 全シーンの台本データ
+│       └── script.ts            # 全シーンの台本データ（実装済み）
 ├── screens/
-│   └── TitleScreen.tsx           # ← 「ルール説明」ボタンを追加
+│   └── TitleScreen.tsx           # 「ルール説明」ボタン（実装済み）
 public/
 └── tutorial/
     └── voice/                    # VOICEVOX 生成音声ファイル
@@ -147,47 +93,11 @@ scripts/
 
 ## 追加パッケージ
 
-### クライアント（apps/client）
+### クライアント（apps/client）— 実装済み
 
 ```
 remotion              # Remotion コア
 @remotion/player      # ブラウザ内再生コンポーネント
-```
-
-### ルート（開発用）
-
-```
-（なし — 音声生成スクリプトは ts-node / tsx で直接実行）
-```
-
----
-
-## 台本データの型定義
-
-```ts
-// data/script.ts
-
-type Speaker = "A" | "B";
-
-interface Dialogue {
-  speaker: Speaker;
-  text: string;
-  audio: string; // 音声ファイルパス（例: "/tutorial/voice/intro_00.wav"）
-  startFrame: number; // 開始フレーム
-  durationFrames: number; // 表示フレーム数（音声の長さに合わせる）
-}
-
-interface DemoContent {
-  type: "title" | "playCard" | "specialCard" | "wildCard" | "stack" | "cutIn" | "dobon" | "scoreTable";
-  // 各typeに応じた追加プロパティ
-}
-
-interface Scene {
-  id: string;
-  durationFrames: number; // シーン全体のフレーム数
-  dialogues: Dialogue[];
-  demo: DemoContent;
-}
 ```
 
 ---
@@ -223,20 +133,17 @@ npx tsx scripts/generate-voice.ts
 
 ## 作業ステップ
 
-### Step 1: Remotion セットアップ
-
-**変更ファイル:** `apps/client/package.json`
+### Step 1: Remotion セットアップ — 完了
 
 - `remotion` と `@remotion/player` をインストール
 - 最小構成で `<Player>` が表示されることを確認
+- タイトル画面に「ルール説明」ボタンを追加
 
-### Step 2: 台本データ作成
+### Step 2: 台本データ作成 — 完了
 
-**新規ファイル:** `apps/client/src/components/tutorial/data/script.ts`
-
-- 全 8 シーンの台本を定義
-- 音声ファイルパスは仮で設定（音声生成後に調整）
-- フレーム数は仮で設定
+- 全 8 シーンの台本を `data/script.ts` に定義
+- 音声ファイルパスは自動生成
+- フレーム数はテキスト長から仮算出（VOICEVOX 音声生成後に調整）
 
 ### Step 3: キャラクター・字幕コンポーネント
 
@@ -252,29 +159,15 @@ npx tsx scripts/generate-voice.ts
 - 既存の `Card` コンポーネントを利用してカードを表示
 - シーンごとに異なるデモコンテンツをアニメーション表示
 
-### Step 5: シーン実装
+### Step 5: TutorialVideo にシーンを組み込む
 
-**新規ファイル:** `scenes/*.tsx`（8 ファイル）
+**変更ファイル:** `TutorialVideo.tsx`
 
-- 各シーンで `Character` + `Subtitle` + `DemoCards` を組み合わせ
-- Remotion の `useCurrentFrame()` でフレームに応じた表示切替
-- `<Audio>` で音声再生（音声生成後）
+- 全シーンを Remotion の `<Series>` で連結
+- 各シーンで `Character` + `Subtitle` + デモ を組み合わせ
+- `useCurrentFrame()` でフレームに応じた表示切替
 
-### Step 6: Composition ルートとプレイヤー
-
-**新規ファイル:**
-
-- `TutorialVideo.tsx` — 全シーンを `<Series>` で連結
-- `TutorialPlayer.tsx` — `@remotion/player` の `<Player>` をダイアログ内に表示
-
-### Step 7: タイトル画面への組み込み
-
-**変更ファイル:** `apps/client/src/screens/TitleScreen.tsx`
-
-- 「ルール説明」ボタンを追加
-- クリックで `TutorialPlayer` ダイアログを表示
-
-### Step 8: VOICEVOX 音声生成
+### Step 6: VOICEVOX 音声生成
 
 **新規ファイル:** `scripts/generate-voice.ts`
 
@@ -282,8 +175,9 @@ npx tsx scripts/generate-voice.ts
 - 生成された音声の長さに合わせて `script.ts` の `durationFrames` を調整
 - `.wav` ファイルを `public/tutorial/voice/` に配置
 
-### Step 9: 音声同期・最終調整
+### Step 7: 音声同期・最終調整
 
+- `<Audio>` で音声再生を追加
 - 音声と字幕のタイミングを微調整
 - デモアニメーションのタイミングを音声に合わせる
 - 全体の流れを通して確認
