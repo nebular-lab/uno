@@ -1,4 +1,6 @@
 import type { DemoType } from "../data/script";
+import { OtherRulesSlide } from "./OtherRulesSlide";
+import { SpecialCardsSlide } from "./SpecialCardsSlide";
 
 interface DemoAreaProps {
   type: DemoType;
@@ -7,14 +9,33 @@ interface DemoAreaProps {
 const DEMO_TITLES: Record<DemoType, string> = {
   title: "ドボンUNO",
   basicRule: "基本ルール",
-  specialCards: "記号カード一覧",
-  forceChange: "強制色変えカード",
+  specialCards: "",
   scoring: "ローカルルール①：点数計算",
   dobon: "ローカルルール②：ドボン",
   dobonReturn: "ローカルルール③：ドボン返し",
-  otherRules: "その他のローカルルール",
+  otherRules: "",
   closing: "",
 };
+
+function DemoContent({ type }: { type: DemoType }) {
+  if (type === "specialCards") return <SpecialCardsSlide />;
+  if (type === "otherRules") return <OtherRulesSlide />;
+
+  const title = DEMO_TITLES[type];
+  if (!title) return null;
+
+  return (
+    <span
+      style={{
+        color: "rgba(255, 255, 255, 0.3)",
+        fontSize: 36,
+        fontWeight: "bold",
+      }}
+    >
+      {title}
+    </span>
+  );
+}
 
 export function DemoArea({ type }: DemoAreaProps) {
   return (
@@ -30,15 +51,7 @@ export function DemoArea({ type }: DemoAreaProps) {
         alignItems: "center",
       }}
     >
-      <span
-        style={{
-          color: "rgba(255, 255, 255, 0.3)",
-          fontSize: 36,
-          fontWeight: "bold",
-        }}
-      >
-        {DEMO_TITLES[type]}
-      </span>
+      <DemoContent type={type} />
     </div>
   );
 }

@@ -17,7 +17,6 @@ export type DemoType =
   | "title"
   | "basicRule"
   | "specialCards"
-  | "forceChange"
   | "scoring"
   | "dobon"
   | "dobonReturn"
@@ -267,7 +266,7 @@ export const scenes: Scene[] = [
   createScene("intro", introLines, "title"),
   createScene("basic", basicRuleLines, "basicRule"),
   createScene("special", specialCardLines, "specialCards"),
-  createScene("force-change", forceChangeLines, "forceChange"),
+  createScene("force-change", forceChangeLines, "specialCards"),
   createScene("scoring", scoringLines, "scoring"),
   createScene("dobon", dobonLines, "dobon"),
   createScene("dobon-return", dobonReturnLines, "dobonReturn"),
