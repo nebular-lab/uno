@@ -1,11 +1,16 @@
 export type Speaker = "A" | "B";
 
+export type MarisaFace = "normal" | "smile" | "smug";
+export type ReimuFace = "normal" | "surprise" | "impressed";
+
 export interface Dialogue {
   speaker: Speaker;
   text: string;
   audio: string;
   startFrame: number;
   durationFrames: number;
+  faceA: MarisaFace;
+  faceB: ReimuFace;
 }
 
 export type DemoType =
@@ -34,15 +39,19 @@ function estimateFrames(text: string): number {
   return Math.ceil((text.length * 0.15 + 0.5) * FPS);
 }
 
-function buildDialogues(
-  lines: { speaker: Speaker; text: string }[],
-  sceneId: string,
-): Dialogue[] {
+interface LineInput {
+  speaker: Speaker;
+  text: string;
+  faceA?: MarisaFace;
+  faceB?: ReimuFace;
+}
+
+function buildDialogues(lines: LineInput[], sceneId: string): Dialogue[] {
   const dialogues: Dialogue[] = [];
   let currentFrame = 0;
 
   for (let i = 0; i < lines.length; i++) {
-    const { speaker, text } = lines[i];
+    const { speaker, text, faceA = "normal", faceB = "normal" } = lines[i];
     const durationFrames = estimateFrames(text);
     dialogues.push({
       speaker,
@@ -50,6 +59,8 @@ function buildDialogues(
       audio: `/tutorial/voice/${sceneId}_${String(i).padStart(2, "0")}.wav`,
       startFrame: currentFrame,
       durationFrames,
+      faceA,
+      faceB,
     });
     currentFrame += durationFrames;
   }
@@ -67,7 +78,7 @@ function totalFrames(dialogues: Dialogue[]): number {
 const A = "A" as const;
 const B = "B" as const;
 
-const introLines = [
+const introLines: LineInput[] = [
   { speaker: A, text: "ドボンUNOのルール説明をするよ" },
   { speaker: B, text: "ドボンUNO？UNOは知ってるけど" },
   { speaker: A, text: "UNOにローカルルールを足したやつ" },
@@ -76,10 +87,10 @@ const introLines = [
     text: "「ドボン」ってルールが一番の特徴だから、ドボンUNOって名前にしてる",
   },
   { speaker: B, text: "ドボンね。まあ聞いてみるわ" },
-  { speaker: A, text: "じゃあまずUNOの基本から" },
+  { speaker: A, text: "じゃあまずUNOの基本から", faceA: "smile" },
 ];
 
-const basicRuleLines = [
+const basicRuleLines: LineInput[] = [
   { speaker: A, text: "最初に7枚ずつ配られる" },
   {
     speaker: A,
@@ -88,7 +99,7 @@ const basicRuleLines = [
   { speaker: B, text: "場が赤の5なら、赤か5を出す。まあここは普通だね" },
 ];
 
-const specialCardLines = [
+const specialCardLines: LineInput[] = [
   { speaker: A, text: "数字以外に記号カードがある" },
   { speaker: A, text: "スキップで次の人飛ばし、リバースで逆回り" },
   { speaker: A, text: "ドロー2は次の人に2枚、ドロー4は4枚引かせる" },
@@ -96,11 +107,12 @@ const specialCardLines = [
     speaker: A,
     text: "ドロー2はドロー2かドロー4で返せる。ドロー4はドロー4でしか返せない",
   },
+  { speaker: A, text: "返せないと溜まった分を全部引く" },
   {
-    speaker: A,
-    text: "返せないと溜まった分を全部引く",
+    speaker: B,
+    text: "ドロー4が何枚か続いたら悲惨だな",
+    faceB: "surprise",
   },
-  { speaker: B, text: "ドロー4が何枚か続いたら悲惨だな" },
   {
     speaker: A,
     text: "色変えカードはいつでも出せて、好きな色を指定できる",
@@ -115,11 +127,15 @@ const specialCardLines = [
   },
 ];
 
-const stackAndCutInLines = [
+const stackAndCutInLines: LineInput[] = [
   { speaker: A, text: "ここからローカルルール" },
   { speaker: A, text: "まず重ね出し。同じカード持ってたらまとめて出せる" },
   { speaker: B, text: "赤5が2枚あったら2枚同時に？" },
-  { speaker: A, text: "そう。数字カードの重ね出しならそのまま上がれる" },
+  {
+    speaker: A,
+    text: "そう。数字カードの重ね出しならそのまま上がれる",
+    faceA: "smug",
+  },
   {
     speaker: A,
     text: "あと、記号カードでは上がれない。最後の1枚が記号だと出せない",
@@ -132,11 +148,12 @@ const stackAndCutInLines = [
   {
     speaker: B,
     text: "横取りみたいなもんか。じゃあモタモタしてると取られるね",
+    faceB: "impressed",
   },
   { speaker: A, text: "カットインした人の次から順番が続く" },
 ];
 
-const scoringLines = [
+const scoringLines: LineInput[] = [
   { speaker: A, text: "誰かが上がったらゲーム終了で点数計算" },
   {
     speaker: A,
@@ -150,11 +167,16 @@ const scoringLines = [
   {
     speaker: A,
     text: "点数は設定で「カードに点数を表示」をオンにすれば見れるから、覚えなくて大丈夫",
+    faceA: "smile",
   },
-  { speaker: B, text: "誰かが上がりそうなとき、でかいカード抱えてると痛いな" },
+  {
+    speaker: B,
+    text: "誰かが上がりそうなとき、でかいカード抱えてると痛いな",
+    faceB: "surprise",
+  },
 ];
 
-const dobonLines = [
+const dobonLines: LineInput[] = [
   { speaker: A, text: "で、ここからが本題のドボン" },
   {
     speaker: A,
@@ -164,16 +186,25 @@ const dobonLines = [
   {
     speaker: A,
     text: "そうそう。手札が5と7と8で、誰かがドロー2出したら？",
+    faceA: "smug",
   },
-  { speaker: B, text: "ドロー2は20点…5+7+8で20。これもドボンか" },
+  {
+    speaker: B,
+    text: "ドロー2は20点…5+7+8で20。これもドボンか",
+    faceB: "impressed",
+  },
   {
     speaker: A,
     text: "ドボンが決まると、出した人がドボンした人に全員の手札の合計点数を払う",
   },
-  { speaker: B, text: "全員分？それは相当でかいな" },
+  {
+    speaker: B,
+    text: "全員分？それは相当でかいな",
+    faceB: "surprise",
+  },
 ];
 
-const dobonReturnLines = [
+const dobonReturnLines: LineInput[] = [
   { speaker: A, text: "ただ、ドボン返しってのがある" },
   {
     speaker: A,
@@ -182,6 +213,7 @@ const dobonReturnLines = [
   {
     speaker: A,
     text: "そこにドボンされたら、ドボンした人の手札も50点。だからドボン返しできる",
+    faceA: "smug",
   },
   {
     speaker: A,
@@ -190,32 +222,39 @@ const dobonReturnLines = [
   {
     speaker: B,
     text: "じゃあドボン返し準備しておけば、50点のドロー4も安全に出せるわけだ",
+    faceB: "impressed",
   },
   {
     speaker: B,
     text: "逆に、相手がドロー4を平気で出してきたら「ドボン返し構えてるな」って読めるね",
+    faceB: "impressed",
   },
-  { speaker: A, text: "そう、そこの読み合いが面白いところ" },
+  {
+    speaker: A,
+    text: "そう、そこの読み合いが面白いところ",
+    faceA: "smile",
+  },
 ];
 
-const strategyLines = [
+const strategyLines: LineInput[] = [
   {
     speaker: B,
     text: "ドボンを警戒しつつ、自分もドボンや上がりを狙うゲームか",
+    faceB: "impressed",
   },
   {
     speaker: A,
     text: "カードを出すたびにドボンされるリスクと上がりに近づくリターンの駆け引きがある",
   },
   { speaker: B, text: "やってみるわ" },
-  { speaker: A, text: "じゃあやろう！" },
+  { speaker: A, text: "じゃあやろう！", faceA: "smile" },
 ];
 
 // --- シーン組み立て ---
 
 function createScene(
   id: string,
-  lines: { speaker: Speaker; text: string }[],
+  lines: LineInput[],
   demoType: DemoType,
 ): Scene {
   const dialogues = buildDialogues(lines, id);
