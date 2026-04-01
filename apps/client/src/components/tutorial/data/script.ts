@@ -16,11 +16,13 @@ export interface Dialogue {
 export type DemoType =
   | "title"
   | "basicRule"
-  | "stackAndCutIn"
+  | "specialCards"
+  | "forceChange"
   | "scoring"
   | "dobon"
   | "dobonReturn"
-  | "strategy";
+  | "otherRules"
+  | "closing";
 
 export interface Scene {
   id: string;
@@ -78,6 +80,8 @@ function totalFrames(dialogues: Dialogue[]): number {
 const A = "A" as const;
 const B = "B" as const;
 
+// --- シーン1: 導入 + 基本ルール ---
+
 const introLines: LineInput[] = [
   { speaker: A, text: "ドボンUNOのルール説明をするよ" },
   { speaker: B, text: "ドボンUNO？UNOは知ってるけど" },
@@ -87,8 +91,9 @@ const introLines: LineInput[] = [
     text: "「ドボン」ってルールが一番の特徴だから、ドボンUNOって名前にしてる",
   },
   { speaker: B, text: "ドボンね。まあ聞いてみるわ" },
-  { speaker: A, text: "じゃあまずUNOの基本から", faceA: "smile" },
 ];
+
+// --- シーン2: 基本ルール ---
 
 const basicRuleLines: LineInput[] = [
   { speaker: A, text: "最初に7枚ずつ配られる" },
@@ -99,65 +104,37 @@ const basicRuleLines: LineInput[] = [
   { speaker: B, text: "場が赤の5なら、赤か5を出す。まあここは普通だね" },
 ];
 
+// --- シーン3: 記号カード（スライド表示） ---
+
 const specialCardLines: LineInput[] = [
-  { speaker: A, text: "数字以外に記号カードがある" },
-  { speaker: A, text: "スキップで次の人飛ばし、リバースで逆回り" },
-  { speaker: A, text: "ドロー2は次の人に2枚、ドロー4は4枚引かせる" },
   {
     speaker: A,
-    text: "ドロー2はドロー2かドロー4で返せる。ドロー4はドロー4でしか返せない",
-  },
-  { speaker: A, text: "返せないと溜まった分を全部引く" },
-  {
-    speaker: B,
-    text: "ドロー4が何枚か続いたら悲惨だな",
-    faceB: "surprise",
-  },
-  {
-    speaker: A,
-    text: "色変えカードはいつでも出せて、好きな色を指定できる",
-  },
-  {
-    speaker: A,
-    text: "強制色変えもいつでも出せるけど、色はカードの色で固定",
-  },
-  {
-    speaker: A,
-    text: "あと、出せるカードがあっても山札から1枚引ける。引いたら出すかパスか選べる",
+    text: "記号カードの効果についてはこれを見てほしい",
   },
 ];
 
-const stackAndCutInLines: LineInput[] = [
-  { speaker: A, text: "ここからローカルルール" },
-  { speaker: A, text: "まず重ね出し。同じカード持ってたらまとめて出せる" },
-  { speaker: B, text: "赤5が2枚あったら2枚同時に？" },
+// --- シーン4: 強制色変えカード ---
+
+const forceChangeLines: LineInput[] = [
+  { speaker: B, text: "1つ、色がついたワイルドカードがあるね" },
   {
     speaker: A,
-    text: "そう。数字カードの重ね出しならそのまま上がれる",
-    faceA: "smug",
-  },
-  {
-    speaker: A,
-    text: "あと、記号カードでは上がれない。最後の1枚が記号だと出せない",
-  },
-  { speaker: B, text: "最後は数字で上がらないといけないのか" },
-  {
-    speaker: A,
-    text: "次、カットイン。自分の番じゃなくても、場と全く同じカード持ってたら割り込める",
+    text: "それは強制色変えカード。その色に変更するワイルドカードだ",
   },
   {
     speaker: B,
-    text: "横取りみたいなもんか。じゃあモタモタしてると取られるね",
+    text: "なるほど、例えば赤の強制色変えは、ワイルドと同じようにいつでも出せるけど、赤色が強制的に選ばれるんだね",
     faceB: "impressed",
   },
-  { speaker: A, text: "カットインした人の次から順番が続く" },
 ];
 
+// --- シーン5: ローカルルール1 — 点数計算 ---
+
 const scoringLines: LineInput[] = [
-  { speaker: A, text: "誰かが上がったらゲーム終了で点数計算" },
+  { speaker: A, text: "ここからローカルルール。1つ目は点数計算" },
   {
     speaker: A,
-    text: "上がれなかった人は、手札の合計点数を上がった人に払う",
+    text: "誰かが上がったら、上がれなかった人は手札の合計点数を上がった人に払う",
   },
   {
     speaker: A,
@@ -176,8 +153,10 @@ const scoringLines: LineInput[] = [
   },
 ];
 
+// --- シーン6: ローカルルール2 — ドボン ---
+
 const dobonLines: LineInput[] = [
-  { speaker: A, text: "で、ここからが本題のドボン" },
+  { speaker: A, text: "2つ目がこのゲームの目玉、ドボン" },
   {
     speaker: A,
     text: "手札の合計点数が、場に出たカードの点数とピッタリ同じなら、ドボンで上がれる",
@@ -204,11 +183,13 @@ const dobonLines: LineInput[] = [
   },
 ];
 
+// --- シーン7: ローカルルール3 — ドボン返し ---
+
 const dobonReturnLines: LineInput[] = [
-  { speaker: A, text: "ただ、ドボン返しってのがある" },
+  { speaker: A, text: "3つ目、ドボン返し" },
   {
     speaker: A,
-    text: "例えば手札の合計100点でドロー4を出した。残り50点",
+    text: "例えば手札の合計100点でドロー4を出した。残りは50点",
   },
   {
     speaker: A,
@@ -236,7 +217,18 @@ const dobonReturnLines: LineInput[] = [
   },
 ];
 
-const strategyLines: LineInput[] = [
+// --- シーン8: その他のローカルルール（スライド表示） ---
+
+const otherRulesLines: LineInput[] = [
+  {
+    speaker: A,
+    text: "他にもいくつかローカルルールがあるから、これを見てほしい",
+  },
+];
+
+// --- シーン9: 締め ---
+
+const closingLines: LineInput[] = [
   {
     speaker: B,
     text: "ドボンを警戒しつつ、自分もドボンや上がりを狙うゲームか",
@@ -245,6 +237,11 @@ const strategyLines: LineInput[] = [
   {
     speaker: A,
     text: "カードを出すたびにドボンされるリスクと上がりに近づくリターンの駆け引きがある",
+  },
+  {
+    speaker: A,
+    text: "ルールが不安な人は、まずはCPU相手に対戦してみてね",
+    faceA: "smile",
   },
   { speaker: B, text: "やってみるわ" },
   { speaker: A, text: "じゃあやろう！", faceA: "smile" },
@@ -269,12 +266,13 @@ function createScene(
 export const scenes: Scene[] = [
   createScene("intro", introLines, "title"),
   createScene("basic", basicRuleLines, "basicRule"),
-  createScene("special", specialCardLines, "basicRule"),
-  createScene("stack-cutin", stackAndCutInLines, "stackAndCutIn"),
+  createScene("special", specialCardLines, "specialCards"),
+  createScene("force-change", forceChangeLines, "forceChange"),
   createScene("scoring", scoringLines, "scoring"),
   createScene("dobon", dobonLines, "dobon"),
   createScene("dobon-return", dobonReturnLines, "dobonReturn"),
-  createScene("strategy", strategyLines, "strategy"),
+  createScene("other-rules", otherRulesLines, "otherRules"),
+  createScene("closing", closingLines, "closing"),
 ];
 
 export const totalDurationFrames = scenes.reduce(
