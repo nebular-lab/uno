@@ -1,8 +1,6 @@
 import { Player } from "@remotion/player";
+import { FPS, totalDurationFrames } from "./data/script";
 import { TutorialVideo } from "./TutorialVideo";
-
-const FPS = 30;
-const DURATION_SECONDS = 5;
 
 export function TutorialPlayer() {
   return (
@@ -11,7 +9,7 @@ export function TutorialPlayer() {
       compositionHeight={540}
       compositionWidth={960}
       controls
-      durationInFrames={FPS * DURATION_SECONDS}
+      durationInFrames={totalDurationFrames}
       fps={FPS}
       style={{
         width: "100%",
