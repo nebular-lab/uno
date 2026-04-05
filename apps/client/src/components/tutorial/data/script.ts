@@ -43,7 +43,7 @@ export const FPS = 30;
 const VOICE_DURATIONS: Record<string, number> = {
   "marisa_basic_1.mp3": 82,
   "marisa_basic_2.mp3": 199,
-  "marisa_closing_1.mp3": 121,
+  "marisa_closing_1.mp3": 125,
   "marisa_closing_2.mp3": 108,
   "marisa_dobon_1.mp3": 101,
   "marisa_dobon_2.mp3": 240,
@@ -61,10 +61,11 @@ const VOICE_DURATIONS: Record<string, number> = {
   "marisa_return_4.mp3": 255,
   "marisa_return_5.mp3": 272,
   "marisa_return_6.mp3": 65,
-  "marisa_scoring_1.mp3": 123,
-  "marisa_scoring_2.mp3": 97,
-  "marisa_scoring_3.mp3": 281,
-  "marisa_scoring_4.mp3": 250,
+  "marisa_scoring_1.mp3": 117,
+  "marisa_scoring_2.mp3": 123,
+  "marisa_scoring_3.mp3": 97,
+  "marisa_scoring_4.mp3": 281,
+  "marisa_scoring_5.mp3": 250,
   "marisa_scoring_play_1.mp3": 67,
   "marisa_scoring_play_2.mp3": 196,
   "marisa_special_1.mp3": 108,
@@ -74,7 +75,7 @@ const VOICE_DURATIONS: Record<string, number> = {
   "reimu_closing_2.mp3": 60,
   "reimu_dobon_1.mp3": 110,
   "reimu_dobon_2.mp3": 93,
-  "reimu_dobon_3.mp3": 276,
+  "reimu_dobon_3.mp3": 287,
   "reimu_dobon_4.mp3": 32,
   "reimu_dobon_5.mp3": 149,
   "reimu_force_1.mp3": 110,
@@ -204,6 +205,7 @@ const forceChangeLines: LineInput[] = [
 // --- シーン5a: ローカルルール1 — 点数計算（スライド） ---
 
 const scoringSlideLines: LineInput[] = [
+  { speaker: A, text: "次に得点計算について説明するぜ" },
   { speaker: A, text: "それぞれのカードに、点数が設定されているぜ" },
   { speaker: A, text: "設定されている点数はこの通りだ" },
   {
@@ -319,7 +321,7 @@ const otherRulesLines: LineInput[] = [
 // --- シーン9: 締め ---
 
 const closingLines: LineInput[] = [
-  { speaker: A, text: "最後に、基本的な戦略を確認するぜ" },
+  { speaker: A, text: "最後に、ドボンUNOのゲーム性を確認するぜ" },
   {
     speaker: B,
     text: "ドボンされるのを警戒して大きな失点を防ぎつつ、上がりやドボンを狙って得点を稼ぐゲームということだね",

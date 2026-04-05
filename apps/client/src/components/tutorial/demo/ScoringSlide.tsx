@@ -6,8 +6,8 @@ import { SlideCard } from "./SlideCard";
 const scoringSlideScene = scenes.find((s) => s.id === "scoring-slide");
 const dialogues = scoringSlideScene?.dialogues ?? [];
 
-// セリフ2:「この点数は、「カードに点数を表示」設定を…」の開始フレーム
-const showPointsFrame = dialogues[2]?.startFrame ?? 0;
+// セリフ3:「この点数は、「カードに点数を表示」設定を…」の開始フレーム
+const showPointsFrame = dialogues[3]?.startFrame ?? 0;
 
 interface ScoreRow {
   color: string;
