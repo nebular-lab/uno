@@ -37,9 +37,59 @@ export interface Scene {
 export const FPS = 30;
 
 /**
- * 1セリフあたりの仮フレーム数（VOICEVOX音声生成後に調整）
- * 日本語1文字あたり約0.15秒 + 余白0.5秒で概算
+ * 音声ファイルの実測フレーム数（scripts/get-voice-durations.sh で生成）
+ * 実測値がない場合はテキスト長から概算する
  */
+const VOICE_DURATIONS: Record<string, number> = {
+  "marisa_basic_1.mp3": 82,
+  "marisa_basic_2.mp3": 199,
+  "marisa_closing_1.mp3": 121,
+  "marisa_closing_2.mp3": 108,
+  "marisa_dobon_1.mp3": 101,
+  "marisa_dobon_2.mp3": 240,
+  "marisa_dobon_3.mp3": 227,
+  "marisa_force_1.mp3": 268,
+  "marisa_intro_1.mp3": 127,
+  "marisa_intro_2.mp3": 196,
+  "marisa_intro_3.mp3": 181,
+  "marisa_intro_4.mp3": 125,
+  "marisa_other_1.mp3": 132,
+  "marisa_other_2.mp3": 186,
+  "marisa_return_1.mp3": 67,
+  "marisa_return_2.mp3": 91,
+  "marisa_return_3.mp3": 196,
+  "marisa_return_4.mp3": 255,
+  "marisa_return_5.mp3": 272,
+  "marisa_return_6.mp3": 65,
+  "marisa_scoring_1.mp3": 123,
+  "marisa_scoring_2.mp3": 97,
+  "marisa_scoring_3.mp3": 281,
+  "marisa_scoring_4.mp3": 250,
+  "marisa_scoring_play_1.mp3": 67,
+  "marisa_scoring_play_2.mp3": 196,
+  "marisa_special_1.mp3": 108,
+  "marisa_special_2.mp3": 108,
+  "reimu_basic_1.mp3": 261,
+  "reimu_closing_1.mp3": 257,
+  "reimu_closing_2.mp3": 60,
+  "reimu_dobon_1.mp3": 110,
+  "reimu_dobon_2.mp3": 93,
+  "reimu_dobon_3.mp3": 276,
+  "reimu_dobon_4.mp3": 32,
+  "reimu_dobon_5.mp3": 149,
+  "reimu_force_1.mp3": 110,
+  "reimu_force_2.mp3": 237,
+  "reimu_intro_1.mp3": 108,
+  "reimu_other_1.mp3": 222,
+  "reimu_return_1.mp3": 30,
+  "reimu_return_2.mp3": 153,
+  "reimu_return_3.mp3": 45,
+  "reimu_return_4.mp3": 205,
+  "reimu_scoring_1.mp3": 82,
+  "reimu_scoring_play_1.mp3": 80,
+  "reimu_scoring_play_2.mp3": 190,
+};
+
 function estimateFrames(text: string): number {
   return Math.ceil((text.length * 0.15 + 0.5) * FPS);
 }
@@ -63,10 +113,11 @@ function buildDialogues(lines: LineInput[], sceneId: string): Dialogue[] {
 
   for (let i = 0; i < lines.length; i++) {
     const { speaker, text, faceA = "normal", faceB = "normal" } = lines[i];
-    const durationFrames = estimateFrames(text);
     speakerCount[speaker]++;
     const speakerName = SPEAKER_NAMES[speaker];
     const num = speakerCount[speaker];
+    const audioFile = `${speakerName}_${sceneId}_${num}.mp3`;
+    const durationFrames = VOICE_DURATIONS[audioFile] ?? estimateFrames(text);
     dialogues.push({
       speaker,
       text,
@@ -271,12 +322,12 @@ const closingLines: LineInput[] = [
   { speaker: A, text: "最後に、基本的な戦略を確認するぜ" },
   {
     speaker: B,
-    text: "このゲームは、ドボンされるのを警戒しつつ、自分もドボンや上がりを狙って点数を稼ぐゲームということだね",
+    text: "ドボンされるのを警戒して大きな失点を防ぎつつ、上がりやドボンを狙って得点を稼ぐゲームということだね",
     faceB: "impressed",
   },
   {
     speaker: A,
-    text: "そうだぜ。このリスクとリターンのバランスを考えるのが難しいけど、それが面白いんだぜ",
+    text: "そう。その駆け引きが面白いんだぜ",
     faceA: "smile",
   },
   { speaker: B, text: "早速やってみよう" },
