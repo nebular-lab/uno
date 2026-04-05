@@ -1,12 +1,7 @@
 import { useSetAtom } from "jotai";
 import { lazy, Suspense, useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { navigateToLobbyAtom, setPlayerNameAtom } from "../atoms/appAtoms";
 
@@ -88,9 +83,6 @@ export function TitleScreen() {
 
       <Dialog onOpenChange={setShowTutorial} open={showTutorial}>
         <DialogContent className="max-w-[1024px] p-4">
-          <DialogHeader>
-            <DialogTitle>ルール説明</DialogTitle>
-          </DialogHeader>
           <Suspense
             fallback={
               <div className="flex items-center justify-center h-64 text-slate-400">
