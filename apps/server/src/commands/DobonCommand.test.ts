@@ -460,6 +460,80 @@ describe("DobonCommand", () => {
     });
   });
 
+  describe("ドロー2に対するドボン", () => {
+    it("ドロー2を出されたときにドボンできる", async () => {
+      const red4: CardData = {
+        id: "r4",
+        color: "red",
+        value: "4",
+        points: 4,
+      };
+      const redDraw2: CardData = {
+        id: "r-draw2",
+        color: "red",
+        value: "draw2",
+        points: 20,
+      };
+      const { room, client1, client2, client3, setHand } =
+        await setupGame(red4);
+
+      expect(room.state.phase).toBe("playing");
+
+      // Player1: red2を出したら残り手札合計20点（= draw2のポイント）
+      await setHand(client1, [
+        testCards.red2,
+        testCards.yellow8,
+        { id: "y9", color: "yellow", value: "9", points: 9 },
+        testCards.green1,
+        testCards.green2,
+      ]);
+
+      // Player2: redDraw2 + 出せないカード（残り手札合計≠20でドボン返し不成立）
+      await setHand(client2, [
+        redDraw2,
+        { id: "b1-200", color: "blue", value: "1", points: 1 },
+        { id: "g1-200", color: "green", value: "1", points: 1 },
+        { id: "b5-200", color: "blue", value: "5", points: 5 },
+        { id: "g3-200", color: "green", value: "3", points: 3 },
+      ]);
+
+      // Player3: 出せないカード
+      await setHand(client3, [
+        { id: "b6-300", color: "blue", value: "6", points: 6 },
+        { id: "g7-300", color: "green", value: "7", points: 7 },
+      ]);
+
+      // タイマーを停止
+      client1.send("__stopTimer");
+      await new Promise((r) => setTimeout(r, 50));
+
+      // Player1がred2を出す（場はred4なので色一致で出せる）
+      client1.send("playCard", { cardIds: [testCards.red2.id] });
+      await new Promise((r) => setTimeout(r, 100));
+
+      // タイマーを停止
+      client1.send("__stopTimer");
+      await new Promise((r) => setTimeout(r, 50));
+
+      // Player2がredDraw2を出す
+      client2.send("playCard", { cardIds: [redDraw2.id] });
+      await new Promise((r) => setTimeout(r, 100));
+
+      // Player1がドボン可能であることを確認
+      const p1 = room.state.players.get(client1.sessionId);
+      expect(p1?.canDobon).toBe(true);
+
+      // Player1がドボン
+      client1.send("dobon");
+      await new Promise((r) => setTimeout(r, 500));
+
+      // ドボンが成功してresultフェーズになる
+      expect(room.state.phase).toBe("result");
+      expect(room.state.dobonPlayerIds.length).toBe(1);
+      expect(room.state.dobonPlayerIds[0]).toBe(client1.sessionId);
+    });
+  });
+
   // ドボン返し待ちのテストはDobonReturnCommand実装後にコメントアウトを外す
   // describe("ドボン返し待ち", () => {
   //   it("ドボンされた人がドボン返し可能な場合、canDobonReturn=trueになる", async () => {
