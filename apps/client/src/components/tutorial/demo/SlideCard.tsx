@@ -20,9 +20,15 @@ interface SlideCardProps {
   color: string;
   value: string;
   size?: "small" | "normal";
+  pointsLabel?: number;
 }
 
-export function SlideCard({ color, value, size = "normal" }: SlideCardProps) {
+export function SlideCard({
+  color,
+  value,
+  size = "normal",
+  pointsLabel,
+}: SlideCardProps) {
   const colors = COLOR_MAP[color] ?? COLOR_MAP.gray;
   const display = VALUE_DISPLAY[value] ?? value;
   const isSmall = size === "small";
@@ -30,6 +36,7 @@ export function SlideCard({ color, value, size = "normal" }: SlideCardProps) {
   return (
     <div
       style={{
+        position: "relative",
         width: isSmall ? 44 : 56,
         height: isSmall ? 62 : 78,
         backgroundColor: colors.bg,
@@ -46,6 +53,20 @@ export function SlideCard({ color, value, size = "normal" }: SlideCardProps) {
       }}
     >
       {display}
+      {pointsLabel !== undefined && (
+        <span
+          style={{
+            position: "absolute",
+            right: 2,
+            bottom: 1,
+            fontSize: isSmall ? 9 : 11,
+            fontWeight: 600,
+            opacity: 0.8,
+          }}
+        >
+          {pointsLabel}
+        </span>
+      )}
     </div>
   );
 }

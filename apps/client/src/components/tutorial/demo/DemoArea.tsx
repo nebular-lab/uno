@@ -1,43 +1,85 @@
 import type { DemoType } from "../data/script";
+import { BasicRuleDemo } from "./BasicRuleDemo";
+import { DobonPlayDemo } from "./DobonPlayDemo";
+import { DobonReturnPlayDemo } from "./DobonReturnPlayDemo";
 import { OtherRulesSlide } from "./OtherRulesSlide";
+import { ScoringPlayDemo } from "./ScoringPlayDemo";
+import { ScoringSlide } from "./ScoringSlide";
 import { SpecialCardsSlide } from "./SpecialCardsSlide";
 
 interface DemoAreaProps {
   type: DemoType;
 }
 
-const DEMO_TITLES: Record<DemoType, string> = {
-  title: "ドボンUNO",
-  basicRule: "基本ルール",
-  specialCards: "",
-  scoring: "ローカルルール①：点数計算",
-  dobon: "ローカルルール②：ドボン",
-  dobonReturn: "ローカルルール③：ドボン返し",
-  otherRules: "",
-  closing: "",
-};
-
-function DemoContent({ type }: { type: DemoType }) {
-  if (type === "specialCards") return <SpecialCardsSlide />;
-  if (type === "otherRules") return <OtherRulesSlide />;
-
-  const title = DEMO_TITLES[type];
-  if (!title) return null;
-
+function TitleScreen() {
   return (
-    <span
+    <div
       style={{
-        color: "rgba(255, 255, 255, 0.3)",
-        fontSize: 36,
-        fontWeight: "bold",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        height: "100%",
+        gap: 16,
       }}
     >
-      {title}
-    </span>
+      <span
+        style={{
+          fontSize: 64,
+          fontWeight: 900,
+          color: "#fff",
+          letterSpacing: 8,
+        }}
+      >
+        ドボンUNO
+      </span>
+      <span
+        style={{
+          fontSize: 20,
+          color: "rgba(255,255,255,0.6)",
+        }}
+      >
+        ルール説明
+      </span>
+    </div>
   );
 }
 
+function DemoContent({ type }: { type: DemoType }) {
+  switch (type) {
+    case "title":
+      return <TitleScreen />;
+    case "basicRule":
+      return <BasicRuleDemo />;
+    case "specialCards":
+      return <SpecialCardsSlide />;
+    case "forceChangeCards":
+      return <SpecialCardsSlide highlightForceChange />;
+    case "scoringSlide":
+      return <ScoringSlide />;
+    case "scoringPlay":
+      return <ScoringPlayDemo />;
+    case "dobonPlay":
+      return <DobonPlayDemo />;
+    case "dobonReturnPlay":
+      return <DobonReturnPlayDemo />;
+    case "otherRules":
+      return <OtherRulesSlide />;
+    default:
+      return null;
+  }
+}
+
+const GAME_UI_TYPES: DemoType[] = [
+  "basicRule",
+  "scoringPlay",
+  "dobonPlay",
+  "dobonReturnPlay",
+];
+
 export function DemoArea({ type }: DemoAreaProps) {
+  const isGameUI = GAME_UI_TYPES.includes(type);
+
   return (
     <div
       style={{
@@ -45,10 +87,11 @@ export function DemoArea({ type }: DemoAreaProps) {
         top: 0,
         left: 0,
         right: 0,
-        bottom: 80,
+        bottom: isGameUI ? 0 : 80,
         display: "flex",
         justifyContent: "center",
-        alignItems: "center",
+        alignItems: isGameUI ? "flex-start" : "center",
+        overflow: "hidden",
       }}
     >
       <DemoContent type={type} />

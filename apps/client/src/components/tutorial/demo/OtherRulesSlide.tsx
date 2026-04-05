@@ -61,7 +61,24 @@ function OptionalDrawVisual() {
   );
 }
 
+function StackingVisual() {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+      <SlideCard color="red" size="small" value="draw2" />
+      <span style={{ color: "#facc15", fontSize: 20, fontWeight: "bold" }}>
+        →
+      </span>
+      <SlideCard color="blue" size="small" value="draw2" />
+    </div>
+  );
+}
+
 const RULES: RuleInfo[] = [
+  {
+    label: "スタッキング",
+    description: "+2に+2か+4、+4に+4を出せる\nドロー数は溜まっていく",
+    visual: <StackingVisual />,
+  },
   {
     label: "重ね出し",
     description: "同じカードを持っていたら\nまとめて出せる",
@@ -123,8 +140,8 @@ function RuleRow({ rule }: { rule: RuleInfo }) {
 }
 
 export function OtherRulesSlide() {
-  const leftColumn = RULES.slice(0, 2);
-  const rightColumn = RULES.slice(2, 4);
+  const leftColumn = RULES.slice(0, 3);
+  const rightColumn = RULES.slice(3, 5);
 
   return (
     <div
