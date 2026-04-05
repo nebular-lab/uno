@@ -41,6 +41,7 @@ export function Character({ character, face, isSpeaking }: CharacterProps) {
         style={{
           height: 130,
           objectFit: "contain",
+          transform: character === "marisa" ? "scaleX(-1)" : undefined,
         }}
       />
     </div>
