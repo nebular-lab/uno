@@ -206,8 +206,11 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
 
     // ゲーム中のカード効果を適用（Skip: スキップ、Reverse: 方向反転）
     // 重ね出しの場合は枚数分だけ効果を適用
-    // （例: リバース2枚→2回反転で元に戻る、スキップ2枚→2回スキップで3人飛ばす）
-    for (let i = 0; i < stackCount; i++) {
+    // スキップの重ね出しは追加1枚ごとに2人分スキップが増える（2枚→3人、3枚→5人スキップ）
+    // リバースの重ね出しは枚数分反転（2枚→元に戻る）
+    const effectCount =
+      card.value === "skip" && stackCount > 1 ? 2 * stackCount - 1 : stackCount;
+    for (let i = 0; i < effectCount; i++) {
       effect.applyOnPlay(context);
     }
 
