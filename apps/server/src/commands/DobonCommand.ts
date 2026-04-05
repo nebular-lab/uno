@@ -57,6 +57,9 @@ export class DobonCommand extends Command<GameRoom, Payload> {
       this.state.dobonTargetId = this.state.currentTurnPlayerId;
     }
 
+    // ゲーム進行を中断: 全プレイヤーのアクションを無効化（ドボン返し可能者を除く）
+    this.disableAllPlayerActions();
+
     // ドボン返し判定（他にドボン可能なプレイヤーがいても判定する）
     if (this.checkCanDobonReturn()) {
       // ドボン返し待ち状態に
@@ -73,6 +76,20 @@ export class DobonCommand extends Command<GameRoom, Payload> {
 
     // ドボン確定 → 点数計算
     this.finalizeDobonFinish();
+  }
+
+  /**
+   * 全プレイヤーのゲーム進行アクションを無効化する
+   * カード出し、ドロー、色選択、パスをすべて停止する
+   */
+  private disableAllPlayerActions(): void {
+    for (const p of this.state.players.values()) {
+      p.playableCards.clear();
+      p.canDraw = false;
+      p.canDrawStack = false;
+      p.canChooseColor = false;
+      p.canPass = false;
+    }
   }
 
   /**
