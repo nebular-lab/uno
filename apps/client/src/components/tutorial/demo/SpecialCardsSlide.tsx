@@ -35,24 +35,34 @@ const CARDS: CardInfo[] = [
   {
     color: "gray",
     value: "wild",
-    label: "ワイルド",
+    label: "色変え",
     description: "いつでも出せる\n好きな色を指定できる",
   },
   {
     color: "red",
     value: "force-change",
-    label: "強制色変え",
+    label: "固定色変え",
     description: "いつでも出せる\n色はカードの色で固定",
   },
 ];
 
-function CardRow({ card }: { card: CardInfo }) {
+function CardRow({
+  card,
+  highlighted,
+}: {
+  card: CardInfo;
+  highlighted?: boolean;
+}) {
   return (
     <div
       style={{
         display: "flex",
         alignItems: "center",
         gap: 12,
+        padding: "4px 8px",
+        borderRadius: 8,
+        border: highlighted ? "2px solid #facc15" : "2px solid transparent",
+        boxShadow: highlighted ? "0 0 12px rgba(250, 204, 21, 0.4)" : "none",
       }}
     >
       <SlideCard color={card.color} size="small" value={card.value} />
@@ -75,7 +85,13 @@ function CardRow({ card }: { card: CardInfo }) {
   );
 }
 
-export function SpecialCardsSlide() {
+interface SpecialCardsSlideProps {
+  highlightForceChange?: boolean;
+}
+
+export function SpecialCardsSlide({
+  highlightForceChange,
+}: SpecialCardsSlideProps) {
   const leftColumn = CARDS.slice(0, 3);
   const rightColumn = CARDS.slice(3, 6);
 
@@ -97,7 +113,11 @@ export function SpecialCardsSlide() {
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
         {rightColumn.map((card) => (
-          <CardRow card={card} key={card.value} />
+          <CardRow
+            card={card}
+            highlighted={highlightForceChange && card.value === "force-change"}
+            key={card.value}
+          />
         ))}
       </div>
     </div>
