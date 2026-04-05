@@ -17,15 +17,9 @@ interface CharacterProps {
   character: "marisa" | "reimu";
   face: MarisaFace | ReimuFace;
   isSpeaking: boolean;
-  side: "left" | "right";
 }
 
-export function Character({
-  character,
-  face,
-  isSpeaking,
-  side,
-}: CharacterProps) {
+export function Character({ character, face, isSpeaking }: CharacterProps) {
   const frame = useCurrentFrame();
   const mouthOpen =
     isSpeaking && frame % (MOUTH_TOGGLE_INTERVAL * 2) < MOUTH_TOGGLE_INTERVAL;
@@ -38,17 +32,14 @@ export function Character({
   return (
     <div
       style={{
-        position: "absolute",
-        bottom: 80,
-        [side === "left" ? "left" : "right"]: 40,
+        flexShrink: 0,
         filter: isSpeaking ? "brightness(1)" : "brightness(0.7)",
-        transition: "filter 0.1s",
       }}
     >
       <Img
         src={src}
         style={{
-          height: 250,
+          height: 130,
           objectFit: "contain",
         }}
       />

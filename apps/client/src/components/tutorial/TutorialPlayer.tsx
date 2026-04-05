@@ -11,6 +11,7 @@ export function TutorialPlayer() {
       controls
       durationInFrames={totalDurationFrames}
       fps={FPS}
+      numberOfSharedAudioTags={12}
       style={{
         width: "100%",
         maxWidth: 960,
