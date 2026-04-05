@@ -6,6 +6,7 @@ import { OtherRulesSlide } from "./OtherRulesSlide";
 import { ScoringPlayDemo } from "./ScoringPlayDemo";
 import { ScoringSlide } from "./ScoringSlide";
 import { SpecialCardsSlide } from "./SpecialCardsSlide";
+import { StrategySlide } from "./StrategySlide";
 
 interface DemoAreaProps {
   type: DemoType;
@@ -65,6 +66,8 @@ function DemoContent({ type }: { type: DemoType }) {
       return <DobonReturnPlayDemo />;
     case "otherRules":
       return <OtherRulesSlide />;
+    case "closing":
+      return <StrategySlide />;
     default:
       return null;
   }
