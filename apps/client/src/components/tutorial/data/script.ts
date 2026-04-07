@@ -61,13 +61,11 @@ const VOICE_DURATIONS: Record<string, number> = {
   "marisa_return_4.mp3": 255,
   "marisa_return_5.mp3": 272,
   "marisa_return_6.mp3": 65,
-  "marisa_scoring_1.mp3": 117,
-  "marisa_scoring_2.mp3": 123,
-  "marisa_scoring_3.mp3": 97,
-  "marisa_scoring_4.mp3": 281,
-  "marisa_scoring_5.mp3": 250,
+  "marisa_scoring_3.mp3": 123,
+  "marisa_scoring_4.mp3": 97,
+  "marisa_scoring_5.mp3": 281,
+  "marisa_scoring_6.mp3": 250,
   "marisa_scoring_play_1.mp3": 67,
-  "marisa_scoring_play_2.mp3": 196,
   "marisa_special_1.mp3": 108,
   "marisa_special_2.mp3": 108,
   "reimu_basic_1.mp3": 261,
@@ -87,7 +85,6 @@ const VOICE_DURATIONS: Record<string, number> = {
   "reimu_return_3.mp3": 45,
   "reimu_return_4.mp3": 205,
   "reimu_scoring_1.mp3": 82,
-  "reimu_scoring_play_1.mp3": 80,
   "reimu_scoring_play_2.mp3": 190,
 };
 
@@ -205,7 +202,8 @@ const forceChangeLines: LineInput[] = [
 // --- シーン5a: ローカルルール1 — 点数計算（スライド） ---
 
 const scoringSlideLines: LineInput[] = [
-  { speaker: A, text: "次に得点計算について説明するぜ" },
+  { speaker: A, text: "ここからローカルルールの説明をするぜ" },
+  { speaker: A, text: "まずは得点計算についてだ" },
   { speaker: A, text: "それぞれのカードに、点数が設定されているぜ" },
   { speaker: A, text: "設定されている点数はこの通りだ" },
   {
@@ -229,11 +227,15 @@ const scoringPlayLines: LineInput[] = [
   },
   {
     speaker: A,
-    text: "プレイヤーAが上がったね。プレイヤーAは全員のプレイヤーから点数をもらえるんだ",
+    text: "プレイヤーAが上がったな。プレイヤーA以外のプレイヤーは、プレイヤーAに、自分の手札の合計点数を支払うんだ",
+  },
+  {
+    speaker: A,
+    text: "合計点数は画面左側に表示されているぞ",
   },
   {
     speaker: B,
-    text: "80点も取られちゃうのか",
+    text: "ドロー4を持っていたせいで80点も取られてしまったな",
     faceB: "surprise",
   },
   {

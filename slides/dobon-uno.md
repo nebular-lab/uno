@@ -62,7 +62,7 @@ paginate: true
 
 - アニメーションの実装は、2年前に作ったものがあったのでそれを再利用
   - 具体的な方法は記事を書いているので、こちらを参照してください。
-  [オンラインUNOゲーム開発【Reactでカードアニメーション編】](https://zenn.dev/nebular/articles/7b4b05ced99a98)
+    [オンラインUNOゲーム開発【Reactでカードアニメーション編】](https://zenn.dev/nebular/articles/7b4b05ced99a98)
 
 ---
 
@@ -78,10 +78,6 @@ class GameState extends Schema {
   @type("string") phase: string = "waiting";
   @type({ map: Player }) players = new MapSchema<Player>();
   @type([Card]) fieldCards = new ArraySchema<Card>();
-}
-class Player extends Schema {
-  @type("number") handCount: number = 0;  // 全員に見える
-  @type([Card]) myHand = new ArraySchema<Card>();  // 自分だけに見える（filterで制御）
 }
 ```
 
@@ -129,8 +125,8 @@ const cpuTools = {
     inputSchema: z.object({ cardId: z.string() }),
   }),
   drawCard: tool({ description: "山札から1枚引く", inputSchema: z.object({}) }),
-  pass:     tool({ description: "パスする",         inputSchema: z.object({}) }),
-  dobon:    tool({ description: "ドボンを宣言する", inputSchema: z.object({}) }),
+  pass: tool({ description: "パスする", inputSchema: z.object({}) }),
+  dobon: tool({ description: "ドボンを宣言する", inputSchema: z.object({}) }),
   // ...
 };
 ```
@@ -166,6 +162,7 @@ h3 { font-size: 1.1em; }
 ### 基本戦略
 
 **優先順位:**
+
 1. 出せるカードがあれば出し、上がりを目指す
 2. 記号カード（Skip, Reverse, +2, Wild, +4）は早めに切る
 3. 手札合計を0〜9, 10, 20, 30, 50点に調整し、ドボンを狙う
@@ -178,6 +175,7 @@ h3 { font-size: 1.1em; }
 ### リスクとリターンの判断
 
 **リスク（相手にドボンされる危険）:**
+
 - 相手が「カードを引いた: いいえ」の場合のみ警戒
 - 手札が1,2枚 → 0〜9を警戒
 - 手札1,3,4枚 → 20点を警戒
@@ -185,6 +183,7 @@ h3 { font-size: 1.1em; }
 - 残り枚数が多いほど、ドボンされた時のダメージ大
 
 **リターン（攻めるべき場面）:**
+
 - 手札が少ない → 積極的に出して上がりを目指す
 - 手札合計がドボン可能点数 → ドボン狙いで攻める
 - 場が安全な点数になるカード → 出してOK
@@ -193,3 +192,9 @@ h3 { font-size: 1.1em; }
 
 </div>
 </div>
+
+---
+
+## 感想
+
+- 
