@@ -10,7 +10,6 @@ import {
   lobbyStateAtom,
   resetDisconnectedAtom,
 } from "./atoms/connectionAtoms";
-import { CardDrawAnimation } from "./components/game/CardDrawAnimation";
 import { CardPlayAnimation } from "./components/game/CardPlayAnimation";
 import { DrawCountIndicator } from "./components/game/DrawCountIndicator";
 import { ScalableContainer } from "./components/ScalableContainer";
@@ -126,9 +125,6 @@ function App() {
       {/* カードアニメーション（ScalableContainerの外でビューポート基準で表示） */}
       {(screen.screen === "game" || screen.screen === "waitingRoom") && (
         <CardPlayAnimation />
-      )}
-      {(screen.screen === "game" || screen.screen === "waitingRoom") && (
-        <CardDrawAnimation />
       )}
       {(screen.screen === "game" || screen.screen === "waitingRoom") && (
         <DrawCountIndicator />

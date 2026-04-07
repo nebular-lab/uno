@@ -74,8 +74,8 @@ const AnimatedCard = ({
   // 実際のカードサイズを使用
   const { width, height } = startPos;
 
-  // フォントサイズを幅に比例させる（基準: 78pxで2.25rem）
-  const fontSize = (width / 78) * 2.25;
+  // フォントサイズを幅に比例させる（場のカード基準: 幅56pxに対してtext-2xl=24px）
+  const fontSize = (width / 56) * 24;
 
   const totalDuration = duration / 1000;
 
@@ -102,14 +102,16 @@ const AnimatedCard = ({
     >
       <div
         className={cn(
-          "flex items-center justify-center rounded-lg border-2 font-bold shadow-lg",
+          "flex items-center justify-center border-2 font-bold shadow-lg",
           getBgClass(),
           getTextClass(),
         )}
         style={{
           width: `${width}px`,
           height: `${height}px`,
-          fontSize: `${fontSize}rem`,
+          fontSize: `${fontSize}px`,
+          // 場のカードと同じ比率の角丸（基準座標: 幅56pxに対して8px）
+          borderRadius: `${(width / 56) * 8}px`,
         }}
       >
         <span>{displayValue}</span>

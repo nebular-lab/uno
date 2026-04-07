@@ -28,6 +28,7 @@ import { playerAtom, screenAtom } from "./appAtoms";
 import {
   cardPositionsAtom,
   deckPositionAtom,
+  fieldCardPositionAtom,
   playerSeatPositionsAtom,
 } from "./cardPositionAtom";
 
@@ -212,8 +213,11 @@ const setupRoomStateSync = (
       const seatPositions = store.get(playerSeatPositionsAtom);
       const seatPos = seatPositions[displayIndex];
       if (seatPos) {
-        // 他プレイヤーの場合はデフォルトのカードサイズを使用
-        startPosition = { ...seatPos, width: 40, height: 56 };
+        // 他プレイヤーの場合は場のカードのサイズを使用
+        const fieldPos = store.get(fieldCardPositionAtom);
+        const cardWidth = fieldPos?.width ?? 40;
+        const cardHeight = fieldPos?.height ?? 56;
+        startPosition = { ...seatPos, width: cardWidth, height: cardHeight };
       }
     }
 

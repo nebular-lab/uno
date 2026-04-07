@@ -145,6 +145,8 @@ export const GameScreen = () => {
         setDeckPosition({
           x: rect.left + rect.width / 2,
           y: rect.top + rect.height / 2,
+          width: rect.width,
+          height: rect.height,
         });
       }
     };
