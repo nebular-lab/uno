@@ -10,6 +10,8 @@ interface RoomCardProps {
 
 export function RoomCard({ room, onJoin }: RoomCardProps) {
   const ownerName = room.metadata?.ownerName ?? "不明";
+  const phase = room.metadata?.phase ?? "waiting";
+  const isInGame = phase !== "waiting";
 
   return (
     <div className="flex flex-col p-4 rounded-xl bg-slate-800/50 border border-slate-700 shadow-lg backdrop-blur-sm">
@@ -21,12 +23,18 @@ export function RoomCard({ room, onJoin }: RoomCardProps) {
         <span>
           {room.clients} / {room.maxClients}
         </span>
+        {isInGame && (
+          <span className="ml-auto text-xs text-yellow-400 font-medium">
+            ゲーム中
+          </span>
+        )}
       </div>
       <Button
-        className="w-full h-20 bg-blue-600 hover:bg-blue-500 border-0 font-bold text-white transition-all text-lg"
+        className="w-full h-20 bg-blue-600 hover:bg-blue-500 border-0 font-bold text-white transition-all text-lg disabled:opacity-50 disabled:hover:bg-blue-600"
+        disabled={isInGame}
         onClick={onJoin}
       >
-        参加
+        {isInGame ? "ゲーム中" : "参加"}
       </Button>
     </div>
   );

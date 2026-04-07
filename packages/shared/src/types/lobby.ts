@@ -1,6 +1,7 @@
 // ルームのメタデータ（サーバー・クライアント共通）
 export interface RoomMetadata {
   ownerName?: string;
+  phase?: string;
 }
 
 // ルーム作成オプション
