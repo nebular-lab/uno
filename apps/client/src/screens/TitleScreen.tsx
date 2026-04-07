@@ -1,5 +1,6 @@
 import { useSetAtom } from "jotai";
 import { lazy, Suspense, useState } from "react";
+import { RuleBook } from "@/components/game/RuleBook";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -18,6 +19,7 @@ export function TitleScreen() {
   const navigateToLobby = useSetAtom(navigateToLobbyAtom);
   const [inputName, setInputName] = useState("");
   const [showTutorial, setShowTutorial] = useState(false);
+  const [showRuleBook, setShowRuleBook] = useState(false);
 
   const handleStart = () => {
     const trimmedName = inputName.trim();
@@ -73,12 +75,20 @@ export function TitleScreen() {
         >
           START GAME
         </Button>
-        <Button
-          className="text-lg h-12 mt-1 bg-slate-700 hover:bg-slate-600 border-0 font-medium tracking-wider shadow transition-all hover:scale-[1.02] text-slate-200"
-          onClick={() => setShowTutorial(true)}
-        >
-          ルール説明
-        </Button>
+        <div className="flex gap-3 mt-1">
+          <Button
+            className="flex-1 text-base h-12 bg-slate-700 hover:bg-slate-600 border-0 font-medium shadow transition-all hover:scale-[1.02] text-slate-200"
+            onClick={() => setShowTutorial(true)}
+          >
+            ルール説明動画
+          </Button>
+          <Button
+            className="flex-1 text-base h-12 bg-slate-700 hover:bg-slate-600 border-0 font-medium shadow transition-all hover:scale-[1.02] text-slate-200"
+            onClick={() => setShowRuleBook(true)}
+          >
+            ルールブック
+          </Button>
+        </div>
       </div>
 
       <Dialog onOpenChange={setShowTutorial} open={showTutorial}>
@@ -92,6 +102,12 @@ export function TitleScreen() {
           >
             <TutorialPlayer />
           </Suspense>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog onOpenChange={setShowRuleBook} open={showRuleBook}>
+        <DialogContent className="max-w-[480px] h-[520px] p-0 overflow-hidden">
+          <RuleBook />
         </DialogContent>
       </Dialog>
     </div>

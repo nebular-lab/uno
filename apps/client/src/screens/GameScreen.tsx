@@ -1,5 +1,5 @@
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { LogOut, Settings } from "lucide-react";
+import { BookOpen, LogOut, Settings } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { currentAnimationAtom, passEventAtom } from "@/atoms/animationAtoms";
 import { deckPositionAtom } from "@/atoms/cardPositionAtom";
@@ -9,6 +9,7 @@ import { CountdownOverlay } from "@/components/game/CountdownOverlay";
 import { FieldCard } from "@/components/game/FieldCard";
 import { MyHand } from "@/components/game/MyHand";
 import { EmptySeat, PlayerSeat } from "@/components/game/PlayerSeat";
+import { RuleBook } from "@/components/game/RuleBook";
 import { ScoreButton } from "@/components/game/ScoreButton";
 import { ScorePanel } from "@/components/game/ScorePanel";
 import { SettingsDialog } from "@/components/game/SettingsDialog";
@@ -78,6 +79,7 @@ export const GameScreen = () => {
 
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
+  const [showRuleBook, setShowRuleBook] = useState(false);
   const [showScorePanel, setShowScorePanel] = useState(false);
   const [showWinnerLabel, setShowWinnerLabel] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -595,6 +597,14 @@ export const GameScreen = () => {
         >
           <Settings className="size-6" />
         </Button>
+        <Button
+          className="size-[80px] bg-slate-700 text-white hover:bg-slate-600"
+          onClick={() => setShowRuleBook(true)}
+          size="icon"
+          variant="ghost"
+        >
+          <BookOpen className="size-6" />
+        </Button>
       </div>
 
       {/* スコアボタン */}
@@ -654,6 +664,13 @@ export const GameScreen = () => {
         onClose={() => setShowScorePanel(false)}
         players={players}
       />
+
+      {/* ルールブック */}
+      <Dialog onOpenChange={setShowRuleBook} open={showRuleBook}>
+        <DialogContent className="max-w-[480px] h-[520px] p-0 overflow-hidden">
+          <RuleBook />
+        </DialogContent>
+      </Dialog>
     </TableContainer>
   );
 };
