@@ -13,8 +13,8 @@ export function calculatePlayableCardsForCurrentTurn(
 ): void {
   player.playableCards.clear();
 
-  // 色選択待ち中は出せない（ただしドロー累積中はドローカードを重ねられる）
-  if (state.waitingForColorChoice && state.drawStack === 0) {
+  // 色選択待ち中は出せない
+  if (state.waitingForColorChoice) {
     return;
   }
 

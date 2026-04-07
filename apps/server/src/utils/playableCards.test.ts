@@ -234,7 +234,7 @@ describe("calculatePlayableCardsForCurrentTurn", () => {
       expect(player.playableCards.size).toBe(0);
     });
 
-    it("色選択待ち中でもドロー累積中はドローカードを出せる", () => {
+    it("色選択待ち中はドロー累積中でも何も出せない", () => {
       const state = createGameState();
       state.currentColor = "";
       state.drawStack = 4;
@@ -250,8 +250,7 @@ describe("calculatePlayableCardsForCurrentTurn", () => {
         isFirstCardWild: false,
       });
 
-      expect(player.playableCards.get("draw4-1")).toBe(true);
-      expect(player.playableCards.has("r5")).toBe(false);
+      expect(player.playableCards.size).toBe(0);
     });
   });
 
