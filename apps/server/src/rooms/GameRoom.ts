@@ -150,7 +150,7 @@ export class GameRoom extends Room<GameState, RoomMetadata> {
       if (seatOccupied) return;
 
       // CPUプレイヤーを追加
-      this.addCPUPlayer(`cpu${message.seatId}`, message.seatId);
+      this.addCPUPlayer(`CPU ${message.seatId}`, message.seatId);
     });
 
     // ゲーム全体設定を更新
