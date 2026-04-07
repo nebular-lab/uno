@@ -34,17 +34,27 @@ export function TutorialScene({ scene }: TutorialSceneProps) {
   const dialogue = findCurrentDialogue(scene.dialogues, frame);
   const hasSectionTitle = !!scene.sectionTitle;
   const hasIntro = !!scene.showSectionIntro;
+  const isIntroScene = scene.demo.type === "title";
 
-  // セクションタイトルの中央表示（最初の3秒）
-  const isTitlePhase = hasIntro && frame < SECTION_TITLE_FRAMES;
-  const titleOpacity = hasIntro
-    ? interpolate(
-        frame,
-        [0, 15, SECTION_TITLE_FRAMES - 15, SECTION_TITLE_FRAMES],
-        [0, 1, 1, 0],
-        { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-      )
-    : 0;
+  // タイトルフェーズ（最初の3秒）: セクションイントロまたはイントロシーン
+  const isTitlePhase =
+    (hasIntro || isIntroScene) && frame < SECTION_TITLE_FRAMES;
+  const titleOpacity =
+    hasIntro || isIntroScene
+      ? isIntroScene
+        ? interpolate(
+            frame,
+            [0, SECTION_TITLE_FRAMES - 15, SECTION_TITLE_FRAMES],
+            [1, 1, 0],
+            { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+          )
+        : interpolate(
+            frame,
+            [0, 15, SECTION_TITLE_FRAMES - 15, SECTION_TITLE_FRAMES],
+            [0, 1, 1, 0],
+            { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+          )
+      : 0;
 
   return (
     <AbsoluteFill>
@@ -61,16 +71,20 @@ export function TutorialScene({ scene }: TutorialSceneProps) {
             opacity: titleOpacity,
           }}
         >
-          <span
-            style={{
-              color: "#fff",
-              fontSize: 40,
-              fontWeight: "bold",
-              textShadow: "0 2px 8px rgba(0,0,0,0.5)",
-            }}
-          >
-            {scene.sectionTitle}
-          </span>
+          {isIntroScene ? (
+            <DemoArea type={scene.demo.type} />
+          ) : (
+            <span
+              style={{
+                color: "#fff",
+                fontSize: 40,
+                fontWeight: "bold",
+                textShadow: "0 2px 8px rgba(0,0,0,0.5)",
+              }}
+            >
+              {scene.sectionTitle}
+            </span>
+          )}
         </div>
       )}
 
@@ -99,8 +113,9 @@ export function TutorialScene({ scene }: TutorialSceneProps) {
       {/* デモ領域（タイトルフェーズ中は非表示） */}
       {!isTitlePhase && <DemoArea type={scene.demo.type} />}
 
-      {/* 字幕バー（キャラクター + 字幕、タイトルフェーズ中は非表示） */}
-      {!isTitlePhase && (
+      {/* 字幕バー（キャラクター + 字幕） */}
+      {/* イントロシーンではタイトルフェーズ中もキャラのみ表示（字幕なし） */}
+      {(!isTitlePhase || isIntroScene) && (
         <div
           style={{
             position: "absolute",
@@ -119,7 +134,7 @@ export function TutorialScene({ scene }: TutorialSceneProps) {
             face={dialogue?.faceA ?? "normal"}
             isSpeaking={dialogue?.speaker === "A"}
           />
-          {dialogue ? (
+          {dialogue && !isTitlePhase ? (
             <Subtitle speaker={dialogue.speaker} text={dialogue.text} />
           ) : (
             <div style={{ flex: 1 }} />

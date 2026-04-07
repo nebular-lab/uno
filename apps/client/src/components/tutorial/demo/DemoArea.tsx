@@ -36,8 +36,10 @@ function TitleScreen() {
       </span>
       <span
         style={{
-          fontSize: 20,
-          color: "rgba(255,255,255,0.6)",
+          fontSize: 48,
+          fontWeight: 900,
+          color: "#fff",
+          letterSpacing: 8,
         }}
       >
         ルール説明

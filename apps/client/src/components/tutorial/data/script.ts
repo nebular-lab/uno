@@ -48,9 +48,10 @@ const VOICE_DURATIONS: Record<string, number> = {
   "marisa_dobon_1.mp3": 101,
   "marisa_dobon_2.mp3": 240,
   "marisa_dobon_3.mp3": 227,
+  "marisa_dobon_4.mp3": 145,
   "marisa_force_1.mp3": 268,
   "marisa_intro_1.mp3": 127,
-  "marisa_intro_2.mp3": 196,
+  "marisa_intro_2.mp3": 192,
   "marisa_intro_3.mp3": 181,
   "marisa_intro_4.mp3": 125,
   "marisa_other_1.mp3": 132,
@@ -61,11 +62,15 @@ const VOICE_DURATIONS: Record<string, number> = {
   "marisa_return_4.mp3": 255,
   "marisa_return_5.mp3": 272,
   "marisa_return_6.mp3": 65,
+  "marisa_scoring_1.mp3": 97,
+  "marisa_scoring_2.mp3": 84,
   "marisa_scoring_3.mp3": 123,
   "marisa_scoring_4.mp3": 97,
-  "marisa_scoring_5.mp3": 281,
+  "marisa_scoring_5.mp3": 279,
   "marisa_scoring_6.mp3": 250,
   "marisa_scoring_play_1.mp3": 67,
+  "marisa_scoring_play_2.mp3": 212,
+  "marisa_scoring_play_3.mp3": 129,
   "marisa_special_1.mp3": 108,
   "marisa_special_2.mp3": 108,
   "reimu_basic_1.mp3": 261,
@@ -83,8 +88,9 @@ const VOICE_DURATIONS: Record<string, number> = {
   "reimu_return_1.mp3": 30,
   "reimu_return_2.mp3": 153,
   "reimu_return_3.mp3": 45,
-  "reimu_return_4.mp3": 205,
+  "reimu_return_4.mp3": 201,
   "reimu_scoring_1.mp3": 82,
+  "reimu_scoring_play_1.mp3": 142,
   "reimu_scoring_play_2.mp3": 190,
 };
 
@@ -208,7 +214,7 @@ const scoringSlideLines: LineInput[] = [
   { speaker: A, text: "設定されている点数はこの通りだ" },
   {
     speaker: A,
-    text: "この点数は、「カードに点数を表示」設定をオンにすると、このようにカードに表示されるから、覚えなくても大丈夫だぜ",
+    text: "この点数は、「カードにポイントを表示」の設定をオンにすると、このようにカードに表示されるから、覚えなくても大丈夫だぜ",
     faceA: "smile",
   },
   { speaker: B, text: "この点数をどのように使うの？" },
@@ -227,7 +233,7 @@ const scoringPlayLines: LineInput[] = [
   },
   {
     speaker: A,
-    text: "プレイヤーAが上がったな。プレイヤーA以外のプレイヤーは、プレイヤーAに、自分の手札の合計点数を支払うんだ",
+    text: "プレイヤーAが上がったな。プレイヤーA以外は、自分の手札の合計点数を支払うんだ",
   },
   {
     speaker: A,
@@ -268,6 +274,10 @@ const dobonLines: LineInput[] = [
     speaker: B,
     text: "全員分ということは、ドボンされると大きなマイナスになるね",
     faceB: "surprise",
+  },
+  {
+    speaker: A,
+    text: "そうだな。ドボンされないようにプレイするのが大切だぜ。",
   },
 ];
 
@@ -375,7 +385,7 @@ function createScene(
 }
 
 export const scenes: Scene[] = [
-  createScene("intro", introLines, "title"),
+  createScene("intro", introLines, "title", { showSectionIntro: true }),
   createScene("basic", basicRuleLines, "basicRule", {
     sectionTitle: "基本ルール",
   }),
