@@ -1,5 +1,5 @@
+import type { Room, RoomAvailable } from "@colyseus/sdk";
 import type { GameState, RoomMetadata } from "@dobon-uno/shared";
-import type { Room, RoomAvailable } from "colyseus.js";
 
 // ロビー接続状態
 export type LobbyState =

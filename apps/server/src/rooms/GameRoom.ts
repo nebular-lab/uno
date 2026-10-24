@@ -34,7 +34,10 @@ export type DeckProvider = () => Card[];
 export const defaultDeckProvider: DeckProvider = () =>
   shuffleDeck(createDeck());
 
-export class GameRoom extends Room<GameState, RoomMetadata> {
+export class GameRoom extends Room<{
+  state: GameState;
+  metadata: RoomMetadata;
+}> {
   dispatcher = new Dispatcher(this);
   maxClients = 6;
 
