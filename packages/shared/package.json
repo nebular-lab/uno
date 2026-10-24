@@ -18,9 +18,9 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
-    "@colyseus/schema": "3.0.76"
+    "@colyseus/schema": "5.0.42"
   },
   "devDependencies": {
-    "typescript": "5.9.3"
+    "typescript": "7.0.2"
   }
 }

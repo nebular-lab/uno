@@ -1,3 +1,4 @@
+import type { Room, RoomAvailable } from "@colyseus/sdk";
 import type {
   DrawCardAnimationEvent,
   GameState,
@@ -7,7 +8,6 @@ import type {
   Card as ServerCard,
   Player as ServerPlayer,
 } from "@dobon-uno/shared";
-import type { Room, RoomAvailable } from "colyseus.js";
 import { atom, getDefaultStore } from "jotai";
 import { colyseusClient } from "../lib/colyseus";
 import type {

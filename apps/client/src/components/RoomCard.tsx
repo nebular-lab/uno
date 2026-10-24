@@ -1,5 +1,5 @@
+import type { RoomAvailable } from "@colyseus/sdk";
 import type { RoomMetadata } from "@dobon-uno/shared";
-import type { RoomAvailable } from "colyseus.js";
 import { Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 

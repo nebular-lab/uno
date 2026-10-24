@@ -1,4 +1,4 @@
-import { Client } from "colyseus.js";
+import { Client } from "@colyseus/sdk";
 
 const COLYSEUS_ENDPOINT =
   import.meta.env.VITE_COLYSEUS_URL || "ws://localhost:2567";

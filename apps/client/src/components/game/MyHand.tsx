@@ -297,7 +297,6 @@ export const MyHand = ({ disabled }: Props) => {
 
   // カード枚数が変わったら状態を更新
   const cardCount = cards.length;
-  // biome-ignore lint/correctness/useExhaustiveDependencies: cardCount変更時にスクロール状態を再計算したい
   useLayoutEffect(() => {
     updateScrollState();
   }, [cardCount, updateScrollState]);
