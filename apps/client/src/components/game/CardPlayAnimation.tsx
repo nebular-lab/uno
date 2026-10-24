@@ -124,7 +124,7 @@ export const CardPlayAnimation = () => {
   const animation = useAtomValue(currentAnimationAtom);
   const fieldCardPosition = useAtomValue(fieldCardPositionAtom);
 
-  if (!animation || animation.type !== "playCard") return null;
+  if (animation?.type !== "playCard") return null;
 
   // 場札の位置がない場合はアニメーションしない
   if (!fieldCardPosition) return null;
