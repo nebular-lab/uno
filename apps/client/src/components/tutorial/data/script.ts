@@ -1,3 +1,5 @@
+import { staticFile } from "remotion";
+
 export type Speaker = "A" | "B";
 
 export type MarisaFace = "normal" | "smile" | "smug";
@@ -125,7 +127,7 @@ function buildDialogues(lines: LineInput[], sceneId: string): Dialogue[] {
     dialogues.push({
       speaker,
       text,
-      audio: `/tutorial/voice/${speakerName}_${sceneId}_${num}.mp3`,
+      audio: staticFile(`tutorial/voice/${audioFile}`),
       startFrame: currentFrame,
       durationFrames,
       faceA,

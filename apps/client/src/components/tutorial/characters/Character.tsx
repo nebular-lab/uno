@@ -1,16 +1,16 @@
-import { Img, useCurrentFrame } from "remotion";
+import { Img, staticFile, useCurrentFrame } from "remotion";
 import type { MarisaFace, ReimuFace } from "../data/script";
 
 const MOUTH_TOGGLE_INTERVAL = 4; // 4フレームごとに口を開閉
 
 function getMarisaImage(face: MarisaFace, mouthOpen: boolean): string {
   const mouth = mouthOpen ? "open" : "close";
-  return `/tutorial/characters/marisa_${face}_${mouth}.png`;
+  return staticFile(`tutorial/characters/marisa_${face}_${mouth}.png`);
 }
 
 function getReimuImage(face: ReimuFace, mouthOpen: boolean): string {
   const mouth = mouthOpen ? "open" : "close";
-  return `/tutorial/characters/reimu_${face}_${mouth}.png`;
+  return staticFile(`tutorial/characters/reimu_${face}_${mouth}.png`);
 }
 
 interface CharacterProps {

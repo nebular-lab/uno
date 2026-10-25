@@ -1,16 +1,10 @@
 import { useSetAtom } from "jotai";
-import { lazy, Suspense, useState } from "react";
+import { useState } from "react";
 import { RuleBook } from "@/components/game/RuleBook";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { navigateToLobbyAtom, setPlayerNameAtom } from "../atoms/appAtoms";
-
-const TutorialPlayer = lazy(() =>
-  import("@/components/tutorial/TutorialPlayer").then((m) => ({
-    default: m.TutorialPlayer,
-  })),
-);
 
 const MAX_NAME_LENGTH = 8;
 
@@ -93,15 +87,15 @@ export function TitleScreen() {
 
       <Dialog onOpenChange={setShowTutorial} open={showTutorial}>
         <DialogContent className="max-w-[1024px] p-4">
-          <Suspense
-            fallback={
-              <div className="flex items-center justify-center h-64 text-slate-400">
-                読み込み中...
-              </div>
-            }
-          >
-            <TutorialPlayer />
-          </Suspense>
+          {/* 動画は pnpm render:tutorial で書き出す */}
+          {/* biome-ignore lint/a11y/useMediaCaption: 字幕は映像に焼き込み済み */}
+          <video
+            className="w-full max-w-[960px] aspect-video bg-black"
+            controls
+            playsInline
+            preload="metadata"
+            src="/tutorial/tutorial.mp4"
+          />
         </DialogContent>
       </Dialog>
 
