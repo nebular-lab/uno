@@ -23,6 +23,8 @@ export interface EntrantStats {
   seats: number;
   totalScore: number;
   averageScore: number;
+  // averageScore の標準誤差（ゲームごとの1席あたりの点数のばらつきから計算）
+  standardError: number;
   normalWins: number;
   dobonWins: number;
   dobonReturnWins: number;
@@ -43,6 +45,10 @@ export interface SimulationOptions {
   // 各席に座るエントリーの並び（省略時は entrants を順に繰り返す）
   seats?: number;
   seed?: number;
+  // 同じ配牌を、座る席を入れ替えて entrants の数だけ繰り返す（配牌の運を打ち消して比べる）
+  duplicate?: boolean;
+  // 各ゲームの終了直後（結果が出て、手札がまだ残っている状態）に呼ばれる
+  onGameEnd?: (state: GameState, game: number) => void;
 }
 
 // 1ゲームでこれ以上行動しても終わらなければ打ち切る
@@ -63,6 +69,7 @@ export async function simulateGames(
     seats: 0,
     totalScore: 0,
     averageScore: 0,
+    standardError: 0,
     normalWins: 0,
     dobonWins: 0,
     dobonReturnWins: 0,
@@ -81,6 +88,9 @@ export async function simulateGames(
     playerIds.push(player.sessionId);
   }
 
+  // ゲームごとの1席あたりの点数（標準誤差の計算用）
+  const perGame = entrants.map(() => ({ n: 0, sum: 0, sumSq: 0 }));
+  const pendingScores = entrants.map(() => ({ seats: 0, score: 0 }));
   let deckOuts = 0;
   let stalls = 0;
 
@@ -103,7 +113,13 @@ export async function simulateGames(
     const before = new Map(
       playerIds.map((id) => [id, room.state.players.get(id)?.score ?? 0]),
     );
-    room.nextDeck = shuffleDeck(createDeck(), seed + game);
+    const deal = options.duplicate ? Math.floor(game / entrants.length) : game;
+    room.nextDeck = shuffleDeck(createDeck(), seed + deal);
+    if (options.duplicate) {
+      // 同じ配牌は同じ人から始め、山札切れの倍率も持ち越さない
+      room.state.nextGameStartPlayerId = "";
+      room.state.rateMultiplier = 1;
+    }
     const outcome = await playOneGame(room, playerIds, deciders);
     if (outcome === "stall") stalls++;
 
@@ -111,6 +127,7 @@ export async function simulateGames(
     const result = room.state.gameHistory[room.state.gameHistory.length - 1];
     if (!finished && outcome !== "stall") deckOuts++;
 
+    const gameScores = entrants.map(() => ({ seats: 0, score: 0 }));
     for (const id of playerIds) {
       const entry = deciders.get(id);
       if (!entry) continue;
@@ -118,6 +135,8 @@ export async function simulateGames(
       const delta =
         (room.state.players.get(id)?.score ?? 0) - (before.get(id) ?? 0);
       stat.totalScore += delta;
+      gameScores[entry.index].seats++;
+      gameScores[entry.index].score += delta;
       if (finished && delta > 0) {
         if (result.finishType === "normal") stat.normalWins++;
         if (result.finishType === "dobon") stat.dobonWins++;
@@ -128,12 +147,35 @@ export async function simulateGames(
       }
     }
 
+    // 同じ配牌を繰り返すときは、その組ごとに1件として数える
+    gameScores.forEach((g, i) => {
+      pendingScores[i].seats += g.seats;
+      pendingScores[i].score += g.score;
+    });
+    const dealEnds = !options.duplicate || (game + 1) % entrants.length === 0;
+    if (dealEnds) {
+      pendingScores.forEach((g, i) => {
+        if (g.seats > 0) {
+          const value = g.score / g.seats;
+          perGame[i].n++;
+          perGame[i].sum += value;
+          perGame[i].sumSq += value * value;
+        }
+        g.seats = 0;
+        g.score = 0;
+      });
+    }
+
+    options.onGameEnd?.(room.state, game);
     room.finishGame();
   }
 
-  for (const stat of stats) {
+  stats.forEach((stat, i) => {
     stat.averageScore = stat.seats === 0 ? 0 : stat.totalScore / stat.seats;
-  }
+    const { n, sum, sumSq } = perGame[i];
+    const variance = n > 1 ? (sumSq - (sum * sum) / n) / (n - 1) : 0;
+    stat.standardError = n > 1 ? Math.sqrt(variance / n) : 0;
+  });
   return { games, deckOuts, stalls, entrants: stats };
 }
 

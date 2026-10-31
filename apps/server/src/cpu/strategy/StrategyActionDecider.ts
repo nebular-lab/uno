@@ -8,13 +8,20 @@ import {
   type PoolEntry,
 } from "./handDistribution";
 import {
+  learnedDistribution,
+  READING_DETECTION,
+  readingContext,
+} from "./learnedReading";
+import {
   averagePoints,
+  baseTotalDistribution,
+  DEFAULT_INFERENCE,
   expectedTotal,
+  type InferenceParams,
   inferBeliefs,
   type OpponentBelief,
   opponentTotalDistribution,
   sumPoints,
-  TRAP_COLOR_FACTOR,
 } from "./opponentModel";
 
 const COLORS = ["red", "blue", "green", "yellow"] as const;
@@ -33,6 +40,8 @@ export interface StrategyWeights {
   tempo: number;
   // ドボン返しされる確率がこれ以上ならドボンを見送る
   maxDobonReturnRisk: number;
+  // 色変えで選ばれた色のカードを出したとき、その人にドボンされる確率に掛ける係数
+  trapColorFactor: number;
 }
 
 // CPU同士の対戦シミュレーション（pnpm --filter server simulate）で調整した値
@@ -44,9 +53,20 @@ export const DEFAULT_WEIGHTS: StrategyWeights = {
   tempo: 0.25,
   // ドボンの期待値は「全員の手札合計 ×（1 − 2 × ドボン返しされる確率）」なので、0.5が損得の境目
   maxDobonReturnRisk: 0.5,
+  trapColorFactor: 1.5,
 };
 
-interface OpponentView {
+export interface StrategyOptions {
+  weights?: StrategyWeights;
+  // 手で決めた推論（readingを使わないとき）
+  inference?: InferenceParams;
+  // 対戦データから学習した読みの重み（learnedReadingWeights.ts）。指定すると手で決めた推論の代わりに使う。
+  // 今は手で決めた推論の方が強いので、既定では使わない
+  reading?: readonly number[];
+  onTrace?: DecisionTraceListener;
+}
+
+export interface OpponentView {
   sessionId: string;
   handCount: number;
   // 手札合計点の確率分布（添字が合計点、末尾は上限超え）
@@ -55,40 +75,72 @@ interface OpponentView {
   belief?: OpponentBelief;
 }
 
-interface Observation {
+export interface Observation {
   pool: PoolEntry[];
   poolSize: number;
   opponents: OpponentView[];
   opponentsTotal: number;
 }
 
-interface Candidate {
+export interface Candidate {
   decision: CPUDecision;
   score: number;
+  // カードを出す手のとき、出すカードと誰かにドボンされる確率（相手ごとの和）
+  cards?: CardKind[];
+  dobonRisk?: number;
 }
+
+/** CPUが判断したときに見ていたもの（可視化・検証用） */
+export interface DecisionTrace {
+  kind: "action" | "dobon";
+  playerId: string;
+  // 判断した時点の行動履歴の件数
+  eventCount: number;
+  decision: CPUDecision;
+  opponents: OpponentView[];
+  candidates: Candidate[];
+  // ドボンの判断で使った、ドボン返しされる確率
+  returnRisk?: number;
+}
+
+export type DecisionTraceListener = (
+  trace: DecisionTrace,
+  state: GameState,
+) => void;
 
 /**
  * 公開情報と行動履歴から相手の手札合計を確率で読み、評価関数で行動を決めるCPU。
  * カットインはしない。
  */
 export class StrategyActionDecider implements ActionDecider {
+  private readonly weights: StrategyWeights;
+  private readonly inference: InferenceParams;
+  private readonly reading?: readonly number[];
+  private readonly onTrace?: DecisionTraceListener;
+
   constructor(
     private readonly log: GameLog,
-    private readonly weights: StrategyWeights = DEFAULT_WEIGHTS,
-  ) {}
+    options: StrategyOptions = {},
+  ) {
+    this.weights = options.weights ?? DEFAULT_WEIGHTS;
+    this.inference = options.inference ?? DEFAULT_INFERENCE;
+    this.reading = options.reading;
+    this.onTrace = options.onTrace;
+  }
 
   async decide(state: GameState, me: Player): Promise<CPUDecision> {
     if (me.canDobonReturn) return { action: "dobonReturn" };
 
     const view = this.observe(state, me);
     if (me.canDobon && this.shouldDobon(state, me, view)) {
-      return { action: "dobon" };
+      return this.trace("action", state, me, view, { action: "dobon" }, []);
     }
     if (me.canChooseColor) {
-      return {
+      const decision = {
         action: "chooseColor",
         params: { color: chooseColor(me, view) },
       };
+      return this.trace("action", state, me, view, decision, []);
     }
 
     const candidates = this.listCandidates(state, me, view);
@@ -96,11 +148,55 @@ export class StrategyActionDecider implements ActionDecider {
       throw new Error("No available CPU action");
     }
     candidates.sort((a, b) => b.score - a.score);
-    return candidates[0].decision;
+    return this.trace(
+      "action",
+      state,
+      me,
+      view,
+      candidates[0].decision,
+      candidates,
+    );
   }
 
   decideDobon(state: GameState, me: Player): boolean {
-    return this.shouldDobon(state, me, this.observe(state, me));
+    const view = this.observe(state, me);
+    const dobon = this.shouldDobon(state, me, view);
+    if (this.onTrace) {
+      this.trace(
+        "dobon",
+        state,
+        me,
+        view,
+        { action: dobon ? "dobon" : "skipDobon" },
+        [],
+        this.returnRisk(state, me, view),
+      );
+    }
+    return dobon;
+  }
+
+  private trace(
+    kind: DecisionTrace["kind"],
+    state: GameState,
+    me: Player,
+    view: Observation,
+    decision: CPUDecision,
+    candidates: Candidate[],
+    returnRisk?: number,
+  ): CPUDecision {
+    this.onTrace?.(
+      {
+        kind,
+        playerId: me.sessionId,
+        eventCount: this.log.getEvents().length,
+        decision,
+        opponents: view.opponents,
+        candidates,
+        returnRisk,
+      },
+      state,
+    );
+    return decision;
   }
 
   /**
@@ -115,23 +211,51 @@ export class StrategyActionDecider implements ActionDecider {
     if (state.dobonPlayerIds.length > 0) return true;
     const target = state.players.get(state.dobonTargetId);
     if (!target || target.handCount === 0) return true;
+    return this.returnRisk(state, me, view) < this.weights.maxDobonReturnRisk;
+  }
 
+  /** ドボンしたら、ドボン返しされる確率（ドボンされた人の残りが自分の合計と同じ確率） */
+  private returnRisk(state: GameState, me: Player, view: Observation): number {
     const myTotal = sumPoints(me.myHand);
     const opponent = view.opponents.find(
-      (o) => o.sessionId === target.sessionId,
+      (o) => o.sessionId === state.dobonTargetId,
     );
-    if (!opponent || myTotal > MAX_TRACKED_TOTAL) return true;
-    return opponent.dist[myTotal] < this.weights.maxDobonReturnRisk;
+    if (!opponent || myTotal > MAX_TRACKED_TOTAL) return 0;
+    return opponent.dist[myTotal];
+  }
+
+  /**
+   * 今の局面の読みと、評価の高い順に並べた候補手（先読み探索の土台に使う）。
+   */
+  analyze(
+    state: GameState,
+    me: Player,
+  ): { view: Observation; candidates: Candidate[] } {
+    const view = this.observe(state, me);
+    const candidates = this.listCandidates(state, me, view);
+    candidates.sort((a, b) => b.score - a.score);
+    return { view, candidates };
   }
 
   private observe(state: GameState, me: Player): Observation {
     const pool = buildUnseenPool(state, me);
-    const beliefs = inferBeliefs(this.log.getEvents(), state.players.keys());
+    const reading = this.reading;
+    const beliefs = inferBeliefs(
+      this.log.getEvents(),
+      state.players.keys(),
+      reading ? READING_DETECTION : this.inference,
+    );
     const opponents: OpponentView[] = [];
     state.players.forEach((p) => {
       if (p.sessionId === me.sessionId) return;
       const belief = beliefs.get(p.sessionId);
-      const dist = opponentTotalDistribution(belief, p.handCount, pool);
+      const dist = reading
+        ? learnedDistribution(
+            baseTotalDistribution(belief, p.handCount, pool, READING_DETECTION),
+            readingContext(belief, p.handCount),
+            reading,
+          )
+        : opponentTotalDistribution(belief, p.handCount, pool, this.inference);
       opponents.push({
         sessionId: p.sessionId,
         handCount: p.handCount,
@@ -158,12 +282,20 @@ export class StrategyActionDecider implements ActionDecider {
     const candidates: Candidate[] = [];
 
     for (const cards of listPlays(hand, me)) {
+      const { score, dobonRisk } = this.scorePlay(
+        cards,
+        hand.length,
+        myTotal,
+        view,
+      );
       candidates.push({
         decision: {
           action: "playCard",
           params: { cardIds: cards.map((c) => c.id) },
         },
-        score: this.scorePlay(cards, hand.length, myTotal, view),
+        score,
+        cards,
+        dobonRisk,
       });
     }
 
@@ -209,7 +341,7 @@ export class StrategyActionDecider implements ActionDecider {
     handCount: number,
     myTotal: number,
     view: Observation,
-  ): number {
+  ): { score: number; dobonRisk: number } {
     const played = sumPoints(cards);
     const rest = myTotal - played;
     const restCount = handCount - cards.length;
@@ -222,7 +354,7 @@ export class StrategyActionDecider implements ActionDecider {
     for (const opponent of view.opponents) {
       let p = played <= MAX_TRACKED_TOTAL ? opponent.dist[played] : 0;
       if (opponent.belief?.trapColor === cards[0].color) {
-        p = Math.min(1, p * TRAP_COLOR_FACTOR);
+        p = Math.min(1, p * this.weights.trapColorFactor);
       }
       dobonExpected += p;
       noDobon *= 1 - p;
@@ -233,13 +365,17 @@ export class StrategyActionDecider implements ActionDecider {
         ? view.opponentsTotal
         : this.holdValue(rest, restCount, view);
     const dobonValue = dobonExpected * pot * (canReturn ? 1 : -1);
-    return noDobon * after + dobonValue + this.tempoValue(cards);
+    return {
+      score: noDobon * after + dobonValue + this.tempoValue(cards),
+      dobonRisk: dobonExpected,
+    };
   }
 
   /** 手番を終えて手札を持ち続けるときの価値 */
   private holdValue(total: number, count: number, view: Observation): number {
     const { holdCost, cardCost, dobonChance } = this.weights;
-    // 相手が自分の合計点ちょうどのカードを出してくれる見込み
+    // 相手が自分の合計点ちょうどのカードを出してくれる見込み。
+    // 場に出せるか・相手の手札枚数まで数えた計算も試したが、この単純な形の方が強かった
     let matching = 0;
     for (const entry of view.pool) {
       if (entry.points === total) matching += entry.count;
@@ -292,6 +428,7 @@ function canStack(first: Card, card: Card): boolean {
 
 /**
  * 色選択。手札に多い色を選び、パスした相手が持っていなさそうな色を少し優先する。
+ * （自分の合計点のカードが出やすい色を選ぶ方法も試したが、弱くなった）
  */
 function chooseColor(me: Player, view: Observation): string {
   let best: string = COLORS[0];

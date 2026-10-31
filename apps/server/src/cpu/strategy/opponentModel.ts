@@ -10,7 +10,7 @@ import {
  * 「その時点で出せるカードを持っていなかった」という推測。
  * パスした人は場札の色・数字のカードやワイルド類を、累積ドローを引いた人はドローカードを持っていなさそう。
  */
-type Lack =
+export type Lack =
   | { kind: "pass"; color: string; value: string }
   | { kind: "stack"; value: string };
 
@@ -18,26 +18,63 @@ type Lack =
 export interface OpponentBelief {
   // ドボンしなかったことから、今の手札合計ではないと分かっている点数
   excludedTotals: Set<number>;
-  // 危険な場面で高得点カードを出した人は、ドボン返し狙いで残りをその点数にしていそう
-  bait?: { total: number; weight: number };
+  // 危険な場面で記号カードを出した人は、ドボン返し狙いで残りをその点数にしていそう
+  // source は読みのきっかけになったカード（draw4 / wild / skip など）
+  bait?: { total: number; weight: number; source: string };
   lacks: Lack[];
   // 色変えで選んだ色。次に行動するまで、その色のカードを待っていそう
   trapColor?: string;
+  // 最後に出したカード（学習した読みの手がかり）
+  lastPlay?: { points: number; value: string; handCountAfter: number };
+  // 最後にカードを出してから引いた枚数
+  drawnSincePlay: number;
 }
 
-/** ドボンを宣言しなかった点数の確率に掛ける係数（宣言し忘れもあるので0にはしない） */
-export const EXCLUDED_TOTAL_FACTOR = 0.1;
-/** 持っていなさそうなカードの重み */
-export const LACK_WEIGHT = 0.3;
-/** 色変えで選んだ色のカードを出したときに、その人にドボンされる確率に掛ける係数 */
-export const TRAP_COLOR_FACTOR = 1.5;
+/** 行動履歴からの推論に使う定数（CPU同士の対戦で調整する） */
+export interface InferenceParams {
+  // ドボンを宣言しなかった点数の確率に掛ける係数
+  excludedTotalFactor: number;
+  // 持っていなさそうなカードの重み
+  lackWeight: number;
+  // ドボン返し狙いとみなす手札枚数の上限（出した後の枚数）
+  baitMaxHandCount: number;
+  // 記号カードを出した人の残りが、出したカードと同じ点数である確率。
+  // 出したカードと同じ点数を手元に残していれば、そのカードにドボンされてもドボン返しできる
+  // （例: ドロー4なら残り50点、ワイルドなら30点、スキップ・リバース・ドロー2なら20点）
+  baitWeights: Record<string, number>;
+}
 
-// ドボン返し狙いとみなす条件: 出した後の手札がこの枚数以下で、高得点カードを出した
-const BAIT_MAX_HAND_COUNT = 4;
-const BAIT_WEIGHT: Record<string, number> = { draw4: 0.5, wild: 0.35 };
+// CPU同士の対戦で調整した値（pnpm --filter server tune）。
+// ドボン返し狙いの読みは、CPU同士ではほとんど当たらず逆効果だったので使わない（確率0）
+export const DEFAULT_INFERENCE: InferenceParams = {
+  excludedTotalFactor: 0.1,
+  lackWeight: 0.3,
+  baitMaxHandCount: 4,
+  baitWeights: {
+    draw4: 0,
+    wild: 0,
+    skip: 0,
+    reverse: 0,
+    draw2: 0,
+    "force-change": 0,
+  },
+};
+
+// ドボン返しをよく狙う相手向けの値（調整前の初期値）
+export const BAIT_AWARE_INFERENCE: InferenceParams = {
+  ...DEFAULT_INFERENCE,
+  baitWeights: {
+    draw4: 0.5,
+    wild: 0.35,
+    skip: 0.25,
+    reverse: 0.25,
+    draw2: 0.25,
+    "force-change": 0.2,
+  },
+};
 
 function emptyBelief(): OpponentBelief {
-  return { excludedTotals: new Set(), lacks: [] };
+  return { excludedTotals: new Set(), lacks: [], drawnSincePlay: 0 };
 }
 
 /**
@@ -46,6 +83,7 @@ function emptyBelief(): OpponentBelief {
 export function inferBeliefs(
   events: readonly GameLogEvent[],
   playerIds: Iterable<string>,
+  params: InferenceParams = DEFAULT_INFERENCE,
 ): Map<string, OpponentBelief> {
   const beliefs = new Map<string, OpponentBelief>();
   const beliefOf = (playerId: string) => {
@@ -78,14 +116,27 @@ export function inferBeliefs(
           belief.bait = total >= 0 ? { ...belief.bait, total } : undefined;
         }
         belief.trapColor = undefined;
+        belief.lastPlay = {
+          points: played,
+          value: event.cards[0].value,
+          handCountAfter: event.handCountAfter,
+        };
+        belief.drawnSincePlay = 0;
 
-        const baitWeight = BAIT_WEIGHT[event.cards[0].value];
+        const baitWeight = params.baitWeights[event.cards[0].value];
+        // 前の読み（ドロー4の後に20を出したら残り30など）の方が強ければそちらを残す
         if (
           baitWeight !== undefined &&
+          baitWeight > 0 &&
           event.handCountAfter > 0 &&
-          event.handCountAfter <= BAIT_MAX_HAND_COUNT
+          event.handCountAfter <= params.baitMaxHandCount &&
+          baitWeight > (belief.bait?.weight ?? 0)
         ) {
-          belief.bait = { total: played, weight: baitWeight };
+          belief.bait = {
+            total: played,
+            weight: baitWeight,
+            source: event.cards[0].value,
+          };
         }
         break;
       }
@@ -96,6 +147,7 @@ export function inferBeliefs(
         belief.bait = undefined;
         belief.lacks = [];
         belief.trapColor = undefined;
+        belief.drawnSincePlay += event.count;
         if (event.stackedValue) {
           belief.lacks.push({ kind: "stack", value: event.stackedValue });
         }
@@ -126,14 +178,14 @@ export function opponentTotalDistribution(
   belief: OpponentBelief | undefined,
   handCount: number,
   pool: PoolEntry[],
+  params: InferenceParams = DEFAULT_INFERENCE,
 ): number[] {
-  const groups = weightedGroups(pool, belief?.lacks ?? []);
-  const base = handTotalDistribution(groups, handCount);
+  const base = baseTotalDistribution(belief, handCount, pool, params);
   if (!belief) return base;
 
   const dist = base.slice();
   for (const total of belief.excludedTotals) {
-    if (total <= MAX_TRACKED_TOTAL) dist[total] *= EXCLUDED_TOTAL_FACTOR;
+    if (total <= MAX_TRACKED_TOTAL) dist[total] *= params.excludedTotalFactor;
   }
   normalize(dist);
 
@@ -143,6 +195,20 @@ export function opponentTotalDistribution(
     dist[bait.total] += bait.weight;
   }
   return dist;
+}
+
+/**
+ * 手札枚数と「持っていなさそうなカード」だけを反映した、手札合計点の分布。
+ * ドボンしなかった点数やドボン返し狙いの読みは含まない（学習した読みの土台にする）。
+ */
+export function baseTotalDistribution(
+  belief: OpponentBelief | undefined,
+  handCount: number,
+  pool: PoolEntry[],
+  params: InferenceParams = DEFAULT_INFERENCE,
+): number[] {
+  const groups = weightedGroups(pool, belief?.lacks ?? [], params.lackWeight);
+  return handTotalDistribution(groups, handCount);
 }
 
 /** 分布の期待値（上限超えの区分は、平均的なカードで埋めた値で近似する） */
@@ -170,12 +236,16 @@ export function averagePoints(pool: PoolEntry[]): number {
   return count === 0 ? 0 : points / count;
 }
 
-function weightedGroups(pool: PoolEntry[], lacks: Lack[]): WeightedGroup[] {
+function weightedGroups(
+  pool: PoolEntry[],
+  lacks: Lack[],
+  lackWeight: number,
+): WeightedGroup[] {
   const groups = new Map<string, WeightedGroup>();
   for (const entry of pool) {
     let weight = 1;
     for (const lack of lacks) {
-      if (isCoveredByLack(entry, lack)) weight *= LACK_WEIGHT;
+      if (isCoveredByLack(entry, lack)) weight *= lackWeight;
     }
     const key = `${entry.points}:${weight}`;
     const group = groups.get(key);
@@ -211,7 +281,7 @@ function shiftTotals(totals: Set<number>, played: number): Set<number> {
   return shifted;
 }
 
-function normalize(dist: number[]): void {
+export function normalize(dist: number[]): void {
   const sum = dist.reduce((a, b) => a + b, 0);
   if (sum === 0) return;
   for (let i = 0; i < dist.length; i++) dist[i] /= sum;

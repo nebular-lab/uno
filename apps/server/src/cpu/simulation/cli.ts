@@ -1,7 +1,4 @@
-import {
-  DEFAULT_WEIGHTS,
-  StrategyActionDecider,
-} from "../strategy/StrategyActionDecider";
+import { StrategyActionDecider } from "../strategy/StrategyActionDecider";
 import { SimpleActionDecider } from "./SimpleActionDecider";
 import { type SimulationEntrant, simulateGames } from "./simulateGames";
 
@@ -17,7 +14,7 @@ const seats = Number(process.argv[3] ?? 4);
 const entrants: SimulationEntrant[] = [
   {
     name: "strategy",
-    createDecider: (log) => new StrategyActionDecider(log, DEFAULT_WEIGHTS),
+    createDecider: (log) => new StrategyActionDecider(log),
   },
   { name: "simple", createDecider: () => new SimpleActionDecider() },
 ];
@@ -33,6 +30,7 @@ console.table(
   result.entrants.map((e) => ({
     name: e.name,
     "平均点/席": Number(e.averageScore.toFixed(2)),
+    "95%区間": `±${(1.96 * e.standardError).toFixed(2)}`,
     上がり: e.normalWins,
     ドボン: e.dobonWins,
     ドボン返し: e.dobonReturnWins,

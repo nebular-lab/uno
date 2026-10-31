@@ -2,10 +2,20 @@ import { describe, expect, it } from "vitest";
 import type { CardKind, GameLogEvent } from "../GameLog";
 import type { PoolEntry } from "./handDistribution";
 import {
-  EXCLUDED_TOTAL_FACTOR,
+  BAIT_AWARE_INFERENCE,
   inferBeliefs,
+  type OpponentBelief,
   opponentTotalDistribution,
 } from "./opponentModel";
+
+// ドボン返し狙いの読みも確かめるため、狙いの確率がある設定で推論する
+const infer = (events: GameLogEvent[], playerIds: string[]) =>
+  inferBeliefs(events, playerIds, BAIT_AWARE_INFERENCE);
+const distOf = (
+  belief: OpponentBelief | undefined,
+  handCount: number,
+  pool: PoolEntry[],
+) => opponentTotalDistribution(belief, handCount, pool, BAIT_AWARE_INFERENCE);
 
 const wild: CardKind = { color: "wild", value: "wild", points: 30 };
 const draw4: CardKind = { color: "wild", value: "draw4", points: 50 };
@@ -32,7 +42,7 @@ function numberPool(): PoolEntry[] {
 
 describe("inferBeliefs", () => {
   it("出されたカードにドボンしなかった人は、手札合計がその点数ではない", () => {
-    const beliefs = inferBeliefs([play("a", [wild])], ["a", "b", "c"]);
+    const beliefs = infer([play("a", [wild])], ["a", "b", "c"]);
 
     expect(beliefs.get("b")?.excludedTotals.has(30)).toBe(true);
     expect(beliefs.get("c")?.excludedTotals.has(30)).toBe(true);
@@ -41,7 +51,7 @@ describe("inferBeliefs", () => {
   });
 
   it("30にドボンしなかった人が20を出したら、残りは10ではない", () => {
-    const beliefs = inferBeliefs(
+    const beliefs = infer(
       [play("a", [wild]), play("b", [redSkip])],
       ["a", "b"],
     );
@@ -51,47 +61,82 @@ describe("inferBeliefs", () => {
 
   it("ドボンされない点数は、分布でも確率が下がる", () => {
     const pool = numberPool();
-    const beliefs = inferBeliefs(
+    const beliefs = infer(
       [play("a", [{ color: "red", value: "9", points: 9 }])],
       ["a", "b"],
     );
 
-    const plain = opponentTotalDistribution(undefined, 2, pool);
-    const inferred = opponentTotalDistribution(beliefs.get("b"), 2, pool);
+    const plain = distOf(undefined, 2, pool);
+    const inferred = distOf(beliefs.get("b"), 2, pool);
 
-    expect(inferred[9]).toBeLessThan(plain[9] * EXCLUDED_TOTAL_FACTOR * 1.2);
+    expect(inferred[9]).toBeLessThan(
+      plain[9] * BAIT_AWARE_INFERENCE.excludedTotalFactor * 1.2,
+    );
     expect(inferred[10]).toBeGreaterThan(plain[10]);
   });
 
   it("手札が少ないときにドロー4を出した人は、残りが50点の可能性が高い", () => {
     const pool = [...numberPool(), { ...draw4, count: 3 }];
-    const beliefs = inferBeliefs([play("b", [draw4], 1)], ["a", "b"]);
+    const beliefs = infer([play("b", [draw4], 1)], ["a", "b"]);
 
     expect(beliefs.get("b")?.bait?.total).toBe(50);
-    const dist = opponentTotalDistribution(beliefs.get("b"), 1, pool);
+    const dist = distOf(beliefs.get("b"), 1, pool);
     expect(dist[50]).toBeGreaterThanOrEqual(0.5);
   });
 
   it("ドロー4の後に20を出したら、残りは30の可能性が高い", () => {
     const pool = [...numberPool(), { ...wild, count: 3 }];
-    const beliefs = inferBeliefs(
+    const beliefs = infer(
       [play("b", [draw4], 2), play("b", [redSkip], 1)],
       ["a", "b"],
     );
 
     expect(beliefs.get("b")?.bait?.total).toBe(30);
-    const dist = opponentTotalDistribution(beliefs.get("b"), 1, pool);
+    const dist = distOf(beliefs.get("b"), 1, pool);
     expect(dist[30]).toBeGreaterThanOrEqual(0.5);
   });
 
+  it("ワイルド（30点）やスキップ（20点）でも、残りが同じ点数の可能性が高いと読む", () => {
+    const pool = [
+      ...numberPool(),
+      { ...wild, count: 3 },
+      { ...redSkip, count: 2 },
+    ];
+
+    const afterWild = infer([play("b", [wild], 1)], ["a", "b"]);
+    expect(afterWild.get("b")?.bait).toMatchObject({
+      total: 30,
+      source: "wild",
+    });
+    const wildDist = distOf(afterWild.get("b"), 1, pool);
+    expect(wildDist[30]).toBeGreaterThanOrEqual(0.35);
+
+    const afterSkip = infer([play("b", [redSkip], 1)], ["a", "b"]);
+    expect(afterSkip.get("b")?.bait).toMatchObject({
+      total: 20,
+      source: "skip",
+    });
+    const skipDist = distOf(afterSkip.get("b"), 1, pool);
+    expect(skipDist[20]).toBeGreaterThanOrEqual(0.25);
+  });
+
+  it("数字カードはドボン返し狙いとみなさない", () => {
+    const beliefs = infer(
+      [play("b", [{ color: "red", value: "7", points: 7 }], 1)],
+      ["a", "b"],
+    );
+
+    expect(beliefs.get("b")?.bait).toBeUndefined();
+  });
+
   it("手札が多いときのドロー4はドボン返し狙いとみなさない", () => {
-    const beliefs = inferBeliefs([play("b", [draw4], 6)], ["a", "b"]);
+    const beliefs = infer([play("b", [draw4], 6)], ["a", "b"]);
 
     expect(beliefs.get("b")?.bait).toBeUndefined();
   });
 
   it("カードを引くと、それまでの推論は使えなくなる", () => {
-    const beliefs = inferBeliefs(
+    const beliefs = infer(
       [
         play("a", [wild]),
         play("b", [draw4], 2),
@@ -109,7 +154,7 @@ describe("inferBeliefs", () => {
       { color: "red", value: "4", points: 4, count: 4 },
       { color: "blue", value: "2", points: 2, count: 4 },
     ];
-    const beliefs = inferBeliefs(
+    const beliefs = infer(
       [
         { type: "draw", playerId: "b", count: 1 },
         { type: "pass", playerId: "b", fieldValue: "7", currentColor: "red" },
@@ -117,15 +162,15 @@ describe("inferBeliefs", () => {
       ["a", "b"],
     );
 
-    const plain = opponentTotalDistribution(undefined, 1, pool);
-    const inferred = opponentTotalDistribution(beliefs.get("b"), 1, pool);
+    const plain = distOf(undefined, 1, pool);
+    const inferred = distOf(beliefs.get("b"), 1, pool);
 
     expect(inferred[4]).toBeLessThan(plain[4]);
     expect(inferred[2]).toBeGreaterThan(plain[2]);
   });
 
   it("累積ドローを引いた人は、重ねられるドローカードを持っていなさそう", () => {
-    const beliefs = inferBeliefs(
+    const beliefs = infer(
       [{ type: "draw", playerId: "b", count: 2, stackedValue: "draw2" }],
       ["a", "b"],
     );
@@ -136,7 +181,7 @@ describe("inferBeliefs", () => {
   });
 
   it("色変えで選んだ色は、その人が次に行動するまで覚えておく", () => {
-    const chose = inferBeliefs(
+    const chose = infer(
       [
         play("b", [wild], 3),
         { type: "chooseColor", playerId: "b", color: "blue" },
@@ -145,7 +190,7 @@ describe("inferBeliefs", () => {
     );
     expect(chose.get("b")?.trapColor).toBe("blue");
 
-    const acted = inferBeliefs(
+    const acted = infer(
       [
         play("b", [wild], 3),
         { type: "chooseColor", playerId: "b", color: "blue" },

@@ -1,7 +1,18 @@
 import { Card, GameState, Player } from "@dobon-uno/shared";
 import { describe, expect, it } from "vitest";
 import { GameLog } from "../GameLog";
-import { StrategyActionDecider } from "./StrategyActionDecider";
+import { BAIT_AWARE_INFERENCE } from "./opponentModel";
+import {
+  StrategyActionDecider,
+  type StrategyOptions,
+} from "./StrategyActionDecider";
+
+// 手で決めた推論で判断を確かめる（既定）
+const handTuned: StrategyOptions = {};
+// ドボン返しをよく狙う相手向けの推論
+const baitAware: StrategyOptions = {
+  inference: BAIT_AWARE_INFERENCE,
+};
 
 function createPlayer(sessionId: string, cards: Card[] = []): Player {
   const player = new Player();
@@ -46,10 +57,10 @@ describe("StrategyActionDecider", () => {
     cpu.canDraw = true;
     const state = createState(cpu, { b: 7 });
 
-    const decision = await new StrategyActionDecider(new GameLog()).decide(
-      state,
-      cpu,
-    );
+    const decision = await new StrategyActionDecider(
+      new GameLog(),
+      handTuned,
+    ).decide(state, cpu);
 
     expect(decision).toEqual({
       action: "playCard",
@@ -70,7 +81,10 @@ describe("StrategyActionDecider", () => {
     // cが8を出したが、手札1枚のbはドボンしなかった → bの手札は8点ではない
     log.recordPlay("c", [new Card("g8", "green", "8", 8)], 7);
 
-    const decision = await new StrategyActionDecider(log).decide(state, cpu);
+    const decision = await new StrategyActionDecider(log, handTuned).decide(
+      state,
+      cpu,
+    );
 
     expect(decision).toEqual({
       action: "playCard",
@@ -90,7 +104,10 @@ describe("StrategyActionDecider", () => {
     log.recordPlay("b", [new Card("wild-1", "wild", "wild", 30)], 1);
     log.recordChooseColor("b", "blue");
 
-    const decision = await new StrategyActionDecider(log).decide(state, cpu);
+    const decision = await new StrategyActionDecider(log, handTuned).decide(
+      state,
+      cpu,
+    );
 
     expect(decision).toEqual({
       action: "playCard",
@@ -114,7 +131,9 @@ describe("StrategyActionDecider", () => {
     // 手札が少ないときにドロー4を出した → 残りも50点（ドロー4）の可能性が高い
     log.recordPlay("b", [new Card("d1", "wild", "draw4", 50)], 1);
 
-    expect(new StrategyActionDecider(log).decideDobon(state, cpu)).toBe(false);
+    expect(
+      new StrategyActionDecider(log, baitAware).decideDobon(state, cpu),
+    ).toBe(false);
   });
 
   it("ドボン返しの心配がなければドボンする", () => {
@@ -132,7 +151,9 @@ describe("StrategyActionDecider", () => {
     const log = new GameLog();
     log.recordPlay("b", [new Card("d1", "wild", "draw4", 50)], 6);
 
-    expect(new StrategyActionDecider(log).decideDobon(state, cpu)).toBe(true);
+    expect(
+      new StrategyActionDecider(log, baitAware).decideDobon(state, cpu),
+    ).toBe(true);
   });
 
   it("上がりのカードには必ずドボンする（見送ると上がられる）", () => {
@@ -142,7 +163,10 @@ describe("StrategyActionDecider", () => {
     state.dobonTargetId = "b";
 
     expect(
-      new StrategyActionDecider(new GameLog()).decideDobon(state, cpu),
+      new StrategyActionDecider(new GameLog(), handTuned).decideDobon(
+        state,
+        cpu,
+      ),
     ).toBe(true);
   });
 
@@ -155,10 +179,10 @@ describe("StrategyActionDecider", () => {
     cpu.canChooseColor = true;
     const state = createState(cpu, { b: 5 });
 
-    const decision = await new StrategyActionDecider(new GameLog()).decide(
-      state,
-      cpu,
-    );
+    const decision = await new StrategyActionDecider(
+      new GameLog(),
+      handTuned,
+    ).decide(state, cpu);
 
     expect(decision).toEqual({
       action: "chooseColor",
