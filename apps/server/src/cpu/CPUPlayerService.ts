@@ -1,34 +1,31 @@
 import type { Dispatcher } from "@colyseus/command";
 import type { GameState, Player } from "@dobon-uno/shared";
-import { ChooseColorCommand } from "../commands/ChooseColorCommand";
 import { DobonCommand } from "../commands/DobonCommand";
 import { DobonReturnCommand } from "../commands/DobonReturnCommand";
-import { DrawCardCommand } from "../commands/DrawCardCommand";
-import { DrawStackCommand } from "../commands/DrawStackCommand";
-import { PassCommand } from "../commands/PassCommand";
-import { PlayCardCommand } from "../commands/PlayCardCommand";
 import type { GameRoom } from "../rooms/GameRoom";
-import type { ActionDecider, CPUDecision } from "./ActionDecider";
+import type { ActionDecider } from "./ActionDecider";
 import { createActionDecider } from "./createActionDecider";
-
-// 型ガード: paramsがオブジェクトかどうか
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-// paramsから文字列を取得
-function getString(params: unknown, key: string): string | undefined {
-  if (!isObject(params)) return undefined;
-  const value = params[key];
-  return typeof value === "string" ? value : undefined;
-}
+import {
+  executeDecision,
+  fallbackDecision,
+  hasAnyAction,
+} from "./executeDecision";
+import type { GameLog } from "./GameLog";
 
 export class CPUPlayerService {
-  private decider: ActionDecider = createActionDecider();
+  private decider: ActionDecider;
   private thinkingDelay = 3000;
   private quickActionDelay = 200; // 即決アクションの遅延（ms）
   private dobonReturnDelay = 3000; // ドボン返しの遅延（ms）
   private dobonWaitDelay = 5000; // 他プレイヤーのドボン待ち時間（ms）
+  private offTurnDobonDelay = 1000; // 手番外のドボンの遅延（ms）
+
+  // 手番外のドボン・ドボン返しを待っているCPU（二重に宣言しないため）
+  private pendingOffTurn = new Set<string>();
+
+  constructor(log: GameLog, decider?: ActionDecider) {
+    this.decider = decider ?? createActionDecider(log);
+  }
 
   async handleTurn(
     state: GameState,
@@ -38,7 +35,10 @@ export class CPUPlayerService {
     // CPUプレイヤーでない場合は何もしない
     if (!cpuPlayer.isCpu) return;
 
-    // ドボン返しが可能な場合は3秒後に実行（LLM不要）
+    // ドボン待ちなどで取れる行動がない
+    if (!hasAnyAction(cpuPlayer)) return;
+
+    // ドボン返しが可能な場合は3秒後に実行
     if (cpuPlayer.canDobonReturn) {
       await this.delay(this.dobonReturnDelay);
       await dispatcher.dispatch(new DobonReturnCommand(), {
@@ -47,8 +47,8 @@ export class CPUPlayerService {
       return;
     }
 
-    // ドボンが可能な場合は即座に実行（LLM不要）
-    if (cpuPlayer.canDobon) {
+    // ドボンが可能な場合は即座に実行（ドボン返しされそうなら見送って手番を続ける）
+    if (cpuPlayer.canDobon && this.wantsDobon(state, cpuPlayer)) {
       await this.delay(this.quickActionDelay);
       await dispatcher.dispatch(new DobonCommand(), {
         sessionId: cpuPlayer.sessionId,
@@ -70,152 +70,69 @@ export class CPUPlayerService {
     // 思考時間の演出
     await this.delay(this.thinkingDelay);
 
+    // 待っている間にドボンなどで手番が終わっていれば何もしない
+    if (
+      state.phase !== "playing" ||
+      state.currentTurnPlayerId !== cpuPlayer.sessionId ||
+      !hasAnyAction(cpuPlayer)
+    ) {
+      return;
+    }
+
     try {
       const decision = await this.decider.decide(state, cpuPlayer);
-      await this.executeAction(decision, cpuPlayer.sessionId, dispatcher);
+      executeDecision(decision, cpuPlayer.sessionId, dispatcher);
     } catch (error) {
       console.error("CPU decision error:", error);
       // フォールバック: 可能なアクションを順に試す
-      await this.executeFallbackAction(cpuPlayer, dispatcher);
+      const fallback = fallbackDecision(cpuPlayer);
+      if (fallback) {
+        executeDecision(fallback, cpuPlayer.sessionId, dispatcher);
+      }
     }
   }
 
-  private async executeAction(
-    decision: CPUDecision,
-    sessionId: string,
+  /**
+   * 手番でないときのドボン・ドボン返し（カットインはしない）
+   */
+  async handleOffTurn(
+    state: GameState,
+    cpuPlayer: Player,
     dispatcher: Dispatcher<GameRoom>,
   ): Promise<void> {
-    switch (decision.action) {
-      case "playCard": {
-        const cardId = getString(decision.params, "cardId");
-        if (cardId) {
-          await dispatcher.dispatch(new PlayCardCommand(), {
-            sessionId,
-            cardIds: [cardId],
-          });
-        }
-        break;
+    const { sessionId } = cpuPlayer;
+    if (this.pendingOffTurn.has(sessionId)) return;
+
+    if (cpuPlayer.canDobonReturn) {
+      this.pendingOffTurn.add(sessionId);
+      try {
+        await this.delay(this.dobonReturnDelay);
+        dispatcher.dispatch(new DobonReturnCommand(), { sessionId });
+      } finally {
+        this.pendingOffTurn.delete(sessionId);
       }
+      return;
+    }
 
-      case "drawCard":
-        await dispatcher.dispatch(new DrawCardCommand(), {
-          sessionId,
-        });
-        break;
+    if (!cpuPlayer.canDobon || !this.wantsDobon(state, cpuPlayer)) return;
 
-      case "drawStack":
-        await dispatcher.dispatch(new DrawStackCommand(), {
-          sessionId,
-        });
-        break;
-
-      case "pass":
-        await dispatcher.dispatch(new PassCommand(), {
-          sessionId,
-        });
-        break;
-
-      case "dobon":
-        await dispatcher.dispatch(new DobonCommand(), {
-          sessionId,
-        });
-        break;
-
-      case "dobonReturn":
-        await dispatcher.dispatch(new DobonReturnCommand(), {
-          sessionId,
-        });
-        break;
-
-      case "chooseColor": {
-        const color = getString(decision.params, "color") ?? "red";
-        await dispatcher.dispatch(new ChooseColorCommand(), {
-          sessionId,
-          color,
-        });
-        break;
-      }
-
-      default:
-        console.warn(`Unknown CPU action: ${decision.action}`);
+    this.pendingOffTurn.add(sessionId);
+    try {
+      await this.delay(this.offTurnDobonDelay);
+      // 待っている間に次の人が動いてドボンできなくなっていれば、validateで弾かれる
+      dispatcher.dispatch(new DobonCommand(), { sessionId });
+    } finally {
+      this.pendingOffTurn.delete(sessionId);
     }
   }
 
-  private async executeFallbackAction(
-    player: Player,
-    dispatcher: Dispatcher<GameRoom>,
-  ): Promise<void> {
-    // 優先順位: ドボン返し > ドボン > 色選択 > カード出す > 累積引く > 山札引く > パス
-    if (player.canDobonReturn) {
-      await dispatcher.dispatch(new DobonReturnCommand(), {
-        sessionId: player.sessionId,
-      });
-    } else if (player.canDobon) {
-      await dispatcher.dispatch(new DobonCommand(), {
-        sessionId: player.sessionId,
-      });
-    } else if (player.canChooseColor) {
-      // 手札に最も多い色を選ぶ
-      const color = this.getMostCommonColor(player);
-      await dispatcher.dispatch(new ChooseColorCommand(), {
-        sessionId: player.sessionId,
-        color,
-      });
-    } else {
-      let hasPlayableCards = false;
-      let cardId: string | undefined;
-      player.playableCards.forEach((canPlay, id) => {
-        if (canPlay && !cardId) {
-          hasPlayableCards = true;
-          cardId = id;
-        }
-      });
-
-      if (hasPlayableCards && cardId) {
-        await dispatcher.dispatch(new PlayCardCommand(), {
-          sessionId: player.sessionId,
-          cardIds: [cardId],
-        });
-      } else if (player.canDrawStack) {
-        await dispatcher.dispatch(new DrawStackCommand(), {
-          sessionId: player.sessionId,
-        });
-      } else if (player.canDraw) {
-        await dispatcher.dispatch(new DrawCardCommand(), {
-          sessionId: player.sessionId,
-        });
-      } else if (player.canPass) {
-        await dispatcher.dispatch(new PassCommand(), {
-          sessionId: player.sessionId,
-        });
-      }
+  private wantsDobon(state: GameState, cpuPlayer: Player): boolean {
+    try {
+      return this.decider.decideDobon?.(state, cpuPlayer) ?? true;
+    } catch (error) {
+      console.error("CPU dobon decision error:", error);
+      return true;
     }
-  }
-
-  private getMostCommonColor(player: Player): string {
-    const colorCount: Record<string, number> = {
-      red: 0,
-      blue: 0,
-      green: 0,
-      yellow: 0,
-    };
-
-    for (const card of player.myHand) {
-      if (card.color in colorCount) {
-        colorCount[card.color]++;
-      }
-    }
-
-    let maxColor = "red";
-    let maxCount = 0;
-    for (const [color, count] of Object.entries(colorCount)) {
-      if (count > maxCount) {
-        maxCount = count;
-        maxColor = color;
-      }
-    }
-
-    return maxColor;
   }
 
   private checkOtherPlayersCanDobon(

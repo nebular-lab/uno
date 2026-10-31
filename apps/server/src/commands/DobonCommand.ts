@@ -73,6 +73,8 @@ export class DobonCommand extends Command<GameRoom, Payload> {
     const othersCanDobon = this.checkOthersCanDobon();
     if (othersCanDobon) {
       // 他のドボン待ち（タイマー継続）
+      // ドボンを見送っていたCPUも、ここで続けてドボンする
+      this.room.checkCPUTurn();
       return;
     }
 

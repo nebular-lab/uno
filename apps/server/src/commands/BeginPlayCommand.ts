@@ -16,6 +16,8 @@ export class BeginPlayCommand extends Command<GameRoom> {
     // 最初のカードの効果を適用（ドロー4の場合は色選択状態にする等）
     const firstCard = this.state.fieldCards[this.state.fieldCards.length - 1];
     if (firstCard) {
+      // 最初の場札は誰も出していないカードとして記録する（全員のドボン判定の対象）
+      this.room.gameLog.recordPlay("", [firstCard], 0);
       const effect = CardEffectRegistry.getEffectForCard(firstCard);
       const contextFactory = new CardEffectContextFactory(this.state);
       const context = contextFactory.create(firstCard);

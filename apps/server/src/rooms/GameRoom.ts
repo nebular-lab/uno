@@ -18,6 +18,7 @@ import { PassCommand } from "../commands/PassCommand";
 import { PlayCardCommand } from "../commands/PlayCardCommand";
 import { StartGameCommand } from "../commands/StartGameCommand";
 import { CPUPlayerService } from "../cpu/CPUPlayerService";
+import { GameLog } from "../cpu/GameLog";
 import { PlayerActionUpdater } from "../services/PlayerActionUpdater";
 import { TurnTimerService } from "../services/TurnTimerService";
 import { createDeck, shuffleDeck } from "../utils/deck";
@@ -61,8 +62,11 @@ export class GameRoom extends Room<{
   // ターンタイマーサービス
   turnTimerService!: TurnTimerService;
 
+  // 全員に見えている行動の履歴（CPUの推論に使う）
+  gameLog = new GameLog();
+
   // CPUプレイヤーサービス
-  private cpuService = new CPUPlayerService();
+  private cpuService = new CPUPlayerService(this.gameLog);
 
   // 一度でもゲームを開始したか（開始後はwaitingに戻ってもプレイヤーとして参加できない）
   private hasStarted = false;
@@ -527,11 +531,24 @@ export class GameRoom extends Room<{
    * PlayerActionUpdater.update() 後に呼び出す
    */
   async checkCPUTurn(): Promise<void> {
+    if (this.state.phase !== "playing") return;
+
+    // 手番でないCPUのドボン・ドボン返し（カットインはしない）
+    for (const player of this.state.players.values()) {
+      if (
+        player.isCpu &&
+        player.sessionId !== this.state.currentTurnPlayerId &&
+        (player.canDobon || player.canDobonReturn)
+      ) {
+        void this.cpuService.handleOffTurn(this.state, player, this.dispatcher);
+      }
+    }
+
     const currentPlayer = this.state.players.get(
       this.state.currentTurnPlayerId,
     );
 
-    if (currentPlayer?.isCpu && this.state.phase === "playing") {
+    if (currentPlayer?.isCpu) {
       await this.cpuService.handleTurn(
         this.state,
         currentPlayer,
@@ -585,5 +602,8 @@ export class GameRoom extends Room<{
 
     // 山札をクリア
     this.deck = [];
+
+    // 行動履歴をクリア
+    this.gameLog.reset();
   }
 }
