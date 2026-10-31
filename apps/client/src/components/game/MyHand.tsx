@@ -98,7 +98,8 @@ type Props = {
 
 export const MyHand = ({ disabled }: Props) => {
   const cards = useAtomValue(orderedMyHandAtom);
-  const { myHand } = useAtomValue(gamePlayStateAtom);
+  const { myHand, currentTurnPlayerId, mySessionId } =
+    useAtomValue(gamePlayStateAtom);
   const syncHandOrder = useSetAtom(syncHandOrderAtom);
   const setCardPosition = useSetAtom(setCardPositionAtom);
   const [selectedCardIds, setSelectedCardIds] = useAtom(selectedCardIdsAtom);
@@ -119,10 +120,10 @@ export const MyHand = ({ disabled }: Props) => {
     hiddenRight: 0,
   });
 
-  // カードを切ったら並び替え、引いたカードは右端に追加する
+  // カードを切ったときと手番が終わったときに並び替え、手番中に引いたカードは右端に追加する
   useLayoutEffect(() => {
     syncHandOrder();
-  }, [myHand, syncHandOrder]);
+  }, [myHand, currentTurnPlayerId, mySessionId, syncHandOrder]);
 
   // カード位置更新のコールバック
   const handlePositionUpdate = useCallback(
