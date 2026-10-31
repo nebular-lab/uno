@@ -16,7 +16,7 @@ export const orderedMyHandAtom = atom<ClientCard[]>((get) => {
 
   if (myHand.length === 0) return [];
 
-  // ローカル順序がないカードは末尾に追加
+  // ローカル順序がないカード（引いたカード）は末尾に追加
   const orderedCards = [...myHand].sort((a, b) => {
     const orderA = localOrder.get(a.id);
     const orderB = localOrder.get(b.id);
@@ -35,26 +35,21 @@ export const orderedMyHandAtom = atom<ClientCard[]>((get) => {
   return orderedCards;
 });
 
-// 手札の並び順を更新するアクション
-export const updateHandOrderAtom = atom(
-  null,
-  (_get, set, newOrder: ClientCard[]) => {
-    const orderMap = new Map<string, number>();
-    newOrder.forEach((card, index) => {
-      orderMap.set(card.id, index);
-    });
-    set(localHandOrderAtom, orderMap);
-  },
-);
-
-// 手札をソートするアクション
-export const sortHandAtom = atom(null, (get, set) => {
+// 手札の変化に合わせて並び順を同期するアクション
+// - カードが減った（切った）とき、または新しく配られたときは全体を並び替える
+// - カードが増えただけ（引いた）のときは並び順を保ち、右端に追加する
+export const syncHandOrderAtom = atom(null, (get, set) => {
   const { myHand } = get(gamePlayStateAtom);
+  const localOrder = get(localHandOrderAtom);
   if (myHand.length === 0) return;
 
-  const sortedCards = sortCards(myHand);
+  const handIds = new Set(myHand.map((card) => card.id));
+  const hasRemovedCard = [...localOrder.keys()].some((id) => !handIds.has(id));
+  const isNewHand = !myHand.some((card) => localOrder.has(card.id));
+  if (!hasRemovedCard && !isNewHand) return;
+
   const orderMap = new Map<string, number>();
-  sortedCards.forEach((card, index) => {
+  sortCards(myHand).forEach((card, index) => {
     orderMap.set(card.id, index);
   });
   set(localHandOrderAtom, orderMap);

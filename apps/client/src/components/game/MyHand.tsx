@@ -1,19 +1,4 @@
-import {
-  closestCenter,
-  DndContext,
-  type DragEndEvent,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
-import {
-  horizontalListSortingStrategy,
-  SortableContext,
-  useSortable,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { ArrowUpDown } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -22,11 +7,8 @@ import {
   useState,
 } from "react";
 import { setCardPositionAtom } from "@/atoms/cardPositionAtom";
-import {
-  orderedMyHandAtom,
-  sortHandAtom,
-  updateHandOrderAtom,
-} from "@/atoms/handOrderAtom";
+import { gamePlayStateAtom } from "@/atoms/connectionAtoms";
+import { orderedMyHandAtom, syncHandOrderAtom } from "@/atoms/handOrderAtom";
 import { playerSettingsAtom } from "@/atoms/playerSettingsAtom";
 import { selectedCardIdsAtom } from "@/atoms/selectedCardAtom";
 import { Button } from "@/components/ui/button";
@@ -34,11 +16,10 @@ import { useGameRoom } from "@/hooks/useGameRoom";
 import type { ClientCard } from "@/types/connection";
 import { Card } from "./Card";
 
-type SortableCardProps = {
+type HandCardProps = {
   card: ClientCard;
   disabled: boolean;
   playable: boolean;
-  scale: number;
   selected: boolean;
   selectionOrder?: number;
   showPoints?: boolean;
@@ -53,40 +34,23 @@ type SortableCardProps = {
   ) => void;
 };
 
-const SortableCard = ({
+const HandCard = ({
   card,
   disabled,
   playable,
-  scale,
   selected,
   selectionOrder,
   showPoints,
   readOnly,
   onCardClick,
   onPositionUpdate,
-}: SortableCardProps) => {
+}: HandCardProps) => {
   const cardRef = useRef<HTMLDivElement>(null);
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: card.id });
-
-  const style = {
-    transform: transform
-      ? CSS.Transform.toString({ ...transform, x: transform.x / scale, y: 0 })
-      : undefined,
-    transition,
-    zIndex: isDragging ? 10 : 0,
-  };
 
   // カードの位置を報告（継続的に更新）
   useEffect(() => {
     const updatePosition = () => {
-      if (cardRef.current && !isDragging) {
+      if (cardRef.current) {
         const rect = cardRef.current.getBoundingClientRect();
         onPositionUpdate(
           card.id,
@@ -110,29 +74,13 @@ const SortableCard = ({
       observer.disconnect();
       window.removeEventListener("resize", updatePosition);
     };
-  }, [card.id, isDragging, onPositionUpdate]);
-
-  // 複数のrefを結合
-  const setRefs = useCallback(
-    (node: HTMLDivElement | null) => {
-      setNodeRef(node);
-      (cardRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
-    },
-    [setNodeRef],
-  );
+  }, [card.id, onPositionUpdate]);
 
   return (
-    <div
-      data-card-id={card.id}
-      ref={setRefs}
-      style={style}
-      {...attributes}
-      {...listeners}
-    >
+    <div data-card-id={card.id} ref={cardRef}>
       <Card
         card={card}
         disabled={disabled}
-        draggable={isDragging}
         onClick={onCardClick}
         playable={playable}
         readOnly={readOnly}
@@ -150,8 +98,8 @@ type Props = {
 
 export const MyHand = ({ disabled }: Props) => {
   const cards = useAtomValue(orderedMyHandAtom);
-  const sortHand = useSetAtom(sortHandAtom);
-  const updateHandOrder = useSetAtom(updateHandOrderAtom);
+  const { myHand } = useAtomValue(gamePlayStateAtom);
+  const syncHandOrder = useSetAtom(syncHandOrderAtom);
   const setCardPosition = useSetAtom(setCardPositionAtom);
   const [selectedCardIds, setSelectedCardIds] = useAtom(selectedCardIdsAtom);
   const {
@@ -166,11 +114,15 @@ export const MyHand = ({ disabled }: Props) => {
   const playerSettings = useAtomValue(playerSettingsAtom);
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(1);
   const [scrollState, setScrollState] = useState({
     hiddenLeft: 0,
     hiddenRight: 0,
   });
+
+  // カードを切ったら並び替え、引いたカードは右端に追加する
+  useLayoutEffect(() => {
+    syncHandOrder();
+  }, [myHand, syncHandOrder]);
 
   // カード位置更新のコールバック
   const handlePositionUpdate = useCallback(
@@ -255,23 +207,6 @@ export const MyHand = ({ disabled }: Props) => {
     }
   };
 
-  useEffect(() => {
-    const updateScale = () => {
-      if (containerRef.current) {
-        const scaleValue = getComputedStyle(
-          containerRef.current,
-        ).getPropertyValue("--container-scale");
-        if (scaleValue) {
-          setScale(Number.parseFloat(scaleValue));
-        }
-      }
-    };
-
-    updateScale();
-    window.addEventListener("resize", updateScale);
-    return () => window.removeEventListener("resize", updateScale);
-  }, []);
-
   // スクロール状態を更新
   const updateScrollState = useCallback(() => {
     const scrollContainer = scrollRef.current;
@@ -321,30 +256,6 @@ export const MyHand = ({ disabled }: Props) => {
 
   const totalPoints = cards.reduce((sum, card) => sum + card.points, 0);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-  );
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-
-    const oldIndex = cards.findIndex((card) => card.id === active.id);
-    const newIndex = cards.findIndex((card) => card.id === over.id);
-
-    if (oldIndex === -1 || newIndex === -1) return;
-
-    const newCards = [...cards];
-    const [movedCard] = newCards.splice(oldIndex, 1);
-    newCards.splice(newIndex, 0, movedCard);
-
-    updateHandOrder(newCards);
-  };
-
   return (
     <>
       <div className="fixed bottom-[150px] left-4 flex gap-2">
@@ -356,24 +267,14 @@ export const MyHand = ({ disabled }: Props) => {
         )}
         {/* 観戦中は操作ボタンを出さない */}
         {!isSpectator && (
-          <>
-            <Button
-              className="size-[80px] bg-slate-700 border-2 border-slate-500 text-white hover:bg-slate-600"
-              disabled={disabled || cards.length === 0}
-              onClick={() => sortHand()}
-              variant="ghost"
-            >
-              <ArrowUpDown className="size-5" />
-            </Button>
-            <Button
-              className="size-[80px] bg-purple-500/80 text-white hover:bg-purple-600 disabled:bg-gray-600/50 disabled:text-gray-400"
-              disabled={!canDobon}
-              onClick={dobon}
-              variant="ghost"
-            >
-              <span className="text-lg font-bold">ドボン</span>
-            </Button>
-          </>
+          <Button
+            className="size-[80px] bg-purple-500/80 text-white hover:bg-purple-600 disabled:bg-gray-600/50 disabled:text-gray-400"
+            disabled={!canDobon}
+            onClick={dobon}
+            variant="ghost"
+          >
+            <span className="text-lg font-bold">ドボン</span>
+          </Button>
         )}
       </div>
       <div
@@ -407,53 +308,39 @@ export const MyHand = ({ disabled }: Props) => {
               msOverflowStyle: "none",
             }}
           >
-            <DndContext
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-              sensors={sensors}
-            >
-              <SortableContext
-                items={cards.map((card) => card.id)}
-                strategy={horizontalListSortingStrategy}
-              >
-                <div className="mx-auto flex w-fit gap-0.5 px-1">
-                  {cards.map((card) => {
-                    const selectionIndex = selectedCardIds.indexOf(card.id);
-                    const isSelected = selectionIndex !== -1;
-                    // force-changeの場合のみ選択順番を表示
-                    const showOrder =
-                      isSelected &&
-                      firstSelectedCard?.value === "force-change" &&
-                      selectedCardIds.length > 1;
+            <div className="mx-auto flex w-fit gap-0.5 px-1">
+              {cards.map((card) => {
+                const selectionIndex = selectedCardIds.indexOf(card.id);
+                const isSelected = selectionIndex !== -1;
+                // force-changeの場合のみ選択順番を表示
+                const showOrder =
+                  isSelected &&
+                  firstSelectedCard?.value === "force-change" &&
+                  selectedCardIds.length > 1;
 
-                    // ハイライトOFFの場合、全カードを playable=true で表示
-                    const cardPlayable = highlightPlayableCards
-                      ? selectedCardIds.length > 0
-                        ? isStackSelectable(card)
-                        : isPlayable(card.id)
-                      : true;
+                // ハイライトOFFの場合、全カードを playable=true で表示
+                const cardPlayable = highlightPlayableCards
+                  ? selectedCardIds.length > 0
+                    ? isStackSelectable(card)
+                    : isPlayable(card.id)
+                  : true;
 
-                    return (
-                      <SortableCard
-                        card={card}
-                        disabled={disabled}
-                        key={card.id}
-                        onCardClick={() => handleCardClick(card.id)}
-                        onPositionUpdate={handlePositionUpdate}
-                        playable={cardPlayable}
-                        readOnly={isSpectator}
-                        scale={scale}
-                        selected={isSelected}
-                        selectionOrder={
-                          showOrder ? selectionIndex + 1 : undefined
-                        }
-                        showPoints={playerSettings.showCardPoints}
-                      />
-                    );
-                  })}
-                </div>
-              </SortableContext>
-            </DndContext>
+                return (
+                  <HandCard
+                    card={card}
+                    disabled={disabled}
+                    key={card.id}
+                    onCardClick={() => handleCardClick(card.id)}
+                    onPositionUpdate={handlePositionUpdate}
+                    playable={cardPlayable}
+                    readOnly={isSpectator}
+                    selected={isSelected}
+                    selectionOrder={showOrder ? selectionIndex + 1 : undefined}
+                    showPoints={playerSettings.showCardPoints}
+                  />
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
