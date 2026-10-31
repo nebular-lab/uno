@@ -70,6 +70,7 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
       }
     }
     player.handCount = player.myHand.length;
+    this.room.gameLog.recordPlay(sessionId, playedCards, player.handCount);
 
     // カードを出したのでフラグをリセット
     player.hasDrawnCard = false;

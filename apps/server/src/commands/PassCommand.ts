@@ -26,6 +26,13 @@ export class PassCommand extends Command<GameRoom, Payload> {
         seatId: player.seatId,
       };
       this.room.broadcast("pass", passEvent);
+
+      const fieldCard = this.state.fieldCards[this.state.fieldCards.length - 1];
+      this.room.gameLog.recordPass(
+        sessionId,
+        fieldCard?.value ?? "",
+        this.state.currentColor,
+      );
     }
 
     // タイマー停止

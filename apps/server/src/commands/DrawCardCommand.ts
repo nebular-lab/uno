@@ -40,6 +40,7 @@ export class DrawCardCommand extends Command<GameRoom, Payload> {
     player.myHand.push(drawnCard);
     player.handCount = player.myHand.length;
     this.state.deckCount = this.room.deck.length;
+    this.room.gameLog.recordDraw(sessionId, 1);
 
     // ドローアニメーションイベントを送信
     const animationEvent: DrawCardAnimationEvent = {

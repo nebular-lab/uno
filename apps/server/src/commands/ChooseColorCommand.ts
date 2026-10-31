@@ -34,6 +34,7 @@ export class ChooseColorCommand extends Command<GameRoom, Payload> {
     // 色を設定
     this.state.currentColor = color;
     this.state.waitingForColorChoice = false;
+    this.room.gameLog.recordChooseColor(sessionId, color);
 
     // 次のプレイヤーに手番を移す
     advanceToNextPlayer(this.state);

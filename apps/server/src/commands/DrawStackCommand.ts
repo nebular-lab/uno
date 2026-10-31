@@ -51,6 +51,8 @@ export class DrawStackCommand extends Command<GameRoom, Payload> {
     // カウント更新
     player.handCount = player.myHand.length;
     this.state.deckCount = this.room.deck.length;
+    const stackedCard = this.state.fieldCards[this.state.fieldCards.length - 1];
+    this.room.gameLog.recordDraw(sessionId, drawCount, stackedCard?.value);
 
     // ドローアニメーションイベントを送信
     const animationEvent: DrawCardAnimationEvent = {
