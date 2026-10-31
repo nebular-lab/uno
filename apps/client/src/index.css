@@ -158,3 +158,17 @@
 .dobon-glow {
   animation: dobon-glow 2s ease-in-out infinite;
 }
+
+@keyframes dobon-return-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 16px rgba(249, 115, 22, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 32px rgba(249, 115, 22, 0.85);
+  }
+}
+
+.dobon-return-glow {
+  animation: dobon-return-glow 2s ease-in-out infinite;
+}

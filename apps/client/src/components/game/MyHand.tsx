@@ -67,7 +67,9 @@ export const MyHand = ({ disabled }: Props) => {
     playCard,
     playableCards,
     canDobon,
+    canDobonReturn,
     dobon,
+    dobonReturn,
     showTotalPoints,
     highlightPlayableCards,
     isSpectator,
@@ -226,6 +228,20 @@ export const MyHand = ({ disabled }: Props) => {
             variant="ghost"
           >
             <span className="text-5xl font-black tracking-widest">ドボン</span>
+          </Button>
+        </div>
+      )}
+      {/* ドボン返しできるときもドボンと同じく画面中央に大きく表示する */}
+      {!isSpectator && !canDobon && canDobonReturn && (
+        <div className="fixed left-1/2 top-[53%] z-50 -translate-x-1/2 -translate-y-1/2 animate-in fade-in zoom-in-90 duration-300">
+          <Button
+            className="dobon-return-glow h-[96px] w-[280px] rounded-2xl border-4 border-yellow-300 bg-orange-600 text-white hover:bg-orange-500"
+            onClick={dobonReturn}
+            variant="ghost"
+          >
+            <span className="text-4xl font-black tracking-widest">
+              ドボン返し
+            </span>
           </Button>
         </div>
       )}
