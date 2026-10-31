@@ -8,7 +8,8 @@ import { DrawStackCommand } from "../commands/DrawStackCommand";
 import { PassCommand } from "../commands/PassCommand";
 import { PlayCardCommand } from "../commands/PlayCardCommand";
 import type { GameRoom } from "../rooms/GameRoom";
-import { CPUActionDecider, type CPUDecision } from "./CPUActionDecider";
+import type { ActionDecider, CPUDecision } from "./ActionDecider";
+import { createActionDecider } from "./createActionDecider";
 
 // 型ガード: paramsがオブジェクトかどうか
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -23,7 +24,7 @@ function getString(params: unknown, key: string): string | undefined {
 }
 
 export class CPUPlayerService {
-  private decider = new CPUActionDecider();
+  private decider: ActionDecider = createActionDecider();
   private thinkingDelay = 3000;
   private quickActionDelay = 200; // 即決アクションの遅延（ms）
   private dobonReturnDelay = 3000; // ドボン返しの遅延（ms）
