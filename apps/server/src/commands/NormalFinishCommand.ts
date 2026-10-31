@@ -13,7 +13,7 @@ interface Payload {
  * ドボンやドボン返しではない、通常の上がり（手札を出し切った）場合に使用。
  *
  * 処理内容:
- * 1. フェーズを"result"に変更
+ * 1. フェーズを"result"に変更（手札は公開しない）
  * 2. 収支計算（各プレイヤーが上がった人に手札の合計点数を支払う）
  * 3. GameResultを作成してgameHistoryに追加
  * 4. 次のゲームの最初のプレイヤーを設定
@@ -36,7 +36,7 @@ export class NormalFinishCommand extends Command<GameRoom, Payload> {
   }
 
   execute({ sessionId }: Payload) {
-    // 1. フェーズを"result"に変更
+    // 1. フェーズを"result"に変更（普通の上がりでは手札を公開しない）
     this.state.phase = "result";
 
     // 2. 収支計算

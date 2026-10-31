@@ -4,6 +4,7 @@ import {
   calculateTotalHandPoints,
   createGameResult,
   RESULT_DISPLAY_DURATION,
+  revealHand,
 } from "../utils/finishGame";
 
 interface Payload {
@@ -53,8 +54,10 @@ export class DobonReturnCommand extends Command<GameRoom, Payload> {
    * ドボン返し確定処理（点数計算、result遷移）
    */
   private finalizeDobonReturn(dobonReturnPlayerId: string): void {
-    // フェーズをresultに変更
+    // フェーズをresultに変更し、ドボン返しした人の手札も公開（ドボンした人の公開はそのまま）
     this.state.phase = "result";
+    const returner = this.state.players.get(dobonReturnPlayerId);
+    if (returner) revealHand(returner);
 
     // 点数計算
     const rateMultiplier = this.state.rateMultiplier;

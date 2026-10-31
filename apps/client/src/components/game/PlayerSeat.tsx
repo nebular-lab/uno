@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import { playerSeatPositionsAtom } from "@/atoms/cardPositionAtom";
 import { cn } from "@/lib/utils";
 import type { ClientPlayer } from "@/types/connection";
+import { RevealedHand } from "./RevealedHand";
 
 type Props = {
   player: ClientPlayer;
@@ -419,6 +420,10 @@ export const PlayerSeat = ({
           size={70}
         />
       </div>
+      {/* 公開された手札（上がり・ドボン・ドボン返し時） */}
+      {player.revealedHand.length > 0 && (
+        <RevealedHand cards={player.revealedHand} displayIndex={posIndex} />
+      )}
     </div>
   );
 };

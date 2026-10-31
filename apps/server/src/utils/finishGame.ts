@@ -1,12 +1,29 @@
-import { GameResult, type GameState } from "@dobon-uno/shared";
+import {
+  Card,
+  GameResult,
+  type GameState,
+  type Player,
+} from "@dobon-uno/shared";
 
-/** 上がり表示時間（ミリ秒） */
-export const FINISH_DISPLAY_DURATION = 3000;
-/** スコアパネル表示時間（ミリ秒） */
-export const SCORE_DISPLAY_DURATION = 5000;
-/** 結果表示合計時間（ミリ秒） */
-export const RESULT_DISPLAY_DURATION =
-  FINISH_DISPLAY_DURATION + SCORE_DISPLAY_DURATION;
+export {
+  FINISH_DISPLAY_DURATION,
+  HAND_REVEAL_DURATION,
+  RESULT_DISPLAY_DURATION,
+  SCORE_DISPLAY_DURATION,
+} from "@dobon-uno/shared";
+
+/**
+ * プレイヤーの手札を公開する（revealedHandに現在の手札をコピー）
+ * @param player 手札を公開するプレイヤー
+ */
+export function revealHand(player: Player): void {
+  player.revealedHand.splice(0, player.revealedHand.length);
+  for (const card of player.myHand) {
+    player.revealedHand.push(
+      new Card(card.id, card.color, card.value, card.points),
+    );
+  }
+}
 
 /**
  * 全プレイヤーの手札合計点数を計算

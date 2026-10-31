@@ -39,6 +39,7 @@ export type ClientPlayer = {
   isSpectator: boolean;
   isCpu: boolean; // CPUプレイヤーかどうか
   timeRemaining: number; // タイマー残り秒数（0なら非アクティブ）
+  revealedHand: ClientCard[]; // 公開された手札（上がり・ドボン・ドボン返し時）
   // アクションフラグ
   canPass: boolean;
   canDraw: boolean;

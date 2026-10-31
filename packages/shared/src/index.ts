@@ -14,6 +14,14 @@ export { Card } from "./schema/Card";
 export { GameResult } from "./schema/GameResult";
 export { GameState } from "./schema/GameState";
 export { Player } from "./schema/Player";
+// Timing constants
+export {
+  FINISH_DISPLAY_DURATION,
+  HAND_REVEAL_DURATION,
+  RESULT_DISPLAY_DURATION,
+  SCORE_DISPLAY_DURATION,
+  SCORE_PANEL_DELAY,
+} from "./timing";
 // Type exports
 export type {
   CreateRoomOptions,

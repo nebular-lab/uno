@@ -12,6 +12,7 @@ export class Player extends Schema {
   @type("boolean") isSpectator: boolean = false; // ゲーム中に参加した観戦者
   @type("number") turnOrder: number = 0; // 手番順（リバースで動的に変わる）
   @type("number") timeRemaining: number = 0; // タイマー残り秒数（0なら非アクティブ）
+  @type([Card]) revealedHand = new ArraySchema<Card>(); // 公開された手札（ドボン・ドボン返しをした人）
 
   // 自分だけに見える情報（@view()は実装時にfilterで処理）
   @type([Card]) myHand = new ArraySchema<Card>();

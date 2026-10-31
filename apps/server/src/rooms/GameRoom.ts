@@ -461,6 +461,7 @@ export class GameRoom extends Room<{
       // 手札をクリア
       player.myHand.splice(0, player.myHand.length);
       player.handCount = 0;
+      player.revealedHand.splice(0, player.revealedHand.length);
 
       // アクションフラグをリセット
       player.canPass = false;

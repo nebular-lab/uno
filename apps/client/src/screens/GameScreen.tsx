@@ -1,3 +1,4 @@
+import { FINISH_DISPLAY_DURATION, SCORE_PANEL_DELAY } from "@dobon-uno/shared";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { BookOpen, LogOut, Settings } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -112,18 +113,24 @@ export const GameScreen = () => {
     prevSettingsRef.current = { showTotalPoints, highlightPlayableCards };
   }, [showTotalPoints, highlightPlayableCards, showToast]);
 
-  // resultフェーズになったら、最初3秒は「上がり！」表示、その後スコアパネルを開く
+  // resultフェーズになったら、「上がり！」表示 → 手札公開 → スコアパネルの順に切り替える
+  // （公開された手札はPlayerSeatがrevealedHandから表示する）
   useEffect(() => {
     if (phase === "result") {
       setShowWinnerLabel(true);
       setShowScorePanel(false);
 
-      const timer = setTimeout(() => {
+      const labelTimer = setTimeout(() => {
         setShowWinnerLabel(false);
+      }, FINISH_DISPLAY_DURATION);
+      const scoreTimer = setTimeout(() => {
         setShowScorePanel(true);
-      }, 3000);
+      }, SCORE_PANEL_DELAY);
 
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(labelTimer);
+        clearTimeout(scoreTimer);
+      };
     }
   }, [phase]);
 

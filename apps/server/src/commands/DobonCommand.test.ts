@@ -155,6 +155,80 @@ describe("DobonCommand", () => {
   });
 
   describe("ドボン宣言", () => {
+    it("ドボン返し待ちの間はドボンした人の手札だけが公開される", async () => {
+      const { room, client1, client2, client3, setHand } = await setupGame(
+        testCards.red5,
+      );
+
+      expect(room.state.phase).toBe("playing");
+
+      // Player1: 5を出すと残り5点（ドボン返し可能 → 待ち状態になる）
+      await setHand(client1, [testCards.red5, testCards.red2, testCards.red3]);
+      // Player2: 合計5点（ドボン可能）
+      await setHand(client2, [testCards.red2, testCards.red3]);
+      await setHand(client3, [testCards.blue7, testCards.yellow8]);
+
+      client1.send("playCard", { cardIds: [testCards.red5.id] });
+      await new Promise((r) => setTimeout(r, 100));
+
+      client2.send("dobon");
+      await new Promise((r) => setTimeout(r, 100));
+
+      // ドボン返し待ち（まだplayingフェーズ）
+      expect(room.state.phase).toBe("playing");
+      expect(room.state.players.get(client1.sessionId)?.canDobonReturn).toBe(
+        true,
+      );
+
+      const revealedIds = (sessionId: string) =>
+        room.state.players
+          .get(sessionId)
+          ?.revealedHand.map((c: CardData) => c.id);
+
+      expect(revealedIds(client2.sessionId)).toEqual([
+        testCards.red2.id,
+        testCards.red3.id,
+      ]);
+      expect(revealedIds(client1.sessionId)).toEqual([]);
+      expect(revealedIds(client3.sessionId)).toEqual([]);
+    });
+
+    it("ドボン確定時もドボンした人の手札だけが公開される", async () => {
+      const { room, client1, client2, client3, setHand } = await setupGame(
+        testCards.red5,
+      );
+
+      // Player1: 5を出すと残り6点（ドボン返し不可）
+      await setHand(client1, [
+        testCards.red5,
+        testCards.red1,
+        testCards.red1,
+        testCards.red1,
+        testCards.red1,
+        testCards.red1,
+        testCards.red1,
+      ]);
+      await setHand(client2, [testCards.red2, testCards.red3]);
+      await setHand(client3, [testCards.blue7]);
+
+      client1.send("playCard", { cardIds: [testCards.red5.id] });
+      await new Promise((r) => setTimeout(r, 100));
+
+      client2.send("dobon");
+      await new Promise((r) => setTimeout(r, 100));
+
+      expect(room.state.phase).toBe("result");
+      expect(
+        room.state.players.get(client1.sessionId)?.revealedHand.length,
+      ).toBe(0);
+      expect(
+        room.state.players.get(client2.sessionId)?.revealedHand.length,
+      ).toBe(2);
+      expect(
+        room.state.players.get(client3.sessionId)?.revealedHand.length,
+      ).toBe(0);
+    });
+
     it("ドボンしたプレイヤーがdobonPlayerIdsに追加される", async () => {
       const { room, client1, client2, setHand } = await setupGame(
         testCards.red5,

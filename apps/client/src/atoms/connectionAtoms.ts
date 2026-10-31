@@ -92,6 +92,9 @@ const convertPlayer = (serverPlayer: ServerPlayer): ClientPlayer => {
     isSpectator: serverPlayer.isSpectator,
     isCpu: serverPlayer.isCpu,
     timeRemaining: serverPlayer.timeRemaining,
+    revealedHand: serverPlayer.revealedHand
+      ? Array.from(serverPlayer.revealedHand).map(convertCard)
+      : [],
     // アクションフラグ
     canPass: serverPlayer.canPass,
     canDraw: serverPlayer.canDraw,

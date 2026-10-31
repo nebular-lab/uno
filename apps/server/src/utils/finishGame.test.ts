@@ -4,7 +4,9 @@ import {
   calculateTotalHandPoints,
   createGameResult,
   FINISH_DISPLAY_DURATION,
+  HAND_REVEAL_DURATION,
   RESULT_DISPLAY_DURATION,
+  revealHand,
   SCORE_DISPLAY_DURATION,
 } from "./finishGame";
 
@@ -135,17 +137,45 @@ describe("finishGame ユーティリティ", () => {
     });
   });
 
+  describe("revealHand", () => {
+    it("revealHandでプレイヤーの手札がrevealedHandにコピーされる", () => {
+      const player = createPlayer("playerA", [3, 7]);
+
+      revealHand(player);
+
+      expect(player.revealedHand.map((c) => c.id)).toEqual([
+        "playerA-card-0",
+        "playerA-card-1",
+      ]);
+      expect(player.revealedHand.map((c) => c.points)).toEqual([3, 7]);
+    });
+
+    it("revealHandを再度呼ぶと最新の手札で置き換わる", () => {
+      const player = createPlayer("playerA", [3, 7]);
+      revealHand(player);
+
+      player.myHand.pop();
+      revealHand(player);
+
+      expect(player.revealedHand.length).toBe(1);
+    });
+  });
+
   describe("定数", () => {
-    it("FINISH_DISPLAY_DURATIONは3000ms", () => {
-      expect(FINISH_DISPLAY_DURATION).toBe(3000);
+    it("FINISH_DISPLAY_DURATIONは1500ms", () => {
+      expect(FINISH_DISPLAY_DURATION).toBe(1500);
+    });
+
+    it("HAND_REVEAL_DURATIONは3500ms", () => {
+      expect(HAND_REVEAL_DURATION).toBe(3500);
     });
 
     it("SCORE_DISPLAY_DURATIONは5000ms", () => {
       expect(SCORE_DISPLAY_DURATION).toBe(5000);
     });
 
-    it("RESULT_DISPLAY_DURATIONは8000ms（3000 + 5000）", () => {
-      expect(RESULT_DISPLAY_DURATION).toBe(8000);
+    it("RESULT_DISPLAY_DURATIONは10000ms（1500 + 3500 + 5000）", () => {
+      expect(RESULT_DISPLAY_DURATION).toBe(10000);
     });
   });
 });

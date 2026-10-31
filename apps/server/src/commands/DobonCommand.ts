@@ -4,6 +4,7 @@ import {
   calculateTotalHandPoints,
   createGameResult,
   RESULT_DISPLAY_DURATION,
+  revealHand,
 } from "../utils/finishGame";
 
 interface Payload {
@@ -48,9 +49,10 @@ export class DobonCommand extends Command<GameRoom, Payload> {
       p.canChooseColor = false;
     }
 
-    // ドボンしたプレイヤーを記録
+    // ドボンしたプレイヤーを記録し、手札を公開
     this.state.dobonPlayerIds.push(sessionId);
     player.canDobon = false;
+    revealHand(player);
 
     // ドボンされた人を特定（カードを出した人 = currentTurnPlayerId）
     if (this.state.dobonTargetId === "") {
@@ -169,7 +171,7 @@ export class DobonCommand extends Command<GameRoom, Payload> {
    * ドボン確定処理（点数計算、result遷移）
    */
   private finalizeDobonFinish(): void {
-    // フェーズをresultに変更
+    // フェーズをresultに変更（公開するのはドボンした人の手札のみ）
     this.state.phase = "result";
 
     // 点数計算

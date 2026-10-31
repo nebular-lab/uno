@@ -164,6 +164,43 @@ describe("DobonReturnCommand", () => {
   });
 
   describe("ドボン返し", () => {
+    it("ドボン返しすると、ドボンした人とドボン返しした人の手札が公開される", async () => {
+      const { room, client1, client2, client3, setHand } = await setupGame(
+        testCards.red5,
+      );
+
+      await setHand(client1, [testCards.red5, testCards.red2, testCards.red3]);
+      await setHand(client2, [testCards.red2, testCards.red3]);
+      await setHand(client3, [testCards.blue5, testCards.blue5]);
+
+      client1.send("playCard", { cardIds: [testCards.red5.id] });
+      await new Promise((r) => setTimeout(r, 100));
+
+      client2.send("dobon");
+      await new Promise((r) => setTimeout(r, 100));
+
+      client1.send("dobonReturn");
+      await new Promise((r) => setTimeout(r, 100));
+
+      expect(room.state.phase).toBe("result");
+
+      const revealedIds = (sessionId: string) =>
+        room.state.players
+          .get(sessionId)
+          ?.revealedHand.map((c: CardData) => c.id);
+
+      expect(revealedIds(client1.sessionId)).toEqual([
+        testCards.red2.id,
+        testCards.red3.id,
+      ]);
+      // ドボンした人の公開手札は残る
+      expect(revealedIds(client2.sessionId)).toEqual([
+        testCards.red2.id,
+        testCards.red3.id,
+      ]);
+      expect(revealedIds(client3.sessionId)).toEqual([]);
+    });
+
     it("ドボン返しするとドボンした人がスコアを失う", async () => {
       const { room, client1, client2, client3, setHand } = await setupGame(
         testCards.red5,
