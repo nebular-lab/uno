@@ -219,11 +219,9 @@ export const MyHand = ({ disabled }: Props) => {
       )}
       {/* ドボンできるときだけ画面中央に大きく表示する（観戦中は出さない） */}
       {!isSpectator && canDobon && (
-        <div className="fixed left-1/2 top-[53%] z-50 -translate-x-1/2 -translate-y-1/2 animate-in fade-in zoom-in-50 duration-200">
-          {/* 背後で光を広げて目立たせる */}
-          <div className="absolute inset-0 animate-ping rounded-2xl bg-purple-500/60" />
+        <div className="fixed left-1/2 top-[53%] z-50 -translate-x-1/2 -translate-y-1/2 animate-in fade-in zoom-in-90 duration-300">
           <Button
-            className="relative h-[96px] w-[240px] rounded-2xl border-4 border-yellow-300 bg-purple-600 text-white shadow-[0_0_40px_rgba(168,85,247,0.9)] hover:bg-purple-500"
+            className="dobon-glow h-[96px] w-[240px] rounded-2xl border-4 border-yellow-300 bg-purple-600 text-white hover:bg-purple-500"
             onClick={dobon}
             variant="ghost"
           >

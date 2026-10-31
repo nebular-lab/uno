@@ -143,3 +143,18 @@
   background-color: rgba(251, 191, 36, 0.5);
   animation: turn-pulse 1s ease-out infinite;
 }
+
+/* ドボンボタンの光をゆっくり強弱させる */
+@keyframes dobon-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 16px rgba(168, 85, 247, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 32px rgba(168, 85, 247, 0.85);
+  }
+}
+
+.dobon-glow {
+  animation: dobon-glow 2s ease-in-out infinite;
+}
