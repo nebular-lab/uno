@@ -14,7 +14,10 @@
     "build": "vite build",
     "test": "vitest run",
     "test:watch": "vitest",
-    "simulate": "tsx src/cpu/simulation/cli.ts"
+    "simulate": "tsx src/cpu/simulation/cli.ts",
+    "cpu-report": "tsx src/cpu/simulation/report/cli.ts",
+    "tune": "tsx src/cpu/simulation/tuning/tune.ts",
+    "train-reading": "tsx src/cpu/simulation/reading/cli.ts"
   },
   "author": "",
   "license": "UNLICENSED",
