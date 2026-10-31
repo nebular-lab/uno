@@ -6,7 +6,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { setCardPositionAtom } from "@/atoms/cardPositionAtom";
 import { gamePlayStateAtom } from "@/atoms/connectionAtoms";
 import { orderedMyHandAtom, syncHandOrderAtom } from "@/atoms/handOrderAtom";
 import { playerSettingsAtom } from "@/atoms/playerSettingsAtom";
@@ -25,13 +24,6 @@ type HandCardProps = {
   showPoints?: boolean;
   readOnly?: boolean;
   onCardClick: () => void;
-  onPositionUpdate: (
-    cardId: string,
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-  ) => void;
 };
 
 const HandCard = ({
@@ -43,41 +35,10 @@ const HandCard = ({
   showPoints,
   readOnly,
   onCardClick,
-  onPositionUpdate,
 }: HandCardProps) => {
-  const cardRef = useRef<HTMLDivElement>(null);
-
-  // カードの位置を報告（継続的に更新）
-  useEffect(() => {
-    const updatePosition = () => {
-      if (cardRef.current) {
-        const rect = cardRef.current.getBoundingClientRect();
-        onPositionUpdate(
-          card.id,
-          rect.left + rect.width / 2,
-          rect.top + rect.height / 2,
-          rect.width,
-          rect.height,
-        );
-      }
-    };
-
-    updatePosition();
-    // レイアウト変更時に位置を再計算
-    const observer = new ResizeObserver(updatePosition);
-    if (cardRef.current) {
-      observer.observe(cardRef.current);
-    }
-    window.addEventListener("resize", updatePosition);
-
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("resize", updatePosition);
-    };
-  }, [card.id, onPositionUpdate]);
-
+  // data-card-id はカードを出すアニメーションの開始位置の実測にも使う
   return (
-    <div data-card-id={card.id} ref={cardRef}>
+    <div data-card-id={card.id}>
       <Card
         card={card}
         disabled={disabled}
@@ -101,7 +62,6 @@ export const MyHand = ({ disabled }: Props) => {
   const { myHand, currentTurnPlayerId, mySessionId } =
     useAtomValue(gamePlayStateAtom);
   const syncHandOrder = useSetAtom(syncHandOrderAtom);
-  const setCardPosition = useSetAtom(setCardPositionAtom);
   const [selectedCardIds, setSelectedCardIds] = useAtom(selectedCardIdsAtom);
   const {
     playCard,
@@ -124,14 +84,6 @@ export const MyHand = ({ disabled }: Props) => {
   useLayoutEffect(() => {
     syncHandOrder();
   }, [myHand, currentTurnPlayerId, mySessionId, syncHandOrder]);
-
-  // カード位置更新のコールバック
-  const handlePositionUpdate = useCallback(
-    (cardId: string, x: number, y: number, width: number, height: number) => {
-      setCardPosition({ cardId, x, y, width, height });
-    },
-    [setCardPosition],
-  );
 
   // 重ね出しできるカードを取得
   // force-changeは色が違っても重ね出し可能
@@ -333,7 +285,6 @@ export const MyHand = ({ disabled }: Props) => {
                     disabled={disabled}
                     key={card.id}
                     onCardClick={() => handleCardClick(card.id)}
-                    onPositionUpdate={handlePositionUpdate}
                     playable={cardPlayable}
                     readOnly={isSpectator}
                     selected={isSelected}
