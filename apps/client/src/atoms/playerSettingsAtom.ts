@@ -15,7 +15,7 @@ const loadSettings = (): PlayerSettings => {
   } catch {
     // ignore
   }
-  return { showCardPoints: false };
+  return { showCardPoints: true };
 };
 
 const baseAtom = atom<PlayerSettings>(loadSettings());
