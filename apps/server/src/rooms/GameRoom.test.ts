@@ -216,4 +216,153 @@ describe("GameRoom", () => {
       }
     });
   });
+
+  // -------------------------------------------------------
+  // 途中参加の禁止・観戦
+  // -------------------------------------------------------
+  describe("途中参加の禁止と観戦", () => {
+    const wait = (ms: number) =>
+      new Promise((resolve) => setTimeout(resolve, ms));
+
+    it("開始前はプレイヤーとして参加でき、メタデータに参加者が載る", async () => {
+      const room = await colyseus.createRoom("game", {});
+      await colyseus.connectTo(room, { playerName: "Owner" });
+      await colyseus.connectTo(room, { playerName: "Player2" });
+
+      expect(room.state.players.size).toBe(2);
+      expect(room.metadata).toEqual({
+        ownerName: "Owner",
+        status: "waiting",
+        playerNames: ["Owner", "Player2"],
+        spectatorCount: 0,
+      });
+    });
+
+    it("開始前のルームは観戦できない", async () => {
+      const room = await colyseus.createRoom("game", {});
+      await colyseus.connectTo(room, { playerName: "Owner" });
+
+      await expect(
+        colyseus.connectTo(room, { playerName: "Viewer", spectate: true }),
+      ).rejects.toThrow("開始前のルームは観戦できません");
+    });
+
+    it("ゲーム開始後はプレイヤーとして参加できない", async () => {
+      const { room } = await setupWithHands(
+        testCards.red5,
+        dummyHand(100),
+        dummyHand(200),
+        dummyHand(300),
+      );
+
+      await expect(
+        colyseus.connectTo(room, { playerName: "Late" }),
+      ).rejects.toThrow("ゲームが開始されているため参加できません");
+      expect(room.state.players.size).toBe(3);
+      expect(room.metadata.status).toBe("playing");
+    });
+
+    it("ゲーム開始後は観戦者として参加でき、プレイヤーには数えられない", async () => {
+      const { room } = await setupWithHands(
+        testCards.red5,
+        dummyHand(100),
+        dummyHand(200),
+        dummyHand(300),
+      );
+
+      const viewer = await colyseus.connectTo(room, {
+        playerName: "Viewer",
+        spectate: true,
+      });
+      await room.waitForNextPatch();
+
+      expect(room.state.players.size).toBe(3);
+      expect(room.state.players.has(viewer.sessionId)).toBe(false);
+      expect(room.state.spectatorCount).toBe(1);
+      expect(room.metadata.spectatorCount).toBe(1);
+
+      // 観戦者には全プレイヤーの手札が同期される（視点表示に使う）
+      for (const player of viewer.state.players.values()) {
+        expect(player.myHand.length).toBe(7);
+      }
+
+      // 観戦者が退出すると人数が戻る
+      await viewer.leave();
+      await wait(100);
+      expect(room.state.spectatorCount).toBe(0);
+      expect(room.metadata.spectatorCount).toBe(0);
+    });
+
+    it("観戦者の操作は無視される", async () => {
+      const { room } = await setupWithHands(
+        testCards.red5,
+        dummyHand(100),
+        dummyHand(200),
+        dummyHand(300),
+      );
+      const viewer = await colyseus.connectTo(room, {
+        playerName: "Viewer",
+        spectate: true,
+      });
+
+      const deckCountBefore = room.state.deckCount;
+      const turnPlayerBefore = room.state.currentTurnPlayerId;
+      viewer.send("drawCard");
+      viewer.send("pass");
+      viewer.send("dobon");
+      await wait(200);
+
+      expect(room.state.deckCount).toBe(deckCountBefore);
+      expect(room.state.currentTurnPlayerId).toBe(turnPlayerBefore);
+      expect(room.state.phase).toBe("playing");
+    });
+
+    it("ゲーム終了後にwaitingへ戻っても進行中のまま、プレイヤーとして参加できない", async () => {
+      const { room, owner, setHand } = await setupWithHands(
+        testCards.red5,
+        dummyHand(100),
+        dummyHand(200),
+        dummyHand(300),
+      );
+
+      // 上がってwaitingに戻るまで待つ
+      await setHand(owner, [testCards.red3]);
+      owner.send("playCard", { cardIds: [testCards.red3.id] });
+      await wait(RESULT_DISPLAY_DURATION + 700);
+      expect(room.state.phase).toBe("waiting");
+
+      expect(room.metadata.status).toBe("playing");
+      await expect(
+        colyseus.connectTo(room, { playerName: "Late" }),
+      ).rejects.toThrow("ゲームが開始されているため参加できません");
+
+      // 観戦はできる
+      const viewer = await colyseus.connectTo(room, {
+        playerName: "Viewer",
+        spectate: true,
+      });
+      expect(viewer.sessionId).toBeTruthy();
+    });
+
+    it("人間のプレイヤーが全員退出すると観戦者も切断される", async () => {
+      const room = await colyseus.createRoom("game", {});
+      const owner = await colyseus.connectTo(room, { playerName: "Owner" });
+      owner.send("addCpu", { seatId: 2 });
+      owner.send("addCpu", { seatId: 3 });
+      await wait(100);
+      owner.send("startGame");
+      while (room.state.phase === "waiting") {
+        await room.waitForNextPatch();
+      }
+
+      const viewer = await colyseus.connectTo(room, {
+        playerName: "Viewer",
+        spectate: true,
+      });
+      const left = new Promise<number>((resolve) => viewer.onLeave(resolve));
+
+      await owner.leave();
+      await expect(left).resolves.toBeTypeOf("number");
+    });
+  });
 });

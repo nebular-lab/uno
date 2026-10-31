@@ -36,7 +36,6 @@ export type ClientPlayer = {
   name: string;
   cardCount: number;
   isHost: boolean;
-  isSpectator: boolean;
   isCpu: boolean; // CPUプレイヤーかどうか
   timeRemaining: number; // タイマー残り秒数（0なら非アクティブ）
   revealedHand: ClientCard[]; // 公開された手札（上がり・ドボン・ドボン返し時）
@@ -63,7 +62,9 @@ export type ClientGameResult = {
 export type GamePlayState = {
   // プレイヤー情報
   players: (ClientPlayer | null)[]; // 6人分の席配列
-  mySessionId: string;
+  mySessionId: string; // 観戦時は視点に選んだプレイヤーのsessionId
+  isSpectator: boolean; // 観戦者として参加しているか
+  spectatorCount: number;
   myHand: ClientCard[];
 
   // ゲーム進行状態

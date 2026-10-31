@@ -27,4 +27,5 @@ export type {
   CreateRoomOptions,
   JoinRoomOptions,
   RoomMetadata,
+  RoomStatus,
 } from "./types/lobby";

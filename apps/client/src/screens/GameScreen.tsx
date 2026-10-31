@@ -1,6 +1,6 @@
 import { FINISH_DISPLAY_DURATION, SCORE_PANEL_DELAY } from "@dobon-uno/shared";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { BookOpen, LogOut, Settings } from "lucide-react";
+import { BookOpen, Eye, LogOut, Settings } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { currentAnimationAtom, passEventAtom } from "@/atoms/animationAtoms";
 import { deckPositionAtom } from "@/atoms/cardPositionAtom";
@@ -76,9 +76,14 @@ export const GameScreen = () => {
     removeCpu,
     showTotalPoints,
     highlightPlayableCards,
+    isSpectator,
+    spectatorCount,
+    viewpointPlayer,
+    setViewpointSessionId,
   } = useGameRoom();
 
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+  const [showViewpointDialog, setShowViewpointDialog] = useState(false);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const [showRuleBook, setShowRuleBook] = useState(false);
   const [showScorePanel, setShowScorePanel] = useState(false);
@@ -285,7 +290,18 @@ export const GameScreen = () => {
     prevPassEventRef.current = passEvent;
   }, [passEvent]);
 
-  // 自分が下中央（position 3）に来るように回転
+  // 観戦中で視点が未選択（または視点のプレイヤーが退出した）なら視点選択を必須にする
+  const isViewpointRequired =
+    isSpectator && viewpointPlayer === null && playerCount > 0;
+
+  // 視点を切り替える
+  const selectViewpoint = (sessionId: string) => {
+    setSelectedCardIds([]);
+    setViewpointSessionId(sessionId);
+    setShowViewpointDialog(false);
+  };
+
+  // 自分（観戦時は視点のプレイヤー）が下中央（position 3）に来るように回転
   const getActualIndex = (displayIndex: number): number => {
     if (mySeatIndex === -1) return displayIndex;
     return (displayIndex + mySeatIndex - 3 + 6) % 6;
@@ -335,6 +351,32 @@ export const GameScreen = () => {
           !showScorePanel;
 
         if (player) {
+          // 観戦中はクリックでそのプレイヤーの視点に切り替える
+          if (isSpectator) {
+            return (
+              <button
+                className="cursor-pointer bg-transparent border-0 p-0"
+                key={`seat-${actualIndex}`}
+                onClick={() => selectViewpoint(player.sessionId)}
+                title="クリックでこのプレイヤーの視点に切り替え"
+                type="button"
+              >
+                <PlayerSeat
+                  displayIndex={displayIndex}
+                  finishType={latestGameResult?.finishType}
+                  isChoosingColor={isOtherPlayerChoosingColor}
+                  isCurrentPlayer={isCurrentTurn}
+                  isCutIn={cutInSeatIndex === displayIndex}
+                  isDoboner={isDoboner}
+                  isPass={passPlayerIds.has(player.sessionId)}
+                  isPlaying={phase !== "waiting"}
+                  isUno={unoPlayerIds.has(player.sessionId)}
+                  isWinner={isWinner}
+                  player={player}
+                />
+              </button>
+            );
+          }
           // waitingフェーズでCPUプレイヤーの場合、ホストはクリックで削除可能
           if (phase === "waiting" && player.isCpu && isHost) {
             return (
@@ -485,8 +527,10 @@ export const GameScreen = () => {
         <CountdownOverlay count={countdown} />
       )}
 
-      {/* 自分の手札 */}
-      {phase !== "waiting" && <MyHand disabled={phase !== "playing"} />}
+      {/* 自分の手札（観戦時は視点のプレイヤーの手札） */}
+      {phase !== "waiting" && !isViewpointRequired && (
+        <MyHand disabled={phase !== "playing"} />
+      )}
 
       {/* 重ね出し選択UI（プレイヤーシートの右側） */}
       {phase === "playing" && firstSelectedCard && stackableCardCount >= 2 && (
@@ -575,8 +619,16 @@ export const GameScreen = () => {
               </Button>
             </div>
           )}
+          {/* 観戦者には観戦中メッセージ */}
+          {isSpectator && (
+            <div className="absolute bottom-4 right-4">
+              <span className="text-sm text-slate-400">
+                観戦中です。次のゲームの開始をお待ちください
+              </span>
+            </div>
+          )}
           {/* 非ホストには待機メッセージ */}
-          {!isHost && (
+          {!isHost && !isSpectator && (
             <div className="absolute bottom-4 right-4">
               <span className="text-sm text-slate-400">
                 ホストがゲームを開始するのをお待ちください
@@ -617,6 +669,76 @@ export const GameScreen = () => {
       {/* スコアボタン */}
       <ScoreButton onClick={() => setShowScorePanel(true)} />
 
+      {/* 観戦中の表示と視点切り替え（スコアボタンの左） */}
+      {isSpectator && (
+        <div className="absolute right-[104px] top-4 flex h-[80px] items-center gap-3 rounded-md bg-slate-800/90 px-4 border border-slate-600">
+          <Eye className="size-5 text-amber-400" />
+          <div className="flex flex-col">
+            <span className="text-xs text-amber-400 font-bold">観戦中</span>
+            <span className="text-sm text-white">
+              {viewpointPlayer
+                ? `${viewpointPlayer.name} さんの視点`
+                : "視点を選択してください"}
+            </span>
+          </div>
+          <Button
+            className="h-12 px-4 bg-slate-600 text-white hover:bg-slate-500"
+            onClick={() => setShowViewpointDialog(true)}
+            variant="ghost"
+          >
+            視点を切替
+          </Button>
+        </div>
+      )}
+
+      {/* 観戦者の人数（プレイヤー向け） */}
+      {!isSpectator && spectatorCount > 0 && (
+        <div className="absolute right-[104px] top-4 flex h-[80px] items-center gap-2 rounded-md bg-slate-800/70 px-4 text-sm text-slate-300">
+          <Eye className="size-4" />
+          <span>観戦 {spectatorCount}人</span>
+        </div>
+      )}
+
+      {/* 視点選択ダイアログ（観戦時） */}
+      <Dialog
+        onOpenChange={(open) => {
+          // 視点が未選択の間は閉じられない
+          if (!isViewpointRequired) setShowViewpointDialog(open);
+        }}
+        open={isViewpointRequired || showViewpointDialog}
+      >
+        <DialogContent className="w-[480px] p-9">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-semibold text-white">
+              誰の視点で観戦しますか？
+            </DialogTitle>
+            <DialogDescription className="mt-3 text-base text-slate-300">
+              選んだプレイヤーの手札と席配置で表示します。席をクリックしても切り替えられます。
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-6 grid grid-cols-2 gap-3">
+            {players
+              .filter((p) => p !== null)
+              .map((p) => (
+                <Button
+                  className={
+                    p.sessionId === viewpointPlayer?.sessionId
+                      ? "h-16 text-lg font-semibold bg-amber-600 text-white hover:bg-amber-500"
+                      : "h-16 text-lg font-semibold bg-slate-600 text-white hover:bg-slate-500"
+                  }
+                  key={p.sessionId}
+                  onClick={() => selectViewpoint(p.sessionId)}
+                >
+                  <span className="truncate">
+                    {p.name}
+                    {p.isCpu ? "（CPU）" : ""}
+                  </span>
+                </Button>
+              ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* 退席確認ダイアログ */}
       <Dialog onOpenChange={setShowLeaveDialog} open={showLeaveDialog}>
         <DialogContent className="w-[480px] p-9">
@@ -625,7 +747,7 @@ export const GameScreen = () => {
               退席確認
             </DialogTitle>
             <DialogDescription className="mt-3 text-base text-slate-300">
-              ゲームから退席しますか？
+              {isSpectator ? "観戦をやめますか？" : "ゲームから退席しますか？"}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="mt-8 grid grid-cols-2 gap-4">

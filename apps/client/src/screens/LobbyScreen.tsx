@@ -5,6 +5,7 @@ import { navigateToCreateRoomAtom, playerAtom } from "../atoms/appAtoms";
 import {
   connectToLobbyAtom,
   disconnectFromLobbyAtom,
+  gameStateAtom,
   joinRoomAtom,
   lobbyStateAtom,
 } from "../atoms/connectionAtoms";
@@ -14,6 +15,7 @@ import { Spinner } from "../components/ui/spinner";
 export function LobbyScreen() {
   const player = useAtomValue(playerAtom);
   const lobbyState = useAtomValue(lobbyStateAtom);
+  const gameState = useAtomValue(gameStateAtom);
   const connectToLobby = useSetAtom(connectToLobbyAtom);
   const disconnectFromLobby = useSetAtom(disconnectFromLobbyAtom);
   const joinRoom = useSetAtom(joinRoomAtom);
@@ -27,12 +29,22 @@ export function LobbyScreen() {
   }, [connectToLobby, disconnectFromLobby]);
 
   const handleJoinRoom = (roomId: string) => {
-    joinRoom(roomId);
+    joinRoom({ roomId });
+  };
+
+  const handleSpectateRoom = (roomId: string) => {
+    joinRoom({ roomId, spectate: true });
   };
 
   const isLoading =
     lobbyState.status === "connecting" || lobbyState.status === "idle";
-  const error = lobbyState.status === "error" ? lobbyState.error : null;
+  // ロビー接続エラー、またはルーム参加の失敗（ゲーム開始済みなど）
+  const error =
+    lobbyState.status === "error"
+      ? lobbyState.error
+      : gameState.status === "error"
+        ? gameState.error
+        : null;
   const rooms = lobbyState.status === "connected" ? lobbyState.rooms : [];
 
   return (
@@ -93,6 +105,7 @@ export function LobbyScreen() {
               <RoomCard
                 key={room.roomId}
                 onJoin={() => handleJoinRoom(room.roomId)}
+                onSpectate={() => handleSpectateRoom(room.roomId)}
                 room={room}
               />
             ))}

@@ -8,6 +8,7 @@ export class GameState extends Schema {
   @type("string") roomId: string = "";
   @type("string") phase: string = "waiting"; // waiting/dealing/countdown/revealing/playing/result
   @type({ map: Player }) players = new MapSchema<Player>();
+  @type("number") spectatorCount: number = 0; // 観戦者の人数（観戦者はplayersに含まれない）
 
   // ゲーム開始演出用
   @type("number") dealingRound: number = 0; // カード配布ラウンド（0-7: 0=配布前, 1-7=各ラウンド）

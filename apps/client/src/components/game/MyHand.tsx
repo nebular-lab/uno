@@ -42,6 +42,7 @@ type SortableCardProps = {
   selected: boolean;
   selectionOrder?: number;
   showPoints?: boolean;
+  readOnly?: boolean;
   onCardClick: () => void;
   onPositionUpdate: (
     cardId: string,
@@ -60,6 +61,7 @@ const SortableCard = ({
   selected,
   selectionOrder,
   showPoints,
+  readOnly,
   onCardClick,
   onPositionUpdate,
 }: SortableCardProps) => {
@@ -133,6 +135,7 @@ const SortableCard = ({
         draggable={isDragging}
         onClick={onCardClick}
         playable={playable}
+        readOnly={readOnly}
         selected={selected}
         selectionOrder={selectionOrder}
         showPoints={showPoints}
@@ -158,6 +161,7 @@ export const MyHand = ({ disabled }: Props) => {
     dobon,
     showTotalPoints,
     highlightPlayableCards,
+    isSpectator,
   } = useGameRoom();
   const playerSettings = useAtomValue(playerSettingsAtom);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -214,7 +218,8 @@ export const MyHand = ({ disabled }: Props) => {
 
   // カードクリック時の処理
   const handleCardClick = (cardId: string) => {
-    if (disabled) return;
+    // 観戦中は表示のみ（カードを出せない）
+    if (disabled || isSpectator) return;
 
     const clickedCard = cards.find((c) => c.id === cardId);
     if (!clickedCard) return;
@@ -349,22 +354,27 @@ export const MyHand = ({ disabled }: Props) => {
             <span className="text-2xl font-bold">{totalPoints}</span>
           </div>
         )}
-        <Button
-          className="size-[80px] bg-slate-700 border-2 border-slate-500 text-white hover:bg-slate-600"
-          disabled={disabled || cards.length === 0}
-          onClick={() => sortHand()}
-          variant="ghost"
-        >
-          <ArrowUpDown className="size-5" />
-        </Button>
-        <Button
-          className="size-[80px] bg-purple-500/80 text-white hover:bg-purple-600 disabled:bg-gray-600/50 disabled:text-gray-400"
-          disabled={!canDobon}
-          onClick={dobon}
-          variant="ghost"
-        >
-          <span className="text-lg font-bold">ドボン</span>
-        </Button>
+        {/* 観戦中は操作ボタンを出さない */}
+        {!isSpectator && (
+          <>
+            <Button
+              className="size-[80px] bg-slate-700 border-2 border-slate-500 text-white hover:bg-slate-600"
+              disabled={disabled || cards.length === 0}
+              onClick={() => sortHand()}
+              variant="ghost"
+            >
+              <ArrowUpDown className="size-5" />
+            </Button>
+            <Button
+              className="size-[80px] bg-purple-500/80 text-white hover:bg-purple-600 disabled:bg-gray-600/50 disabled:text-gray-400"
+              disabled={!canDobon}
+              onClick={dobon}
+              variant="ghost"
+            >
+              <span className="text-lg font-bold">ドボン</span>
+            </Button>
+          </>
+        )}
       </div>
       <div
         className="absolute bottom-4 left-1/2 w-full -translate-x-1/2"
@@ -431,6 +441,7 @@ export const MyHand = ({ disabled }: Props) => {
                         onCardClick={() => handleCardClick(card.id)}
                         onPositionUpdate={handlePositionUpdate}
                         playable={cardPlayable}
+                        readOnly={isSpectator}
                         scale={scale}
                         selected={isSelected}
                         selectionOrder={

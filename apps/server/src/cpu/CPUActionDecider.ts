@@ -112,7 +112,7 @@ export class CPUActionDecider {
 
     const otherPlayers: string[] = [];
     state.players.forEach((p) => {
-      if (p.sessionId !== cpuPlayer.sessionId && !p.isSpectator) {
+      if (p.sessionId !== cpuPlayer.sessionId) {
         otherPlayers.push(
           `- ${p.name}: 手札${p.handCount}枚, カードを引いた: ${p.hasDrawnCard ? "はい" : "いいえ"}`,
         );

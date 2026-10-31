@@ -6,6 +6,7 @@ type Props = {
   disabled?: boolean;
   draggable?: boolean;
   playable?: boolean;
+  readOnly?: boolean; // 表示のみ（観戦中など）。ホバー時の強調をしない
   selected?: boolean;
   selectionOrder?: number; // 選択順番（1から始まる、force-change用）
   showPoints?: boolean;
@@ -53,6 +54,7 @@ export const Card = ({
   disabled,
   draggable,
   playable = true,
+  readOnly,
   selected,
   selectionOrder,
   showPoints,
@@ -88,9 +90,11 @@ export const Card = ({
           ? "cursor-not-allowed border-2 opacity-70"
           : isUnplayable
             ? "cursor-not-allowed border-2 opacity-30"
-            : draggable
-              ? "cursor-grab border-2 active:cursor-grabbing"
-              : "cursor-pointer border-2 hover:border-4 hover:border-white",
+            : readOnly
+              ? "cursor-default border-2"
+              : draggable
+                ? "cursor-grab border-2 active:cursor-grabbing"
+                : "cursor-pointer border-2 hover:border-4 hover:border-white",
         draggable && "pointer-events-none",
         selected && "border-4 border-white",
       )}

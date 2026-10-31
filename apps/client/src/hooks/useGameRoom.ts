@@ -2,7 +2,11 @@ import type { CardColor } from "@dobon-uno/shared";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useCallback } from "react";
 import { navigateToLobbyAtom } from "../atoms/appAtoms";
-import { gamePlayStateAtom, gameStateAtom } from "../atoms/connectionAtoms";
+import {
+  gamePlayStateAtom,
+  gameStateAtom,
+  viewpointSessionIdAtom,
+} from "../atoms/connectionAtoms";
 
 // 型のre-export
 export type { ClientCard, ClientPlayer } from "../types/connection";
@@ -11,6 +15,7 @@ export const useGameRoom = () => {
   const gameRoomState = useAtomValue(gameStateAtom);
   const gamePlayState = useAtomValue(gamePlayStateAtom);
   const navigateToLobby = useSetAtom(navigateToLobbyAtom);
+  const setViewpointSessionId = useSetAtom(viewpointSessionIdAtom);
 
   // 退席
   const leaveRoom = useCallback(async () => {
@@ -31,16 +36,27 @@ export const useGameRoom = () => {
       (p) => p !== null && p.sessionId === gamePlayState.mySessionId,
     ) ?? -1;
 
+  // 観戦者かどうか（観戦時のmySeatIndexは視点に選んだプレイヤーの席）
+  const isSpectator = gamePlayState.isSpectator;
+
   // 自分がホストかどうか
   const isHost =
-    mySeatIndex >= 0 && (gamePlayState.players[mySeatIndex]?.isHost ?? false);
+    !isSpectator &&
+    mySeatIndex >= 0 &&
+    (gamePlayState.players[mySeatIndex]?.isHost ?? false);
 
   // プレイヤー数
   const playerCount = gamePlayState.players.filter((p) => p !== null).length;
 
-  // 自分のプレイヤー情報を取得
+  // 自分のプレイヤー情報を取得（観戦者は操作できないのでアクションフラグを使わない）
   const myPlayerInfo =
-    mySeatIndex >= 0 ? gamePlayState.players[mySeatIndex] : null;
+    !isSpectator && mySeatIndex >= 0
+      ? gamePlayState.players[mySeatIndex]
+      : null;
+
+  // 観戦時に視点として表示するプレイヤーの情報
+  const viewpointPlayer =
+    isSpectator && mySeatIndex >= 0 ? gamePlayState.players[mySeatIndex] : null;
 
   // アクション関数
   const drawCard = useCallback(() => {
@@ -130,6 +146,11 @@ export const useGameRoom = () => {
     leaveRoom,
     startGame,
     isConnected: gameRoomState.status === "connected",
+    // 観戦用
+    isSpectator,
+    spectatorCount: gamePlayState.spectatorCount,
+    viewpointPlayer,
+    setViewpointSessionId,
     // ゲーム画面用
     phase: gamePlayState.phase,
     dealingRound: gamePlayState.dealingRound,
@@ -158,7 +179,8 @@ export const useGameRoom = () => {
     canDobon: myPlayerInfo?.canDobon ?? false,
     canDobonReturn: myPlayerInfo?.canDobonReturn ?? false,
     canPass: myPlayerInfo?.canPass ?? false,
-    playableCards: myPlayerInfo?.playableCards ?? {},
+    playableCards:
+      (isSpectator ? viewpointPlayer : myPlayerInfo)?.playableCards ?? {},
     // アクション関数
     drawCard,
     drawStack,

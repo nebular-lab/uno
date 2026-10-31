@@ -3,10 +3,11 @@ import {
   Card,
   type CreateRoomOptions,
   GameState,
+  type JoinRoomOptions,
   Player,
   type RoomMetadata,
 } from "@dobon-uno/shared";
-import { type Client, Room } from "colyseus";
+import { type Client, Room, ServerError } from "colyseus";
 import { ChooseColorCommand } from "../commands/ChooseColorCommand";
 import { DobonCommand } from "../commands/DobonCommand";
 import { DobonReturnCommand } from "../commands/DobonReturnCommand";
@@ -34,12 +35,22 @@ export type DeckProvider = () => Card[];
 export const defaultDeckProvider: DeckProvider = () =>
   shuffleDeck(createDeck());
 
+// プレイヤーの最大人数（観戦者は含まない）
+export const MAX_PLAYERS = 6;
+
+// 観戦者の最大人数
+export const MAX_SPECTATORS = 10;
+
+// 参加を拒否したときのエラーコード
+export const JOIN_REJECTED_CODE = 4403;
+
 export class GameRoom extends Room<{
   state: GameState;
   metadata: RoomMetadata;
 }> {
   dispatcher = new Dispatcher(this);
-  maxClients = 6;
+  // 観戦者も1クライアントとして数えられるため、プレイヤー上限は MAX_PLAYERS で別に判定する
+  maxClients = MAX_PLAYERS + MAX_SPECTATORS;
 
   // 山札（サーバー側のみ保持、クライアントには同期しない）
   deck: Card[] = [];
@@ -52,6 +63,15 @@ export class GameRoom extends Room<{
 
   // CPUプレイヤーサービス
   private cpuService = new CPUPlayerService();
+
+  // 一度でもゲームを開始したか（開始後はwaitingに戻ってもプレイヤーとして参加できない）
+  private hasStarted = false;
+
+  // 観戦者のsessionId（観戦者はstate.playersに含めない）
+  private spectatorIds = new Set<string>();
+
+  // 前回設定したメタデータ（変化がなければsetMetadataしない）
+  private lastMetadataJson = "";
 
   onCreate(_options: CreateRoomOptions) {
     this.state = new GameState();
@@ -143,7 +163,7 @@ export class GameRoom extends Room<{
       if (this.state.phase !== "waiting") return;
 
       // 最大プレイヤー数チェック
-      if (this.state.players.size >= this.maxClients) return;
+      if (this.state.players.size >= MAX_PLAYERS) return;
 
       // 指定された席が空いているか確認
       let seatOccupied = false;
@@ -322,8 +342,54 @@ export class GameRoom extends Room<{
     return 1;
   }
 
-  onJoin(client: Client, options: CreateRoomOptions) {
+  /**
+   * ゲームを開始済みかどうか
+   */
+  private isStarted(): boolean {
+    return this.hasStarted || this.state.phase !== "waiting";
+  }
+
+  /**
+   * 参加可否を判定する
+   * - プレイヤー: ゲーム開始前かつ空席がある場合のみ
+   * - 観戦者: ゲーム開始後のみ
+   */
+  onAuth(_client: Client, options: JoinRoomOptions) {
+    if (options?.spectate) {
+      if (!this.isStarted()) {
+        throw new ServerError(
+          JOIN_REJECTED_CODE,
+          "開始前のルームは観戦できません",
+        );
+      }
+      if (this.spectatorIds.size >= MAX_SPECTATORS) {
+        throw new ServerError(JOIN_REJECTED_CODE, "観戦者が満員です");
+      }
+      return true;
+    }
+
+    if (this.isStarted()) {
+      throw new ServerError(
+        JOIN_REJECTED_CODE,
+        "ゲームが開始されているため参加できません",
+      );
+    }
+    if (this.state.players.size >= MAX_PLAYERS) {
+      throw new ServerError(JOIN_REJECTED_CODE, "ルームが満員です");
+    }
+    return true;
+  }
+
+  onJoin(client: Client, options: JoinRoomOptions) {
     console.log(`${client.sessionId} joined`);
+
+    // 観戦者はプレイヤーとして追加しない
+    if (options?.spectate) {
+      this.spectatorIds.add(client.sessionId);
+      this.state.spectatorCount = this.spectatorIds.size;
+      this.updateMetadata();
+      return;
+    }
 
     // プレイヤーを作成
     const player = new Player();
@@ -336,11 +402,6 @@ export class GameRoom extends Room<{
       player.isOwner = true;
     }
 
-    // ゲーム中に参加した場合は観戦者として設定
-    if (this.state.phase !== "waiting") {
-      player.isSpectator = true;
-    }
-
     // プレイヤーを追加
     this.state.players.set(client.sessionId, player);
 
@@ -348,23 +409,47 @@ export class GameRoom extends Room<{
     this.updateMetadata();
   }
 
+  /**
+   * パッチ送信前にメタデータを同期する
+   * （phaseはCommand内で変わるため、ここでまとめて検知する）
+   */
+  onBeforePatch() {
+    this.updateMetadata();
+  }
+
+  /**
+   * ロビーに表示するメタデータを更新する（変化があったときだけ）
+   */
   private updateMetadata() {
-    // オーナーを取得
-    let ownerName: string | undefined;
-    for (const player of this.state.players.values()) {
-      if (player.isOwner) {
-        ownerName = player.name;
-        break;
-      }
+    if (this.state.phase !== "waiting") {
+      this.hasStarted = true;
     }
 
-    this.setMetadata({
-      ownerName,
-    });
+    const players = Array.from(this.state.players.values()).sort(
+      (a, b) => a.seatId - b.seatId,
+    );
+    const metadata: RoomMetadata = {
+      ownerName: players.find((p) => p.isOwner)?.name,
+      status: this.hasStarted ? "playing" : "waiting",
+      playerNames: players.map((p) => p.name),
+      spectatorCount: this.spectatorIds.size,
+    };
+
+    const json = JSON.stringify(metadata);
+    if (json === this.lastMetadataJson) return;
+    this.lastMetadataJson = json;
+    this.setMetadata(metadata);
   }
 
   onLeave(client: Client) {
     console.log(`${client.sessionId} left`);
+
+    // 観戦者の退出
+    if (this.spectatorIds.delete(client.sessionId)) {
+      this.state.spectatorCount = this.spectatorIds.size;
+      this.updateMetadata();
+      return;
+    }
 
     // 退出プレイヤーのタイマーを停止
     this.turnTimerService.stopTimer(client.sessionId);
@@ -385,6 +470,10 @@ export class GameRoom extends Room<{
         if (p.isCpu) {
           this.state.players.delete(sessionId);
         }
+      }
+      // 観戦者だけが残っている場合は切断してルームを破棄する
+      if (this.spectatorIds.size > 0) {
+        this.disconnect();
       }
       return; // ルームは自動破棄される
     }

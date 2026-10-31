@@ -2,6 +2,7 @@ import type { Room, RoomAvailable } from "@colyseus/sdk";
 import type {
   DrawCardAnimationEvent,
   GameState,
+  JoinRoomOptions,
   PassEvent,
   PlayCardAnimationEvent,
   RoomMetadata,
@@ -41,10 +42,15 @@ export const lobbyStateAtom = atom<LobbyState>({ status: "idle" });
 // ゲームルーム接続状態
 export const gameStateAtom = atom<GameRoomState>({ status: "idle" });
 
+// 観戦時に表示する視点のプレイヤー（sessionId、未選択なら空文字）
+export const viewpointSessionIdAtom = atom("");
+
 // ゲームプレイ状態の初期値
 const initialGamePlayState: GamePlayState = {
   players: [null, null, null, null, null, null],
   mySessionId: "",
+  isSpectator: false,
+  spectatorCount: 0,
   myHand: [],
   phase: "waiting",
   dealingRound: 0,
@@ -89,7 +95,6 @@ const convertPlayer = (serverPlayer: ServerPlayer): ClientPlayer => {
     name: serverPlayer.name,
     cardCount: serverPlayer.handCount,
     isHost: serverPlayer.isOwner,
-    isSpectator: serverPlayer.isSpectator,
     isCpu: serverPlayer.isCpu,
     timeRemaining: serverPlayer.timeRemaining,
     revealedHand: serverPlayer.revealedHand
@@ -121,11 +126,18 @@ const createSeatsArray = (
 };
 
 // Room状態変更をatomに反映するヘルパー
+// 観戦時は視点に選んだプレイヤーを「自分」として扱い、その人の手札・席配置で表示する
 const setupRoomStateSync = (
   room: Room<GameState>,
   set: (atom: typeof gamePlayStateAtom, value: GamePlayState) => void,
+  isSpectator: boolean,
 ) => {
+  // 表示上の「自分」のsessionId
+  const getViewSessionId = () =>
+    isSpectator ? store.get(viewpointSessionIdAtom) : room.sessionId;
+
   const updatePlayState = (state: GameState) => {
+    const viewSessionId = getViewSessionId();
     // stateの各プロパティが初期化されているかチェック
     const playersMap = new Map<string, ServerPlayer>();
     if (state.players) {
@@ -134,7 +146,9 @@ const setupRoomStateSync = (
       });
     }
 
-    const myServerPlayer = state.players?.get(room.sessionId);
+    const myServerPlayer = viewSessionId
+      ? state.players?.get(viewSessionId)
+      : undefined;
 
     // gameHistoryを変換
     const gameHistory = state.gameHistory
@@ -155,7 +169,9 @@ const setupRoomStateSync = (
 
     set(gamePlayStateAtom, {
       players: createSeatsArray(playersMap),
-      mySessionId: room.sessionId,
+      mySessionId: viewSessionId,
+      isSpectator,
+      spectatorCount: state.spectatorCount ?? 0,
       myHand: myServerPlayer?.myHand
         ? Array.from(myServerPlayer.myHand).map(convertCard)
         : [],
@@ -186,9 +202,17 @@ const setupRoomStateSync = (
   // 状態変更を購読
   room.onStateChange(updatePlayState);
 
+  // 観戦時は視点の切り替えで表示を更新する
+  if (isSpectator) {
+    const unsubscribe = store.sub(viewpointSessionIdAtom, () =>
+      updatePlayState(room.state),
+    );
+    room.onLeave(unsubscribe);
+  }
+
   // アニメーションイベントを購読
   room.onMessage("playCardAnimation", (event: PlayCardAnimationEvent) => {
-    const isSelf = event.playerId === room.sessionId;
+    const isSelf = event.playerId === getViewSessionId();
 
     // 開始位置とサイズをスナップショット（カードが削除される前に取得）
     let startPosition: {
@@ -208,7 +232,7 @@ const setupRoomStateSync = (
       // mySeatIndexを計算してdisplayIndexを求める
       const gamePlayState = store.get(gamePlayStateAtom);
       const mySeatIndex = gamePlayState.players.findIndex(
-        (p) => p !== null && p.sessionId === room.sessionId,
+        (p) => p !== null && p.sessionId === getViewSessionId(),
       );
       const seatIndex = event.seatId - 1;
       const displayIndex =
@@ -256,7 +280,7 @@ const setupRoomStateSync = (
     // displayIndexを計算
     const gamePlayState = store.get(gamePlayStateAtom);
     const mySeatIndex = gamePlayState.players.findIndex(
-      (p) => p !== null && p.sessionId === room.sessionId,
+      (p) => p !== null && p.sessionId === getViewSessionId(),
     );
     const seatIndex = event.seatId - 1;
     const displayIndex =
@@ -406,7 +430,7 @@ export const createRoomAtom = atom(null, async (get, set) => {
     set(gameStateAtom, { status: "connected", room });
 
     // Room状態変更をatomに反映
-    setupRoomStateSync(room, set);
+    setupRoomStateSync(room, set, false);
 
     room.onLeave((code) => {
       if (code === 1000) {
@@ -432,53 +456,65 @@ export const createRoomAtom = atom(null, async (get, set) => {
   }
 });
 
-// ルームに参加
-export const joinRoomAtom = atom(null, async (get, set, roomId: string) => {
-  const player = get(playerAtom);
-  if (!player) {
-    set(gameStateAtom, {
-      status: "error",
-      error: "プレイヤー情報がありません",
-    });
-    return;
-  }
-
-  set(gameStateAtom, { status: "joining" });
-
-  try {
-    const room = await colyseusClient.joinById<GameState>(roomId, {
-      playerName: player.name,
-    });
-
-    // GameRoom接続設定
-    set(gameStateAtom, { status: "connected", room });
-
-    // Room状態変更をatomに反映
-    setupRoomStateSync(room, set);
-
-    room.onLeave((code) => {
-      if (code === 1000) {
-        set(gameStateAtom, { status: "idle" });
-        set(gamePlayStateAtom, initialGamePlayState);
-      } else {
-        set(gameStateAtom, { status: "disconnected" });
-      }
-    });
-
-    // ロビーから切断して待機画面へ遷移
-    // 先にidleに設定してからleave()を呼ぶことで、onLeaveでdisconnectedにならないようにする
-    const lobbyState = get(lobbyStateAtom);
-    if (lobbyState.status === "connected") {
-      set(lobbyStateAtom, { status: "idle" });
-      await lobbyState.lobby.leave();
+// ルームに参加（spectate: true なら観戦者として参加）
+export const joinRoomAtom = atom(
+  null,
+  async (
+    get,
+    set,
+    { roomId, spectate = false }: { roomId: string; spectate?: boolean },
+  ) => {
+    const player = get(playerAtom);
+    if (!player) {
+      set(gameStateAtom, {
+        status: "error",
+        error: "プレイヤー情報がありません",
+      });
+      return;
     }
-    set(screenAtom, { screen: "waitingRoom", roomId: room.roomId });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "ルームへの参加に失敗しました";
-    set(gameStateAtom, { status: "error", error: message });
-  }
-});
+
+    set(gameStateAtom, { status: "joining" });
+    set(viewpointSessionIdAtom, "");
+
+    try {
+      const options: JoinRoomOptions = { playerName: player.name, spectate };
+      const room = await colyseusClient.joinById<GameState>(roomId, options);
+
+      // GameRoom接続設定
+      set(gameStateAtom, { status: "connected", room });
+
+      // Room状態変更をatomに反映
+      setupRoomStateSync(room, set, spectate);
+
+      room.onLeave((code) => {
+        if (code === 1000) {
+          set(gameStateAtom, { status: "idle" });
+          set(gamePlayStateAtom, initialGamePlayState);
+        } else {
+          set(gameStateAtom, { status: "disconnected" });
+        }
+      });
+
+      // ロビーから切断して待機画面（観戦はゲーム画面）へ遷移
+      // 先にidleに設定してからleave()を呼ぶことで、onLeaveでdisconnectedにならないようにする
+      const lobbyState = get(lobbyStateAtom);
+      if (lobbyState.status === "connected") {
+        set(lobbyStateAtom, { status: "idle" });
+        await lobbyState.lobby.leave();
+      }
+      set(
+        screenAtom,
+        spectate
+          ? { screen: "game", roomId: room.roomId }
+          : { screen: "waitingRoom", roomId: room.roomId },
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "ルームへの参加に失敗しました";
+      set(gameStateAtom, { status: "error", error: message });
+    }
+  },
+);
 
 // 切断状態をリセット
 export const resetDisconnectedAtom = atom(null, (_get, set) => {
