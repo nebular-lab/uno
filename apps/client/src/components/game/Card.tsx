@@ -4,7 +4,6 @@ import { cn } from "@/lib/utils";
 type Props = {
   card: ClientCard;
   disabled?: boolean;
-  draggable?: boolean;
   playable?: boolean;
   readOnly?: boolean; // 表示のみ（観戦中など）。ホバー時の強調をしない
   selected?: boolean;
@@ -52,7 +51,6 @@ const getDisplayValue = (value: string): string => {
 export const Card = ({
   card,
   disabled,
-  draggable,
   playable = true,
   readOnly,
   selected,
@@ -92,10 +90,7 @@ export const Card = ({
             ? "cursor-not-allowed border-2 opacity-30"
             : readOnly
               ? "cursor-default border-2"
-              : draggable
-                ? "cursor-grab border-2 active:cursor-grabbing"
-                : "cursor-pointer border-2 hover:border-4 hover:border-white",
-        draggable && "pointer-events-none",
+              : "cursor-pointer border-2 hover:border-4 hover:border-white",
         selected && "border-4 border-white",
       )}
       disabled={disabled || isUnplayable}
