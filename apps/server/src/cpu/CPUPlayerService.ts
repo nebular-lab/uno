@@ -23,7 +23,10 @@ export class CPUPlayerService {
   // 手番外のドボン・ドボン返しを待っているCPU（二重に宣言しないため）
   private pendingOffTurn = new Set<string>();
 
-  constructor(log: GameLog, decider?: ActionDecider) {
+  constructor(
+    private readonly log: GameLog,
+    decider?: ActionDecider,
+  ) {
     this.decider = decider ?? createActionDecider(log);
   }
 
@@ -67,20 +70,22 @@ export class CPUPlayerService {
       await this.delay(this.dobonWaitDelay);
     }
 
-    // 思考時間の演出
-    await this.delay(this.thinkingDelay);
-
     // 待っている間にドボンなどで手番が終わっていれば何もしない
-    if (
-      state.phase !== "playing" ||
-      state.currentTurnPlayerId !== cpuPlayer.sessionId ||
-      !hasAnyAction(cpuPlayer)
-    ) {
-      return;
-    }
+    const stillMyTurn = () =>
+      state.phase === "playing" &&
+      state.currentTurnPlayerId === cpuPlayer.sessionId &&
+      hasAnyAction(cpuPlayer);
+    if (!stillMyTurn()) return;
 
     try {
-      const decision = await this.decider.decide(state, cpuPlayer);
+      // 先読みの時間を思考時間の演出と重ねる（合わせて約3秒）
+      const eventCount = this.log.getEvents().length;
+      const [decision] = await Promise.all([
+        this.decider.decide(state, cpuPlayer),
+        this.delay(this.thinkingDelay),
+      ]);
+      // 考えている間に場が動いていたら、その判断は使わない
+      if (!stillMyTurn() || this.log.getEvents().length !== eventCount) return;
       executeDecision(decision, cpuPlayer.sessionId, dispatcher);
     } catch (error) {
       console.error("CPU decision error:", error);
