@@ -14,6 +14,10 @@ export default defineConfig(({ mode }) => {
     server: {
       port: Number(env.VITE_PORT) || 5173,
     },
+    // @dobon-uno/shared は CommonJS でビルドされるため、事前バンドルして名前付き export を解決する
+    optimizeDeps: {
+      include: ["@dobon-uno/shared"],
+    },
     plugins: [
       react(),
       tailwindcss(),
