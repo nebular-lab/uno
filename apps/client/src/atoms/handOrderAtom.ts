@@ -35,18 +35,27 @@ export const orderedMyHandAtom = atom<ClientCard[]>((get) => {
   return orderedCards;
 });
 
+// 前回同期したときに自分の手番だったか
+const wasMyTurnAtom = atom(false);
+
 // 手札の変化に合わせて並び順を同期するアクション
 // - カードが減った（切った）とき、または新しく配られたときは全体を並び替える
-// - カードが増えただけ（引いた）のときは並び順を保ち、右端に追加する
+// - 自分の手番が終わったときは全体を並び替える（引いたカードもここで整列される）
+// - それ以外でカードが増えた（引いた）ときは並び順を保ち、右端に追加する
 export const syncHandOrderAtom = atom(null, (get, set) => {
-  const { myHand } = get(gamePlayStateAtom);
+  const { myHand, currentTurnPlayerId, mySessionId } = get(gamePlayStateAtom);
   const localOrder = get(localHandOrderAtom);
+
+  const isMyTurn = mySessionId !== "" && currentTurnPlayerId === mySessionId;
+  const hasTurnEnded = get(wasMyTurnAtom) && !isMyTurn;
+  set(wasMyTurnAtom, isMyTurn);
+
   if (myHand.length === 0) return;
 
   const handIds = new Set(myHand.map((card) => card.id));
   const hasRemovedCard = [...localOrder.keys()].some((id) => !handIds.has(id));
   const isNewHand = !myHand.some((card) => localOrder.has(card.id));
-  if (!hasRemovedCard && !isNewHand) return;
+  if (!hasRemovedCard && !isNewHand && !hasTurnEnded) return;
 
   const orderMap = new Map<string, number>();
   sortCards(myHand).forEach((card, index) => {

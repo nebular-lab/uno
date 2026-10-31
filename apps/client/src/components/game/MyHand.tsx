@@ -6,7 +6,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { setCardPositionAtom } from "@/atoms/cardPositionAtom";
 import { gamePlayStateAtom } from "@/atoms/connectionAtoms";
 import { orderedMyHandAtom, syncHandOrderAtom } from "@/atoms/handOrderAtom";
 import { playerSettingsAtom } from "@/atoms/playerSettingsAtom";
@@ -25,13 +24,6 @@ type HandCardProps = {
   showPoints?: boolean;
   readOnly?: boolean;
   onCardClick: () => void;
-  onPositionUpdate: (
-    cardId: string,
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-  ) => void;
 };
 
 const HandCard = ({
@@ -43,41 +35,10 @@ const HandCard = ({
   showPoints,
   readOnly,
   onCardClick,
-  onPositionUpdate,
 }: HandCardProps) => {
-  const cardRef = useRef<HTMLDivElement>(null);
-
-  // カードの位置を報告（継続的に更新）
-  useEffect(() => {
-    const updatePosition = () => {
-      if (cardRef.current) {
-        const rect = cardRef.current.getBoundingClientRect();
-        onPositionUpdate(
-          card.id,
-          rect.left + rect.width / 2,
-          rect.top + rect.height / 2,
-          rect.width,
-          rect.height,
-        );
-      }
-    };
-
-    updatePosition();
-    // レイアウト変更時に位置を再計算
-    const observer = new ResizeObserver(updatePosition);
-    if (cardRef.current) {
-      observer.observe(cardRef.current);
-    }
-    window.addEventListener("resize", updatePosition);
-
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("resize", updatePosition);
-    };
-  }, [card.id, onPositionUpdate]);
-
+  // data-card-id はカードを出すアニメーションの開始位置の実測にも使う
   return (
-    <div data-card-id={card.id} ref={cardRef}>
+    <div data-card-id={card.id}>
       <Card
         card={card}
         disabled={disabled}
@@ -98,9 +59,9 @@ type Props = {
 
 export const MyHand = ({ disabled }: Props) => {
   const cards = useAtomValue(orderedMyHandAtom);
-  const { myHand } = useAtomValue(gamePlayStateAtom);
+  const { myHand, currentTurnPlayerId, mySessionId } =
+    useAtomValue(gamePlayStateAtom);
   const syncHandOrder = useSetAtom(syncHandOrderAtom);
-  const setCardPosition = useSetAtom(setCardPositionAtom);
   const [selectedCardIds, setSelectedCardIds] = useAtom(selectedCardIdsAtom);
   const {
     playCard,
@@ -119,18 +80,10 @@ export const MyHand = ({ disabled }: Props) => {
     hiddenRight: 0,
   });
 
-  // カードを切ったら並び替え、引いたカードは右端に追加する
+  // カードを切ったときと手番が終わったときに並び替え、手番中に引いたカードは右端に追加する
   useLayoutEffect(() => {
     syncHandOrder();
-  }, [myHand, syncHandOrder]);
-
-  // カード位置更新のコールバック
-  const handlePositionUpdate = useCallback(
-    (cardId: string, x: number, y: number, width: number, height: number) => {
-      setCardPosition({ cardId, x, y, width, height });
-    },
-    [setCardPosition],
-  );
+  }, [myHand, currentTurnPlayerId, mySessionId, syncHandOrder]);
 
   // 重ね出しできるカードを取得
   // force-changeは色が違っても重ね出し可能
@@ -258,25 +211,26 @@ export const MyHand = ({ disabled }: Props) => {
 
   return (
     <>
-      <div className="fixed bottom-[150px] left-4 flex gap-2">
-        {showTotalPoints && (
-          <div className="flex size-[80px] flex-col items-center justify-center rounded-md bg-black/50 text-white">
-            <span className="text-xs text-zinc-400">合計</span>
-            <span className="text-2xl font-bold">{totalPoints}</span>
-          </div>
-        )}
-        {/* 観戦中は操作ボタンを出さない */}
-        {!isSpectator && (
+      {showTotalPoints && (
+        <div className="fixed bottom-[150px] left-4 flex size-[80px] flex-col items-center justify-center rounded-md bg-black/50 text-white">
+          <span className="text-xs text-zinc-400">合計</span>
+          <span className="text-2xl font-bold">{totalPoints}</span>
+        </div>
+      )}
+      {/* ドボンできるときだけ画面中央に大きく表示する（観戦中は出さない） */}
+      {!isSpectator && canDobon && (
+        <div className="fixed left-1/2 top-[53%] z-50 -translate-x-1/2 -translate-y-1/2 animate-in fade-in zoom-in-50 duration-200">
+          {/* 背後で光を広げて目立たせる */}
+          <div className="absolute inset-0 animate-ping rounded-2xl bg-purple-500/60" />
           <Button
-            className="size-[80px] bg-purple-500/80 text-white hover:bg-purple-600 disabled:bg-gray-600/50 disabled:text-gray-400"
-            disabled={!canDobon}
+            className="relative h-[96px] w-[240px] rounded-2xl border-4 border-yellow-300 bg-purple-600 text-white shadow-[0_0_40px_rgba(168,85,247,0.9)] hover:bg-purple-500"
             onClick={dobon}
             variant="ghost"
           >
-            <span className="text-lg font-bold">ドボン</span>
+            <span className="text-5xl font-black tracking-widest">ドボン</span>
           </Button>
-        )}
-      </div>
+        </div>
+      )}
       <div
         className="absolute bottom-4 left-1/2 w-full -translate-x-1/2"
         ref={containerRef}
@@ -331,7 +285,6 @@ export const MyHand = ({ disabled }: Props) => {
                     disabled={disabled}
                     key={card.id}
                     onCardClick={() => handleCardClick(card.id)}
-                    onPositionUpdate={handlePositionUpdate}
                     playable={cardPlayable}
                     readOnly={isSpectator}
                     selected={isSelected}

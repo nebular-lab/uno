@@ -27,7 +27,6 @@ import {
 } from "./animationAtoms";
 import { playerAtom, screenAtom } from "./appAtoms";
 import {
-  cardPositionsAtom,
   deckPositionAtom,
   fieldCardPositionAtom,
   playerSeatPositionsAtom,
@@ -222,10 +221,18 @@ const setupRoomStateSync = (
       height: number;
     } | null = null;
     if (isSelf && event.cards.length > 0) {
-      const cardPositions = store.get(cardPositionsAtom);
-      const firstCardPos = cardPositions[event.cards[0].id];
-      if (firstCardPos) {
-        startPosition = { ...firstCardPos };
+      // 手札は引く・並び替える・スクロールするたびに位置が変わるため、出した瞬間の位置を実測する
+      const cardElement = document.querySelector(
+        `[data-card-id="${event.cards[0].id}"]`,
+      );
+      if (cardElement) {
+        const rect = cardElement.getBoundingClientRect();
+        startPosition = {
+          x: rect.left + rect.width / 2,
+          y: rect.top + rect.height / 2,
+          width: rect.width,
+          height: rect.height,
+        };
       }
     } else {
       // 他プレイヤーの場合はシート位置を使用
