@@ -258,25 +258,26 @@ export const MyHand = ({ disabled }: Props) => {
 
   return (
     <>
-      <div className="fixed bottom-[150px] left-4 flex gap-2">
-        {showTotalPoints && (
-          <div className="flex size-[80px] flex-col items-center justify-center rounded-md bg-black/50 text-white">
-            <span className="text-xs text-zinc-400">合計</span>
-            <span className="text-2xl font-bold">{totalPoints}</span>
-          </div>
-        )}
-        {/* 観戦中は操作ボタンを出さない */}
-        {!isSpectator && (
+      {showTotalPoints && (
+        <div className="fixed bottom-[150px] left-4 flex size-[80px] flex-col items-center justify-center rounded-md bg-black/50 text-white">
+          <span className="text-xs text-zinc-400">合計</span>
+          <span className="text-2xl font-bold">{totalPoints}</span>
+        </div>
+      )}
+      {/* ドボンできるときだけ画面中央に大きく表示する（観戦中は出さない） */}
+      {!isSpectator && canDobon && (
+        <div className="fixed left-1/2 top-[53%] z-50 -translate-x-1/2 -translate-y-1/2 animate-in fade-in zoom-in-50 duration-200">
+          {/* 背後で光を広げて目立たせる */}
+          <div className="absolute inset-0 animate-ping rounded-2xl bg-purple-500/60" />
           <Button
-            className="size-[80px] bg-purple-500/80 text-white hover:bg-purple-600 disabled:bg-gray-600/50 disabled:text-gray-400"
-            disabled={!canDobon}
+            className="relative h-[96px] w-[240px] rounded-2xl border-4 border-yellow-300 bg-purple-600 text-white shadow-[0_0_40px_rgba(168,85,247,0.9)] hover:bg-purple-500"
             onClick={dobon}
             variant="ghost"
           >
-            <span className="text-lg font-bold">ドボン</span>
+            <span className="text-5xl font-black tracking-widest">ドボン</span>
           </Button>
-        )}
-      </div>
+        </div>
+      )}
       <div
         className="absolute bottom-4 left-1/2 w-full -translate-x-1/2"
         ref={containerRef}
