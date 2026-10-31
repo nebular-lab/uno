@@ -1,7 +1,8 @@
-import { useSetAtom } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import { motion } from "motion/react";
 import { useEffect, useRef } from "react";
 import { fieldCardPositionAtom } from "@/atoms/cardPositionAtom";
+import { playerSettingsAtom } from "@/atoms/playerSettingsAtom";
 import type { ClientCard } from "@/hooks/useGameRoom";
 import { cn } from "@/lib/utils";
 
@@ -54,6 +55,7 @@ export const FieldCard = ({
 }: Props) => {
   const ref = useRef<HTMLDivElement>(null);
   const setFieldCardPosition = useSetAtom(fieldCardPositionAtom);
+  const { showCardPoints } = useAtomValue(playerSettingsAtom);
   const isWild = card.value === "wild";
   const isDraw4 = card.value === "draw4";
 
@@ -111,6 +113,12 @@ export const FieldCard = ({
     >
       {/* 中央の値 */}
       <span className="text-2xl">{displayValue}</span>
+      {/* ポイント表示（数字カード以外のみ） */}
+      {showCardPoints && !/^\d$/.test(card.value) && (
+        <span className="absolute right-1 bottom-0 text-xs font-semibold opacity-80">
+          {card.points}
+        </span>
+      )}
       {/* 強調時のラベル */}
       {isHighlighted && (
         <div className="absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-yellow-400 px-1.5 py-0.5 text-xs font-bold text-black">
