@@ -399,12 +399,14 @@ export const connectToLobbyAtom = atom(null, async (get, set) => {
 });
 
 // ロビーから切断
-export const disconnectFromLobbyAtom = atom(null, async (get, set) => {
+export const disconnectFromLobbyAtom = atom(null, (get, set) => {
   const state = get(lobbyStateAtom);
   if (state.status === "connected") {
     // 先にidleに設定してからleave()を呼ぶことで、onLeaveでdisconnectedにならないようにする
     set(lobbyStateAtom, { status: "idle" });
-    await state.lobby.leave();
+    // leave()はサーバーからの切断応答で解決するため、ソケットが切れていると永久に解決しない。
+    // 待つと画面遷移が止まる（ロビーのスピナーのままになる）ので完了を待たない
+    state.lobby.leave().catch(() => {});
   }
 });
 
@@ -442,12 +444,7 @@ export const createRoomAtom = atom(null, async (get, set) => {
     });
 
     // ロビーから切断して待機画面へ遷移
-    // 先にidleに設定してからleave()を呼ぶことで、onLeaveでdisconnectedにならないようにする
-    const lobbyState = get(lobbyStateAtom);
-    if (lobbyState.status === "connected") {
-      set(lobbyStateAtom, { status: "idle" });
-      await lobbyState.lobby.leave();
-    }
+    set(disconnectFromLobbyAtom);
     set(screenAtom, { screen: "waitingRoom", roomId: room.roomId });
   } catch (error) {
     const message =
@@ -496,12 +493,7 @@ export const joinRoomAtom = atom(
       });
 
       // ロビーから切断して待機画面（観戦はゲーム画面）へ遷移
-      // 先にidleに設定してからleave()を呼ぶことで、onLeaveでdisconnectedにならないようにする
-      const lobbyState = get(lobbyStateAtom);
-      if (lobbyState.status === "connected") {
-        set(lobbyStateAtom, { status: "idle" });
-        await lobbyState.lobby.leave();
-      }
+      set(disconnectFromLobbyAtom);
       set(
         screenAtom,
         spectate
