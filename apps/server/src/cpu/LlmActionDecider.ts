@@ -1,14 +1,9 @@
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
 import { groq } from "@ai-sdk/groq";
 import type { GameState, Player } from "@dobon-uno/shared";
 import { generateText } from "ai";
+import type { ActionDecider, CPUDecision } from "./ActionDecider";
+import { writeCpuLog } from "./cpuLog";
 import { cpuTools } from "./tools";
-
-export interface CPUDecision {
-  action: string;
-  params?: unknown;
-}
 
 interface CPULog {
   timestamp: string;
@@ -27,16 +22,8 @@ interface CPULog {
   };
 }
 
-export class CPUActionDecider {
+export class LlmActionDecider implements ActionDecider {
   private model = groq("llama-3.3-70b-versatile");
-  private logDir = join(process.cwd(), "logs", "cpu");
-
-  constructor() {
-    // ログディレクトリを作成
-    if (!existsSync(this.logDir)) {
-      mkdirSync(this.logDir, { recursive: true });
-    }
-  }
 
   async decide(state: GameState, cpuPlayer: Player): Promise<CPUDecision> {
     const systemPrompt = this.getSystemPrompt();
@@ -61,7 +48,7 @@ export class CPUActionDecider {
     };
 
     // ログを書き出し
-    this.writeLog({
+    const log: CPULog = {
       timestamp: new Date().toISOString(),
       cpuName: cpuPlayer.name,
       systemPrompt,
@@ -78,20 +65,10 @@ export class CPUActionDecider {
             totalTokens: result.usage.totalTokens,
           }
         : undefined,
-    });
+    };
+    writeCpuLog(log);
 
     return decision;
-  }
-
-  private writeLog(log: CPULog): void {
-    try {
-      const filename = `${log.timestamp.replace(/[:.]/g, "-")}_${log.cpuName}.json`;
-      const filepath = join(this.logDir, filename);
-      writeFileSync(filepath, JSON.stringify(log, null, 2), "utf-8");
-      console.log(`[CPU] Log written: ${filepath}`);
-    } catch (error) {
-      console.error("[CPU] Failed to write log:", error);
-    }
   }
 
   private buildContext(state: GameState, cpuPlayer: Player): string {
