@@ -87,9 +87,9 @@ describe("DobonCommand", () => {
   async function setupGame(firstCard: CardData) {
     const room = await colyseus.createRoom("game", {});
 
-    const client1 = await colyseus.connectTo(room, { name: "Player1" });
-    const client2 = await colyseus.connectTo(room, { name: "Player2" });
-    const client3 = await colyseus.connectTo(room, { name: "Player3" });
+    const client1 = await colyseus.connectTo(room, { playerName: "Player1" });
+    const client2 = await colyseus.connectTo(room, { playerName: "Player2" });
+    const client3 = await colyseus.connectTo(room, { playerName: "Player3" });
 
     // テスト用デッキを設定
     const testDeck = createTestDeckWithPlayerHands(
@@ -125,9 +125,13 @@ describe("DobonCommand", () => {
   describe("バリデーション", () => {
     it("playingフェーズ以外は拒否される", async () => {
       const room = await colyseus.createRoom("game", {});
-      const client1 = await colyseus.connectTo(room, { name: "Player1" });
-      const _client2 = await colyseus.connectTo(room, { name: "Player2" });
-      const _client3 = await colyseus.connectTo(room, { name: "Player3" });
+      const client1 = await colyseus.connectTo(room, { playerName: "Player1" });
+      const _client2 = await colyseus.connectTo(room, {
+        playerName: "Player2",
+      });
+      const _client3 = await colyseus.connectTo(room, {
+        playerName: "Player3",
+      });
 
       // waitingフェーズでドボンを試みる
       client1.send("dobon");

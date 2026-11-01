@@ -388,6 +388,16 @@ export class GameRoom extends Room<{
     if (this.state.players.size >= MAX_PLAYERS) {
       throw new ServerError(JOIN_REJECTED_CODE, "ルームが満員です");
     }
+    // 成績表などでプレイヤーを名前で見分けられるよう、同じ名前では参加させない
+    const isNameTaken = Array.from(this.state.players.values()).some(
+      (p) => p.name === options?.playerName,
+    );
+    if (isNameTaken) {
+      throw new ServerError(
+        JOIN_REJECTED_CODE,
+        "同じ名前のプレイヤーがいるため参加できません",
+      );
+    }
     return true;
   }
 

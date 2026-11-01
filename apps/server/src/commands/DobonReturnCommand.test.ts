@@ -85,9 +85,9 @@ describe("DobonReturnCommand", () => {
   async function setupGame(firstCard: CardData) {
     const room = await colyseus.createRoom("game", {});
 
-    const client1 = await colyseus.connectTo(room, { name: "Player1" });
-    const client2 = await colyseus.connectTo(room, { name: "Player2" });
-    const client3 = await colyseus.connectTo(room, { name: "Player3" });
+    const client1 = await colyseus.connectTo(room, { playerName: "Player1" });
+    const client2 = await colyseus.connectTo(room, { playerName: "Player2" });
+    const client3 = await colyseus.connectTo(room, { playerName: "Player3" });
 
     // タイマーを長めに設定（テスト中にタイムアウトしないように）
     client1.send("__setTurnTimeout", 30000);

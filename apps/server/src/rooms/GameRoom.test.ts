@@ -238,6 +238,16 @@ describe("GameRoom", () => {
       });
     });
 
+    it("同じ名前のプレイヤーは参加できない", async () => {
+      const room = await colyseus.createRoom("game", {});
+      await colyseus.connectTo(room, { playerName: "Owner" });
+
+      await expect(
+        colyseus.connectTo(room, { playerName: "Owner" }),
+      ).rejects.toThrow("同じ名前のプレイヤーがいるため参加できません");
+      expect(room.state.players.size).toBe(1);
+    });
+
     it("開始前のルームは観戦できない", async () => {
       const room = await colyseus.createRoom("game", {});
       await colyseus.connectTo(room, { playerName: "Owner" });
