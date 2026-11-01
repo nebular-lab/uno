@@ -2,6 +2,7 @@ import { useAtomValue } from "jotai";
 import { AnimatePresence, motion } from "motion/react";
 import { currentAnimationAtom } from "@/atoms/animationAtoms";
 import { fieldCardPositionAtom } from "@/atoms/cardPositionAtom";
+import { playerSettingsAtom } from "@/atoms/playerSettingsAtom";
 import { cn } from "@/lib/utils";
 
 // カードの色に対応するTailwindクラス
@@ -45,12 +46,14 @@ const AnimatedCard = ({
   startPos,
   endPos,
   duration,
+  showPoints,
 }: {
-  card: { id: string; color: string; value: string };
+  card: { id: string; color: string; value: string; points: number };
   index: number;
   startPos: { x: number; y: number; width: number; height: number };
   endPos: { x: number; y: number };
   duration: number;
+  showPoints: boolean;
 }) => {
   const isDraw4 = card.value === "draw4";
   const isWild = card.value === "wild";
@@ -102,7 +105,7 @@ const AnimatedCard = ({
     >
       <div
         className={cn(
-          "flex items-center justify-center border-2 font-bold shadow-lg",
+          "relative flex items-center justify-center border-2 font-bold shadow-lg",
           getBgClass(),
           getTextClass(),
         )}
@@ -115,6 +118,18 @@ const AnimatedCard = ({
         }}
       >
         <span>{displayValue}</span>
+        {/* ポイント表示（数字カード以外のみ、場のカードと同じ配置: 幅56pxに対してtext-xs=12px・右4px） */}
+        {showPoints && !/^\d$/.test(card.value) && (
+          <span
+            className="absolute bottom-0 font-semibold opacity-80"
+            style={{
+              fontSize: `${(width / 56) * 12}px`,
+              right: `${(width / 56) * 4}px`,
+            }}
+          >
+            {card.points}
+          </span>
+        )}
       </div>
     </motion.div>
   );
@@ -123,6 +138,7 @@ const AnimatedCard = ({
 export const CardPlayAnimation = () => {
   const animation = useAtomValue(currentAnimationAtom);
   const fieldCardPosition = useAtomValue(fieldCardPositionAtom);
+  const { showCardPoints } = useAtomValue(playerSettingsAtom);
 
   if (animation?.type !== "playCard") return null;
 
@@ -143,6 +159,7 @@ export const CardPlayAnimation = () => {
             endPos={fieldCardPosition}
             index={index}
             key={card.id}
+            showPoints={showCardPoints}
             startPos={startPos}
           />
         ))}
