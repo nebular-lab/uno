@@ -241,7 +241,11 @@ const WinnerLabel = ({
   return (
     <div
       className={cn(
-        "absolute -top-5 -translate-x-1/2 whitespace-nowrap rounded-full px-3 py-1 text-sm font-bold shadow-lg z-20 animate-bounce",
+        "absolute -top-5 -translate-x-1/2 whitespace-nowrap rounded-full px-3 py-1 text-sm font-bold shadow-lg z-20",
+        // ドボン・ドボン返しは跳ねさせず落ち着いて表示する
+        finishType !== "dobon" &&
+          finishType !== "dobonReturn" &&
+          "animate-bounce",
         labelPos,
         bgColor,
         textColor,
@@ -352,7 +356,7 @@ export const PlayerSeat = ({
       {isDoboner && !isWinner && !scoreResult && (
         <div
           className={cn(
-            "absolute -top-5 -translate-x-1/2 whitespace-nowrap rounded-full bg-purple-500 px-3 py-1 text-sm font-bold text-white shadow-lg z-20 animate-bounce",
+            "absolute -top-5 -translate-x-1/2 whitespace-nowrap rounded-full bg-purple-500 px-3 py-1 text-sm font-bold text-white shadow-lg z-20",
             labelPos,
           )}
         >
