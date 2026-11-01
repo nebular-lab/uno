@@ -8,6 +8,12 @@
       "port": 2567
     },
     {
+      "name": "server-deckout",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["dev:server:deckout"],
+      "port": 2567
+    },
+    {
       "name": "client",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["dev:client"],

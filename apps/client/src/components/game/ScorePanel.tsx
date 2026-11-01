@@ -2,6 +2,9 @@ import { cn } from "@/lib/utils";
 import type { ClientGameResult, ClientPlayer } from "@/types/connection";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 
+// 「ゲーム」列の幅（ゲーム番号・レート倍率・流局を並べる）
+const GAME_COLUMN_WIDTH = "130px";
+
 type Props = {
   isOpen: boolean;
   onClose: () => void;
@@ -63,7 +66,7 @@ export const ScorePanel = ({
             <div
               className="grid border-b border-slate-600"
               style={{
-                gridTemplateColumns: `80px repeat(${columns.length}, 1fr)`,
+                gridTemplateColumns: `${GAME_COLUMN_WIDTH} repeat(${columns.length}, 1fr)`,
               }}
             >
               <div className="px-3 py-3 text-left text-slate-300">ゲーム</div>
@@ -90,11 +93,19 @@ export const ScorePanel = ({
                   className="grid border-b border-slate-700"
                   key={result.gameNumber}
                   style={{
-                    gridTemplateColumns: `80px repeat(${columns.length}, 1fr)`,
+                    gridTemplateColumns: `${GAME_COLUMN_WIDTH} repeat(${columns.length}, 1fr)`,
                   }}
                 >
-                  <div className="px-3 py-2 text-slate-400">
-                    #{result.gameNumber}
+                  <div className="flex items-center gap-1.5 px-3 py-2 text-slate-400">
+                    <span>#{result.gameNumber}</span>
+                    {result.rateMultiplier > 1 && (
+                      <span className="font-mono text-xs font-bold text-amber-400">
+                        x{result.rateMultiplier}
+                      </span>
+                    )}
+                    {result.finishType === "deckOut" && (
+                      <span className="text-xs text-slate-500">流局</span>
+                    )}
                   </div>
                   {columns.map((column) => {
                     const score = result.scoreChanges[column.sessionId];
@@ -131,7 +142,7 @@ export const ScorePanel = ({
             <div
               className="grid border-t border-slate-600 font-bold"
               style={{
-                gridTemplateColumns: `80px repeat(${columns.length}, 1fr)`,
+                gridTemplateColumns: `${GAME_COLUMN_WIDTH} repeat(${columns.length}, 1fr)`,
               }}
             >
               <div className="px-3 py-3 text-white">累計</div>

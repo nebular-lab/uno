@@ -65,6 +65,7 @@ export const GameScreen = () => {
     currentColor,
     myHand,
     turnDirection,
+    rateMultiplier,
     playCard,
     leaveRoom,
     canChooseColor,
@@ -133,6 +134,15 @@ export const GameScreen = () => {
       cpuThinkingTime,
     };
   }, [showTotalPoints, highlightPlayableCards, cpuThinkingTime, showToast]);
+
+  // 山札切れでレートが上がったらトースト表示
+  const prevRateMultiplierRef = useRef(rateMultiplier);
+  useEffect(() => {
+    if (rateMultiplier > prevRateMultiplierRef.current) {
+      showToast(`レート ${rateMultiplier} 倍に上昇！`);
+    }
+    prevRateMultiplierRef.current = rateMultiplier;
+  }, [rateMultiplier, showToast]);
 
   // resultフェーズになったら、「上がり！」表示 → 手札公開と全員の得点変動 → スコアパネルの順に切り替える
   // （公開された手札はPlayerSeatがrevealedHandから表示する）
@@ -546,6 +556,26 @@ export const GameScreen = () => {
           </div>
         </div>
       )}
+
+      {/* レート倍率（山札切れが続いて2倍以上になっているときだけ表示） */}
+      {rateMultiplier > 1 && (
+        <div className="absolute left-1/2 top-[calc(38%-110px)] z-10 -translate-x-1/2">
+          <div className="rounded-full border-2 border-amber-300 bg-amber-500 px-4 py-1 font-bold text-black shadow-lg">
+            レート ×{rateMultiplier}
+          </div>
+        </div>
+      )}
+
+      {/* 流局表示（山札切れでゲームが終了したとき） */}
+      {phase === "result" &&
+        showWinnerLabel &&
+        latestGameResult?.finishType === "deckOut" && (
+          <div className="absolute left-1/2 top-[38%] z-30 -translate-x-1/2 -translate-y-1/2">
+            <div className="rounded-xl border-2 border-slate-400 bg-slate-800/90 px-10 py-4 text-4xl font-bold text-white shadow-2xl">
+              流局
+            </div>
+          </div>
+        )}
 
       {/* ドロースタック表示（テーブル右寄り、waitingフェーズでは非表示） */}
       {phase !== "waiting" && drawStackCount > 0 && (

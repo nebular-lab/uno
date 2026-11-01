@@ -57,7 +57,8 @@ export type ClientGameResult = {
   playerNames: Record<string, string>; // sessionId -> プレイヤー名
   timestamp: number;
   winnerId: string;
-  finishType: string; // "normal" | "dobon" | "dobonReturn"
+  finishType: string; // "normal" | "dobon" | "dobonReturn" | "deckOut"（流局）
+  rateMultiplier: number; // このゲームのレート倍率
 };
 
 // ゲームプレイ状態（Room.stateをReact用に変換した状態）
@@ -80,6 +81,7 @@ export type GamePlayState = {
   deckCount: number;
   drawStack: number; // ドロー累積枚数
   turnDirection: number; // 1=時計回り, -1=反時計回り
+  rateMultiplier: number; // 次（または現在）のゲームのレート倍率
 
   // ドボン状態
   dobonPlayerIds: string[]; // ドボンしたプレイヤーのsessionIdリスト

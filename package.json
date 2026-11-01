@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "pnpm --filter server dev & pnpm --filter client dev",
     "dev:server": "pnpm --filter server dev",
+    "dev:server:deckout": "DEBUG_DECK_SIZE=31 pnpm --filter server dev",
     "dev:client": "pnpm --filter client dev",
     "build": "pnpm -r build",
     "build:shared": "pnpm --filter @dobon-uno/shared build",
