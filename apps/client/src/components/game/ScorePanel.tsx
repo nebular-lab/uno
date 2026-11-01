@@ -24,9 +24,9 @@ export const ScorePanel = ({
     for (const sessionId of Object.keys(result.scoreChanges)) {
       if (columns.some((c) => c.sessionId === sessionId)) continue;
       // 名前は最後に参加したゲームのものを使う
-      const lastResult = gameHistory.findLast(
-        (r) => r.playerNames[sessionId] !== undefined,
-      );
+      const lastResult = [...gameHistory]
+        .reverse()
+        .find((r) => r.playerNames[sessionId] !== undefined);
       columns.push({
         sessionId,
         name: lastResult?.playerNames[sessionId] ?? "",
