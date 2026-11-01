@@ -74,5 +74,13 @@ export function createGameResult(
     result.scoreChanges.set(playerId, change);
   }
 
+  // 終了時点の各プレイヤーの手札合計点数を記録（結果表示用）
+  for (const [playerId, player] of state.players.entries()) {
+    result.handPoints.set(
+      playerId,
+      player.myHand.reduce((sum, card) => sum + card.points, 0),
+    );
+  }
+
   return result;
 }

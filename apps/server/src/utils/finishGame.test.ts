@@ -97,6 +97,18 @@ describe("finishGame ユーティリティ", () => {
       expect(result.timestamp).toBeGreaterThan(0);
     });
 
+    it("各プレイヤーの手札合計点数が記録される", () => {
+      state.players.set("playerA", createPlayer("playerA", []));
+      state.players.set("playerB", createPlayer("playerB", [5, 8]));
+      state.players.set("playerC", createPlayer("playerC", [20]));
+
+      const result = createGameResult(state, "playerA", "normal", new Map());
+
+      expect(result.handPoints.get("playerA")).toBe(0);
+      expect(result.handPoints.get("playerB")).toBe(13);
+      expect(result.handPoints.get("playerC")).toBe(20);
+    });
+
     it("gameHistoryの長さに応じてgameNumberが設定される", () => {
       // 既に2ゲーム終了している状態を模擬
       state.gameHistory.push(createGameResult(state, "x", "normal", new Map()));

@@ -158,9 +158,14 @@ const setupRoomStateSync = (
           result.scoreChanges?.forEach((value, key) => {
             scoreChanges[key] = value;
           });
+          const handPoints: Record<string, number> = {};
+          result.handPoints?.forEach((value, key) => {
+            handPoints[key] = value;
+          });
           return {
             gameNumber: result.gameNumber,
             scoreChanges,
+            handPoints,
             timestamp: result.timestamp,
             winnerId: result.winnerId,
             finishType: result.finishType,

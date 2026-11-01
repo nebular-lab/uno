@@ -89,6 +89,7 @@ export const GameScreen = () => {
   const [showRuleBook, setShowRuleBook] = useState(false);
   const [showScorePanel, setShowScorePanel] = useState(false);
   const [showWinnerLabel, setShowWinnerLabel] = useState(false);
+  const [showScoreChanges, setShowScoreChanges] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -130,17 +131,20 @@ export const GameScreen = () => {
     };
   }, [showTotalPoints, highlightPlayableCards, cpuThinkingTime, showToast]);
 
-  // resultフェーズになったら、「上がり！」表示 → 手札公開 → スコアパネルの順に切り替える
+  // resultフェーズになったら、「上がり！」表示 → 手札公開と全員の得点変動 → スコアパネルの順に切り替える
   // （公開された手札はPlayerSeatがrevealedHandから表示する）
   useEffect(() => {
     if (phase === "result") {
       setShowWinnerLabel(true);
+      setShowScoreChanges(false);
       setShowScorePanel(false);
 
       const labelTimer = setTimeout(() => {
         setShowWinnerLabel(false);
+        setShowScoreChanges(true);
       }, FINISH_DISPLAY_DURATION);
       const scoreTimer = setTimeout(() => {
+        setShowScoreChanges(false);
         setShowScorePanel(true);
       }, SCORE_PANEL_DELAY);
 
@@ -156,6 +160,7 @@ export const GameScreen = () => {
     if (phase === "waiting") {
       setShowScorePanel(false);
       setShowWinnerLabel(false);
+      setShowScoreChanges(false);
     }
   }, [phase]);
   const [selectedCardIds, setSelectedCardIds] = useAtom(selectedCardIdsAtom);
@@ -361,6 +366,14 @@ export const GameScreen = () => {
           player !== null &&
           dobonPlayerIds.includes(player.sessionId) &&
           !showScorePanel;
+        // 手札公開中に表示する、手札の合計点数とこのゲームの得点変動
+        const scoreResult =
+          phase === "result" && showScoreChanges && player
+            ? {
+                handPoints: latestGameResult?.handPoints[player.sessionId] ?? 0,
+                change: latestGameResult?.scoreChanges[player.sessionId] ?? 0,
+              }
+            : undefined;
 
         if (player) {
           // 観戦中はクリックでそのプレイヤーの視点に切り替える
@@ -385,6 +398,7 @@ export const GameScreen = () => {
                   isUno={unoPlayerIds.has(player.sessionId)}
                   isWinner={isWinner}
                   player={player}
+                  scoreResult={scoreResult}
                 />
               </button>
             );
@@ -411,6 +425,7 @@ export const GameScreen = () => {
                   isUno={unoPlayerIds.has(player.sessionId)}
                   isWinner={isWinner}
                   player={player}
+                  scoreResult={scoreResult}
                 />
               </button>
             );
@@ -429,6 +444,7 @@ export const GameScreen = () => {
               isWinner={isWinner}
               key={`seat-${actualIndex}`}
               player={player}
+              scoreResult={scoreResult}
             />
           );
         }

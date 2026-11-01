@@ -53,6 +53,7 @@ export type ClientPlayer = {
 export type ClientGameResult = {
   gameNumber: number;
   scoreChanges: Record<string, number>; // sessionId -> 得点変動
+  handPoints: Record<string, number>; // sessionId -> 終了時の手札合計点数
   timestamp: number;
   winnerId: string;
   finishType: string; // "normal" | "dobon" | "dobonReturn"
