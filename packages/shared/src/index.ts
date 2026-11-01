@@ -16,6 +16,8 @@ export { GameState } from "./schema/GameState";
 export { Player } from "./schema/Player";
 // Timing constants
 export {
+  CPU_THINKING_TIME_OPTIONS,
+  DEFAULT_CPU_THINKING_TIME,
   FINISH_DISPLAY_DURATION,
   HAND_REVEAL_DURATION,
   RESULT_DISPLAY_DURATION,

@@ -76,6 +76,7 @@ export const GameScreen = () => {
     removeCpu,
     showTotalPoints,
     highlightPlayableCards,
+    cpuThinkingTime,
     isSpectator,
     spectatorCount,
     viewpointPlayer,
@@ -98,7 +99,11 @@ export const GameScreen = () => {
   }, []);
 
   // ゲーム全体設定の変更を検知してトースト表示
-  const prevSettingsRef = useRef({ showTotalPoints, highlightPlayableCards });
+  const prevSettingsRef = useRef({
+    showTotalPoints,
+    highlightPlayableCards,
+    cpuThinkingTime,
+  });
   useEffect(() => {
     const prev = prevSettingsRef.current;
     if (prev.showTotalPoints !== showTotalPoints) {
@@ -115,8 +120,15 @@ export const GameScreen = () => {
           : "出せるカードのハイライトがOFFになりました",
       );
     }
-    prevSettingsRef.current = { showTotalPoints, highlightPlayableCards };
-  }, [showTotalPoints, highlightPlayableCards, showToast]);
+    if (prev.cpuThinkingTime !== cpuThinkingTime) {
+      showToast(`CPUの思考時間が${cpuThinkingTime / 1000}秒になりました`);
+    }
+    prevSettingsRef.current = {
+      showTotalPoints,
+      highlightPlayableCards,
+      cpuThinkingTime,
+    };
+  }, [showTotalPoints, highlightPlayableCards, cpuThinkingTime, showToast]);
 
   // resultフェーズになったら、「上がり！」表示 → 手札公開 → スコアパネルの順に切り替える
   // （公開された手札はPlayerSeatがrevealedHandから表示する）

@@ -1,6 +1,7 @@
 import { Dispatcher } from "@colyseus/command";
 import {
   Card,
+  CPU_THINKING_TIME_OPTIONS,
   type CreateRoomOptions,
   GameState,
   type JoinRoomOptions,
@@ -188,6 +189,7 @@ export class GameRoom extends Room<{
         message: {
           showTotalPoints?: boolean;
           highlightPlayableCards?: boolean;
+          cpuThinkingTime?: number;
         },
       ) => {
         const player = this.state.players.get(client.sessionId);
@@ -198,6 +200,11 @@ export class GameRoom extends Room<{
         }
         if (typeof message.highlightPlayableCards === "boolean") {
           this.state.highlightPlayableCards = message.highlightPlayableCards;
+        }
+        if (
+          CPU_THINKING_TIME_OPTIONS.some((t) => t === message.cpuThinkingTime)
+        ) {
+          this.state.cpuThinkingTime = message.cpuThinkingTime as number;
         }
       },
     );

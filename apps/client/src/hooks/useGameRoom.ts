@@ -123,6 +123,7 @@ export const useGameRoom = () => {
     (settings: {
       showTotalPoints?: boolean;
       highlightPlayableCards?: boolean;
+      cpuThinkingTime?: number;
     }) => {
       if (gameRoomState.status !== "connected") return;
       gameRoomState.room.send("updateGameSettings", settings);
@@ -168,6 +169,7 @@ export const useGameRoom = () => {
     // ホスト設定
     showTotalPoints: gamePlayState.showTotalPoints,
     highlightPlayableCards: gamePlayState.highlightPlayableCards,
+    cpuThinkingTime: gamePlayState.cpuThinkingTime,
     updateGameSettings,
     // ゲーム履歴
     gameHistory: gamePlayState.gameHistory,

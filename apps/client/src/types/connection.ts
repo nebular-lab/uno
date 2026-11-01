@@ -85,6 +85,7 @@ export type GamePlayState = {
   // ホスト設定
   showTotalPoints: boolean;
   highlightPlayableCards: boolean;
+  cpuThinkingTime: number; // CPUの思考時間（ms）
 
   // ゲーム履歴
   gameHistory: ClientGameResult[];

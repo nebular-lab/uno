@@ -9,6 +9,7 @@ import type {
   Card as ServerCard,
   Player as ServerPlayer,
 } from "@dobon-uno/shared";
+import { DEFAULT_CPU_THINKING_TIME } from "@dobon-uno/shared";
 import { atom, getDefaultStore } from "jotai";
 import { colyseusClient } from "../lib/colyseus";
 import type {
@@ -64,6 +65,7 @@ const initialGamePlayState: GamePlayState = {
   dobonPlayerIds: [],
   showTotalPoints: true,
   highlightPlayableCards: true,
+  cpuThinkingTime: DEFAULT_CPU_THINKING_TIME,
   gameHistory: [],
 };
 
@@ -191,6 +193,7 @@ const setupRoomStateSync = (
         : [],
       showTotalPoints: state.showTotalPoints ?? true,
       highlightPlayableCards: state.highlightPlayableCards ?? true,
+      cpuThinkingTime: state.cpuThinkingTime ?? DEFAULT_CPU_THINKING_TIME,
       gameHistory,
     });
   };

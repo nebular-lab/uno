@@ -1,3 +1,4 @@
+import { CPU_THINKING_TIME_OPTIONS } from "@dobon-uno/shared";
 import { useAtom } from "jotai";
 import { playerSettingsAtom } from "@/atoms/playerSettingsAtom";
 import {
@@ -36,12 +37,46 @@ const Toggle = ({
   </label>
 );
 
+const SegmentedChoice = <T extends string | number>({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: T;
+  options: readonly { value: T; label: string }[];
+  onChange: (value: T) => void;
+}) => (
+  <div className="flex items-center justify-between py-3">
+    <span className="text-base text-white">{label}</span>
+    <div className="flex rounded-full bg-gray-600 p-0.5">
+      {options.map((option) => (
+        <button
+          className={`rounded-full px-3 py-1 text-sm transition-colors ${option.value === value ? "bg-blue-500 text-white" : "text-slate-300"}`}
+          key={option.value}
+          onClick={() => onChange(option.value)}
+          type="button"
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  </div>
+);
+
+const cpuThinkingTimeOptions = CPU_THINKING_TIME_OPTIONS.map((ms) => ({
+  value: ms as number,
+  label: `${ms / 1000}秒`,
+}));
+
 export const SettingsDialog = ({ open, onOpenChange }: Props) => {
   const [playerSettings, setPlayerSettings] = useAtom(playerSettingsAtom);
   const {
     isHost,
     showTotalPoints,
     highlightPlayableCards,
+    cpuThinkingTime,
     updateGameSettings,
   } = useGameRoom();
 
@@ -86,6 +121,12 @@ export const SettingsDialog = ({ open, onOpenChange }: Props) => {
               onChange={(checked) =>
                 updateGameSettings({ highlightPlayableCards: checked })
               }
+            />
+            <SegmentedChoice
+              label="CPUの思考時間"
+              onChange={(ms) => updateGameSettings({ cpuThinkingTime: ms })}
+              options={cpuThinkingTimeOptions}
+              value={cpuThinkingTime}
             />
           </div>
         )}

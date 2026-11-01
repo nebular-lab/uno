@@ -1,4 +1,5 @@
 import { ArraySchema, MapSchema, Schema, type } from "@colyseus/schema";
+import { DEFAULT_CPU_THINKING_TIME } from "../timing";
 import { Card } from "./Card";
 import { GameResult } from "./GameResult";
 import { Player } from "./Player";
@@ -43,6 +44,7 @@ export class GameState extends Schema {
   // ホスト設定
   @type("boolean") showTotalPoints: boolean = true; // 合計ポイント表示
   @type("boolean") highlightPlayableCards: boolean = true; // 出せるカードハイライト
+  @type("number") cpuThinkingTime: number = DEFAULT_CPU_THINKING_TIME; // CPUの思考時間（ms）
 
   // 履歴
   @type([GameResult]) gameHistory = new ArraySchema<GameResult>(); // ゲーム結果の履歴

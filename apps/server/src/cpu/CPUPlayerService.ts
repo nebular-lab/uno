@@ -14,7 +14,6 @@ import type { GameLog } from "./GameLog";
 
 export class CPUPlayerService {
   private decider: ActionDecider;
-  private thinkingDelay = 3000;
   private quickActionDelay = 200; // 即決アクションの遅延（ms）
   private dobonReturnDelay = 3000; // ドボン返しの遅延（ms）
   private dobonWaitDelay = 5000; // 他プレイヤーのドボン待ち時間（ms）
@@ -78,11 +77,11 @@ export class CPUPlayerService {
     if (!stillMyTurn()) return;
 
     try {
-      // 先読みの時間を思考時間の演出と重ねる（合わせて約3秒）
+      // 先読みの時間を思考時間の演出と重ねる（ホスト設定の思考時間）
       const eventCount = this.log.getEvents().length;
       const [decision] = await Promise.all([
         this.decider.decide(state, cpuPlayer),
-        this.delay(this.thinkingDelay),
+        this.delay(state.cpuThinkingTime),
       ]);
       // 考えている間に場が動いていたら、その判断は使わない
       if (!stillMyTurn() || this.log.getEvents().length !== eventCount) return;
