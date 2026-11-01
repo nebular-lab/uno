@@ -1,112 +1,95 @@
-import { motion } from "motion/react";
-
 type Props = {
   direction: number; // 1=時計回り, -1=反時計回り
 };
 
-// 半円パスを生成（矢印を含む）
-const createSemiCirclePath = (isClockwise: boolean): string => {
-  // 完全な半円（rx = ry）
-  const r = 80;
-  // 矢印のサイズ
-  const arrowSize = 20;
-  const arrowAngle = -30; // 矢印の折れ曲がり角度（度）- マイナスで鋭角に
+// 半円の半径
+const RADIUS = 80;
+// 点が半円を一周する時間（秒）
+const DURATION = 3.6;
 
-  if (isClockwise) {
-    // 時計回り: 下から上へ弧を描き、折れ曲がりで終わる（左に膨らむ）
-    const ax = arrowSize * Math.sin((arrowAngle * Math.PI) / 180);
-    const ay = arrowSize * Math.cos((arrowAngle * Math.PI) / 180);
-    // 弧を描いてから折れ曲がり部分へ
-    return `M 0,${r} A ${r},${r} 0 0 1 0,${-r} L ${ax},${-r + ay}`;
-  }
-  // 反時計回り: 上から下へ弧を描き、折れ曲がりで終わる（左に膨らむ）
-  // sweep-flag=0 で反時計回り方向に弧を描く（左に膨らむ）
-  // 左の円: 左上に折れ曲がる、右の円（180度回転）: 右下に折れ曲がる
-  const ax = arrowSize * Math.sin((arrowAngle * Math.PI) / 180);
-  const ay = arrowSize * Math.cos((arrowAngle * Math.PI) / 180);
-  return `M 0,${-r} A ${r},${r} 0 0 0 0,${r} L ${ax},${r - ay}`;
+const TRACK_COLOR = "rgba(251, 191, 36, 0.18)";
+const DOT_COLOR = "rgba(251, 191, 36, 0.75)";
+
+// 左に膨らむ半円パス（時計回りは下→上、反時計回りは上→下）
+const createSemiCirclePath = (isClockwise: boolean): string =>
+  isClockwise
+    ? `M 0,${RADIUS} A ${RADIUS},${RADIUS} 0 0 1 0,${-RADIUS}`
+    : `M 0,${-RADIUS} A ${RADIUS},${RADIUS} 0 0 0 0,${RADIUS}`;
+
+const SemiCircle = ({
+  isClockwise,
+  className,
+  label,
+}: {
+  isClockwise: boolean;
+  className: string;
+  label: string;
+}) => {
+  // 点は始点に置き、円の中心を軸に180度回転させて半円をなぞる
+  const startY = isClockwise ? RADIUS : -RADIUS;
+  const endAngle = isClockwise ? 180 : -180;
+
+  return (
+    <svg
+      aria-label={label}
+      className={className}
+      height="200"
+      role="img"
+      style={{ overflow: "visible" }}
+      viewBox="-100 -100 200 200"
+      width="200"
+    >
+      <path
+        d={createSemiCirclePath(isClockwise)}
+        fill="none"
+        stroke={TRACK_COLOR}
+        strokeLinecap="round"
+        strokeWidth="2"
+      />
+      <circle cx="0" cy={startY} fill={DOT_COLOR} opacity="0" r="4">
+        <animateTransform
+          attributeName="transform"
+          calcMode="spline"
+          dur={`${DURATION}s`}
+          from="0 0 0"
+          keySplines="0.45 0 0.55 1"
+          keyTimes="0;1"
+          repeatCount="indefinite"
+          to={`${endAngle} 0 0`}
+          type="rotate"
+        />
+        {/* 両端ではふわっと現れて消える */}
+        <animate
+          attributeName="opacity"
+          dur={`${DURATION}s`}
+          keyTimes="0;0.15;0.85;1"
+          repeatCount="indefinite"
+          values="0;1;1;0"
+        />
+      </circle>
+    </svg>
+  );
 };
 
 export const TurnDirectionIndicator = ({ direction }: Props) => {
   const isClockwise = direction === 1;
 
-  // 左右とも同じパスを使い、右側は180度回転で点対称にする
-  const path = createSemiCirclePath(isClockwise);
-
   // テーブルサイズ: 900x360
+  // 右側は左側を180度回転して点対称に配置する
   return (
     <div className="pointer-events-none relative h-[360px] w-[900px]">
-      {/* 左側の半円矢印 */}
-      <svg
-        aria-label={isClockwise ? "時計回り（左）" : "反時計回り（左）"}
+      <SemiCircle
         className="absolute left-[125px] top-1/2 -translate-y-1/2"
-        height="200"
-        role="img"
-        style={{ overflow: "visible" }}
-        viewBox="-100 -100 200 200"
-        width="200"
-      >
-        <motion.path
-          animate={{ pathLength: 1, opacity: 1 }}
-          d={path}
-          fill="none"
-          initial={{ pathLength: 0, opacity: 0 }}
-          key={`left-${direction}`}
-          stroke="rgba(251, 191, 36, 0.7)"
-          strokeLinecap="butt"
-          strokeLinejoin="round"
-          strokeWidth="3"
-          transition={{
-            pathLength: {
-              duration: 2.0,
-              ease: "easeInOut",
-              repeat: Number.POSITIVE_INFINITY,
-              repeatDelay: 0.5,
-            },
-            opacity: {
-              duration: 0.01,
-              repeat: Number.POSITIVE_INFINITY,
-              repeatDelay: 2.49,
-            },
-          }}
-        />
-      </svg>
-
-      {/* 右側の半円矢印（左側を180度回転して点対称に配置） */}
-      <svg
-        aria-label={isClockwise ? "時計回り（右）" : "反時計回り（右）"}
+        isClockwise={isClockwise}
+        key={`left-${direction}`}
+        label={isClockwise ? "時計回り（左）" : "反時計回り（左）"}
+      />
+      <SemiCircle
         className="absolute right-[125px] top-1/2 -translate-y-1/2 rotate-180"
-        height="200"
-        role="img"
-        style={{ overflow: "visible" }}
-        viewBox="-100 -100 200 200"
-        width="200"
-      >
-        <motion.path
-          animate={{ pathLength: 1, opacity: 1 }}
-          d={path}
-          fill="none"
-          initial={{ pathLength: 0, opacity: 0 }}
-          key={`right-${direction}`}
-          stroke="rgba(251, 191, 36, 0.7)"
-          strokeLinecap="butt"
-          strokeLinejoin="round"
-          strokeWidth="3"
-          transition={{
-            pathLength: {
-              duration: 2.0,
-              ease: "easeInOut",
-              repeat: Number.POSITIVE_INFINITY,
-              repeatDelay: 0.5,
-            },
-            opacity: {
-              duration: 0.01,
-              repeat: Number.POSITIVE_INFINITY,
-              repeatDelay: 2.49,
-            },
-          }}
-        />
-      </svg>
+        isClockwise={isClockwise}
+        key={`right-${direction}`}
+        label={isClockwise ? "時計回り（右）" : "反時計回り（右）"}
+      />
     </div>
   );
 };
