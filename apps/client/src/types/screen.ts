@@ -18,18 +18,3 @@ export type ScreenState =
 export interface PlayerInfo {
   name: string;
 }
-
-// アプリ全体の状態
-export interface AppState {
-  screen: ScreenState;
-  player: PlayerInfo | null;
-}
-
-// アクション型
-export type AppAction =
-  | { type: "SET_PLAYER_NAME"; name: string }
-  | { type: "NAVIGATE_TO_LOBBY" }
-  | { type: "NAVIGATE_TO_CREATE_ROOM" }
-  | { type: "NAVIGATE_TO_WAITING_ROOM"; roomId: string }
-  | { type: "NAVIGATE_TO_GAME"; roomId: string }
-  | { type: "NAVIGATE_TO_TITLE" };

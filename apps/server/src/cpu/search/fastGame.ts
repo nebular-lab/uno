@@ -17,11 +17,6 @@ export interface FastState {
   result?: number[];
 }
 
-export type FastAction =
-  | { kind: "play"; cards: CardKind[] }
-  | { kind: "draw" }
-  | { kind: "drawStack" };
-
 const COLORS = ["red", "blue", "green", "yellow"];
 const SYMBOLS = new Set([
   "skip",
@@ -31,19 +26,6 @@ const SYMBOLS = new Set([
   "draw4",
   "force-change",
 ]);
-
-export function cloneState(state: FastState): FastState {
-  return {
-    hands: state.hands.map((h) => h.slice()),
-    deck: state.deck.slice(),
-    top: state.top,
-    color: state.color,
-    drawStack: state.drawStack,
-    turn: state.turn,
-    direction: state.direction,
-    result: state.result,
-  };
-}
 
 export function handTotal(hand: CardKind[]): number {
   let sum = 0;

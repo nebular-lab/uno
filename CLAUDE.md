@@ -43,11 +43,8 @@ dobon-uno/
 │   └── shared/              # @dobon-uno/shared - 共通型定義・定数
 │       └── src/
 │           ├── schema/      # Colyseusスキーマクラス
-│           ├── action.ts    # アクション型定義
 │           └── card.ts      # カード定数
 ├── doc/                     # ドキュメント
-│   ├── schema.md            # スキーマ定義
-│   ├── action.md            # アクション定義
 │   └── spec/                # 仕様書
 ├── .husky/                  # Git hooks
 ├── pnpm-workspace.yaml

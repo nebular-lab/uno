@@ -48,8 +48,3 @@ export interface PassEventData {
 
 // 最新のパスイベント
 export const passEventAtom = atom<PassEventData | null>(null);
-
-// アニメーション中かどうか
-export const isAnimatingAtom = atom(
-  (get) => get(currentAnimationAtom) !== null,
-);

@@ -9,7 +9,7 @@ import {
 } from "../atoms/connectionAtoms";
 
 // 型のre-export
-export type { ClientCard, ClientPlayer } from "../types/connection";
+export type { ClientCard } from "../types/connection";
 
 export const useGameRoom = () => {
   const gameRoomState = useAtomValue(gameStateAtom);
