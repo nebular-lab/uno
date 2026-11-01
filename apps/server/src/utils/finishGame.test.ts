@@ -109,6 +109,16 @@ describe("finishGame ユーティリティ", () => {
       expect(result.handPoints.get("playerC")).toBe(20);
     });
 
+    it("各プレイヤーの名前が記録される", () => {
+      const playerA = createPlayer("playerA", []);
+      playerA.name = "Alice";
+      state.players.set("playerA", playerA);
+
+      const result = createGameResult(state, "playerA", "normal", new Map());
+
+      expect(result.playerNames.get("playerA")).toBe("Alice");
+    });
+
     it("gameHistoryの長さに応じてgameNumberが設定される", () => {
       // 既に2ゲーム終了している状態を模擬
       state.gameHistory.push(createGameResult(state, "x", "normal", new Map()));

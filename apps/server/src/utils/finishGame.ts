@@ -74,8 +74,9 @@ export function createGameResult(
     result.scoreChanges.set(playerId, change);
   }
 
-  // 終了時点の各プレイヤーの手札合計点数を記録（結果表示用）
+  // 終了時点の各プレイヤーの名前と手札合計点数を記録（結果表示用）
   for (const [playerId, player] of state.players.entries()) {
+    result.playerNames.set(playerId, player.name);
     result.handPoints.set(
       playerId,
       player.myHand.reduce((sum, card) => sum + card.points, 0),

@@ -15,8 +15,25 @@ export const ScorePanel = ({
   gameHistory,
   players,
 }: Props) => {
-  // 参加しているプレイヤーのみ（null除外）
-  const activePlayers = players.filter((p): p is ClientPlayer => p !== null);
+  // 成績表の列: 参加中のプレイヤー（席順）のあとに、成績が残っている退席したプレイヤーを並べる
+  const columns: { sessionId: string; name: string; hasLeft: boolean }[] =
+    players
+      .filter((p): p is ClientPlayer => p !== null)
+      .map((p) => ({ sessionId: p.sessionId, name: p.name, hasLeft: false }));
+  for (const result of gameHistory) {
+    for (const sessionId of Object.keys(result.scoreChanges)) {
+      if (columns.some((c) => c.sessionId === sessionId)) continue;
+      // 名前は最後に参加したゲームのものを使う
+      const lastResult = gameHistory.findLast(
+        (r) => r.playerNames[sessionId] !== undefined,
+      );
+      columns.push({
+        sessionId,
+        name: lastResult?.playerNames[sessionId] ?? "",
+        hasLeft: true,
+      });
+    }
+  }
 
   // 各プレイヤーの累計スコアを計算
   const getTotalScore = (sessionId: string): number => {
@@ -46,16 +63,22 @@ export const ScorePanel = ({
             <div
               className="grid border-b border-slate-600"
               style={{
-                gridTemplateColumns: `80px repeat(${activePlayers.length}, 1fr)`,
+                gridTemplateColumns: `80px repeat(${columns.length}, 1fr)`,
               }}
             >
               <div className="px-3 py-3 text-left text-slate-300">ゲーム</div>
-              {activePlayers.map((player) => (
+              {columns.map((column) => (
                 <div
-                  className="px-3 py-3 text-center text-slate-300"
-                  key={player.sessionId}
+                  className={cn(
+                    "px-3 py-3 text-center",
+                    column.hasLeft ? "text-slate-500" : "text-slate-300",
+                  )}
+                  key={column.sessionId}
                 >
-                  {player.name}
+                  {column.name}
+                  {column.hasLeft && (
+                    <span className="ml-1 text-xs">（退席）</span>
+                  )}
                 </div>
               ))}
             </div>
@@ -67,14 +90,25 @@ export const ScorePanel = ({
                   className="grid border-b border-slate-700"
                   key={result.gameNumber}
                   style={{
-                    gridTemplateColumns: `80px repeat(${activePlayers.length}, 1fr)`,
+                    gridTemplateColumns: `80px repeat(${columns.length}, 1fr)`,
                   }}
                 >
                   <div className="px-3 py-2 text-slate-400">
                     #{result.gameNumber}
                   </div>
-                  {activePlayers.map((player) => {
-                    const score = result.scoreChanges[player.sessionId] ?? 0;
+                  {columns.map((column) => {
+                    const score = result.scoreChanges[column.sessionId];
+                    // そのゲームに参加していなかった（退席後など）場合は「-」
+                    if (score === undefined) {
+                      return (
+                        <div
+                          className="px-3 py-2 text-center font-mono text-slate-600"
+                          key={column.sessionId}
+                        >
+                          -
+                        </div>
+                      );
+                    }
                     return (
                       <div
                         className={cn(
@@ -83,7 +117,7 @@ export const ScorePanel = ({
                           score < 0 && "text-red-400",
                           score === 0 && "text-slate-400",
                         )}
-                        key={player.sessionId}
+                        key={column.sessionId}
                       >
                         {score > 0 ? `+${score}` : score}
                       </div>
@@ -97,12 +131,12 @@ export const ScorePanel = ({
             <div
               className="grid border-t border-slate-600 font-bold"
               style={{
-                gridTemplateColumns: `80px repeat(${activePlayers.length}, 1fr)`,
+                gridTemplateColumns: `80px repeat(${columns.length}, 1fr)`,
               }}
             >
               <div className="px-3 py-3 text-white">累計</div>
-              {activePlayers.map((player) => {
-                const score = getTotalScore(player.sessionId);
+              {columns.map((column) => {
+                const score = getTotalScore(column.sessionId);
                 return (
                   <div
                     className={cn(
@@ -111,7 +145,7 @@ export const ScorePanel = ({
                       score < 0 && "text-red-400",
                       score === 0 && "text-slate-400",
                     )}
-                    key={player.sessionId}
+                    key={column.sessionId}
                   >
                     {score > 0 ? `+${score}` : score}
                   </div>
