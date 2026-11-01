@@ -384,11 +384,10 @@ export const GameScreen = () => {
           player !== null &&
           dobonPlayerIds.includes(player.sessionId) &&
           !showScorePanel;
-        // 手札公開中に表示する、手札の合計点数とこのゲームの得点変動
+        // 手札公開中に表示する、このゲームの得点変動
         const scoreResult =
           phase === "result" && showScoreChanges && player
             ? {
-                handPoints: latestGameResult?.handPoints[player.sessionId] ?? 0,
                 change: latestGameResult?.scoreChanges[player.sessionId] ?? 0,
               }
             : undefined;
@@ -557,11 +556,11 @@ export const GameScreen = () => {
         </div>
       )}
 
-      {/* レート倍率（山札切れが続いて2倍以上になっているときだけ表示） */}
+      {/* レート倍率（山札の上。山札切れが続いて2倍以上になっているときだけ表示） */}
       {rateMultiplier > 1 && (
-        <div className="absolute left-1/2 top-[calc(38%-110px)] z-10 -translate-x-1/2">
-          <div className="rounded-full border-2 border-amber-300 bg-amber-500 px-4 py-1 font-bold text-black shadow-lg">
-            レート ×{rateMultiplier}
+        <div className="absolute left-[calc(50%-120px)] top-[calc(38%-64px)] z-10 -translate-x-1/2 -translate-y-1/2">
+          <div className="whitespace-nowrap rounded-full border-2 border-amber-300 bg-amber-500 px-3 py-0.5 text-sm font-bold text-black shadow-lg">
+            レート x{rateMultiplier}
           </div>
         </div>
       )}
