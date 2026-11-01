@@ -1,6 +1,15 @@
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import type { ClientGameResult, ClientPlayer } from "@/types/connection";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import { ScoreChart } from "./ScoreChart";
+
+type ViewMode = "table" | "chart";
+
+const VIEW_MODES: { value: ViewMode; label: string }[] = [
+  { value: "table", label: "表" },
+  { value: "chart", label: "グラフ" },
+];
 
 type Props = {
   isOpen: boolean;
@@ -15,6 +24,8 @@ export const ScorePanel = ({
   gameHistory,
   players,
 }: Props) => {
+  const [viewMode, setViewMode] = useState<ViewMode>("table");
+
   // 参加しているプレイヤーのみ（null除外）
   const activePlayers = players.filter((p): p is ClientPlayer => p !== null);
 
@@ -36,11 +47,34 @@ export const ScorePanel = ({
           <DialogTitle>スコアボード</DialogTitle>
         </DialogHeader>
 
-        {/* テーブル */}
+        {gameHistory.length > 0 && (
+          <div className="flex justify-end">
+            <div className="flex rounded-lg bg-slate-900/60 p-1">
+              {VIEW_MODES.map((mode) => (
+                <button
+                  className={cn(
+                    "rounded-md px-4 py-1 text-sm transition-colors",
+                    viewMode === mode.value
+                      ? "bg-slate-600 text-white"
+                      : "text-slate-400 hover:text-slate-200",
+                  )}
+                  key={mode.value}
+                  onClick={() => setViewMode(mode.value)}
+                  type="button"
+                >
+                  {mode.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {gameHistory.length === 0 ? (
           <div className="flex h-full items-center justify-center text-slate-400">
             まだゲーム結果がありません
           </div>
+        ) : viewMode === "chart" ? (
+          <ScoreChart gameHistory={gameHistory} players={activePlayers} />
         ) : (
           <div className="flex min-h-0 flex-1 flex-col">
             {/* 固定ヘッダー */}
