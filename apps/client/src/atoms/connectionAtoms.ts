@@ -28,7 +28,6 @@ import {
 } from "./animationAtoms";
 import { playerAtom, screenAtom } from "./appAtoms";
 import {
-  deckPositionAtom,
   fieldCardPositionAtom,
   playerSeatPositionsAtom,
 } from "./cardPositionAtom";
@@ -292,24 +291,6 @@ const setupRoomStateSync = (
 
   // ドローアニメーションイベントを購読
   room.onMessage("drawCardAnimation", (event: DrawCardAnimationEvent) => {
-    // displayIndexを計算
-    const gamePlayState = store.get(gamePlayStateAtom);
-    const mySeatIndex = gamePlayState.players.findIndex(
-      (p) => p !== null && p.sessionId === getViewSessionId(),
-    );
-    const seatIndex = event.seatId - 1;
-    const displayIndex =
-      mySeatIndex === -1 ? seatIndex : (seatIndex - mySeatIndex + 3 + 6) % 6;
-
-    // 開始位置（山札）をスナップショット
-    const deckPosition = store.get(deckPositionAtom);
-    const startPosition = deckPosition ? { ...deckPosition } : null;
-
-    // 終了位置（プレイヤーシート）をスナップショット
-    const seatPositions = store.get(playerSeatPositionsAtom);
-    const seatPos = seatPositions[displayIndex];
-    const endPosition = seatPos ? { ...seatPos } : null;
-
     const animation: DrawCardAnimation = {
       id: `draw-${Date.now()}`,
       playerId: event.playerId,
@@ -317,8 +298,6 @@ const setupRoomStateSync = (
       cardCount: event.cardCount,
       startTime: Date.now(),
       duration: event.animationDuration,
-      startPosition,
-      endPosition,
     };
 
     store.set(currentDrawAnimationAtom, animation);

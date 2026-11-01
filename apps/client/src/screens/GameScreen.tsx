@@ -1,9 +1,12 @@
 import { FINISH_DISPLAY_DURATION, SCORE_PANEL_DELAY } from "@dobon-uno/shared";
-import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { useAtom, useAtomValue } from "jotai";
 import { BookOpen, Eye, LogOut, Settings } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { currentAnimationAtom, passEventAtom } from "@/atoms/animationAtoms";
-import { deckPositionAtom } from "@/atoms/cardPositionAtom";
+import {
+  currentAnimationAtom,
+  currentDrawAnimationAtom,
+  passEventAtom,
+} from "@/atoms/animationAtoms";
 import { selectedCardIdsAtom } from "@/atoms/selectedCardAtom";
 import { ActionButtons } from "@/components/game/ActionButtons";
 import { CountdownOverlay } from "@/components/game/CountdownOverlay";
@@ -165,27 +168,6 @@ export const GameScreen = () => {
   }, [phase]);
   const [selectedCardIds, setSelectedCardIds] = useAtom(selectedCardIdsAtom);
   const currentAnimation = useAtomValue(currentAnimationAtom);
-  const setDeckPosition = useSetAtom(deckPositionAtom);
-  const deckRef = useRef<HTMLDivElement>(null);
-
-  // 山札の位置を報告
-  useEffect(() => {
-    const updateDeckPosition = () => {
-      if (deckRef.current) {
-        const rect = deckRef.current.getBoundingClientRect();
-        setDeckPosition({
-          x: rect.left + rect.width / 2,
-          y: rect.top + rect.height / 2,
-          width: rect.width,
-          height: rect.height,
-        });
-      }
-    };
-
-    updateDeckPosition();
-    window.addEventListener("resize", updateDeckPosition);
-    return () => window.removeEventListener("resize", updateDeckPosition);
-  }, [setDeckPosition]);
 
   // アニメーション中は前の状態を保持するための参照
   const displayedFieldCardsRef = useRef<{
@@ -307,6 +289,32 @@ export const GameScreen = () => {
     prevPassEventRef.current = passEvent;
   }, [passEvent]);
 
+  // カードを引いた枚数（+N）表示（パス表示と同じく席の上に2秒間表示）
+  const [drawCounts, setDrawCounts] = useState<Map<string, number>>(new Map());
+  const drawTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
+    new Map(),
+  );
+  const drawAnimation = useAtomValue(currentDrawAnimationAtom);
+  useEffect(() => {
+    if (!drawAnimation) return;
+    const id = drawAnimation.playerId;
+    setDrawCounts((m) => new Map(m).set(id, drawAnimation.cardCount));
+
+    const existing = drawTimersRef.current.get(id);
+    if (existing) clearTimeout(existing);
+    drawTimersRef.current.set(
+      id,
+      setTimeout(() => {
+        setDrawCounts((m) => {
+          const next = new Map(m);
+          next.delete(id);
+          return next;
+        });
+        drawTimersRef.current.delete(id);
+      }, 2000),
+    );
+  }, [drawAnimation]);
+
   // 観戦中で視点が未選択（または視点のプレイヤーが退出した）なら視点選択を必須にする
   const isViewpointRequired =
     isSpectator && viewpointPlayer === null && playerCount > 0;
@@ -388,6 +396,7 @@ export const GameScreen = () => {
               >
                 <PlayerSeat
                   displayIndex={displayIndex}
+                  drawCount={drawCounts.get(player.sessionId)}
                   finishType={latestGameResult?.finishType}
                   isChoosingColor={isOtherPlayerChoosingColor}
                   isCurrentPlayer={isCurrentTurn}
@@ -415,6 +424,7 @@ export const GameScreen = () => {
               >
                 <PlayerSeat
                   displayIndex={displayIndex}
+                  drawCount={drawCounts.get(player.sessionId)}
                   finishType={latestGameResult?.finishType}
                   isChoosingColor={isOtherPlayerChoosingColor}
                   isCurrentPlayer={isCurrentTurn}
@@ -433,6 +443,7 @@ export const GameScreen = () => {
           return (
             <PlayerSeat
               displayIndex={displayIndex}
+              drawCount={drawCounts.get(player.sessionId)}
               finishType={latestGameResult?.finishType}
               isChoosingColor={isOtherPlayerChoosingColor}
               isCurrentPlayer={isCurrentTurn}
@@ -529,10 +540,7 @@ export const GameScreen = () => {
 
       {/* 山札の残り枚数（テーブル左寄り、waitingフェーズでは非表示） */}
       {phase !== "waiting" && (
-        <div
-          className="absolute left-[calc(50%-120px)] top-[38%] z-10 -translate-x-1/2 -translate-y-1/2"
-          ref={deckRef}
-        >
+        <div className="absolute left-[calc(50%-120px)] top-[38%] z-10 -translate-x-1/2 -translate-y-1/2">
           <div className="flex size-16 items-center justify-center rounded-full bg-slate-700 border-2 border-slate-500 shadow-lg">
             <span className="font-bold text-white text-xl">{deckCount}</span>
           </div>

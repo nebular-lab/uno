@@ -360,7 +360,7 @@ export const PlayerSeat = ({
         </div>
       )}
       {/* カードを引いた枚数（+N） */}
-      {drawCount !== undefined && drawCount > 0 && (
+      {drawCount !== undefined && drawCount > 0 && !isPass && (
         <div
           className={cn(
             "absolute -top-5 -translate-x-1/2 whitespace-nowrap rounded-full bg-blue-500 px-3 py-1 text-sm font-bold text-white shadow-lg z-20",

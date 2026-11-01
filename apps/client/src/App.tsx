@@ -11,7 +11,6 @@ import {
   resetDisconnectedAtom,
 } from "./atoms/connectionAtoms";
 import { CardPlayAnimation } from "./components/game/CardPlayAnimation";
-import { DrawCountIndicator } from "./components/game/DrawCountIndicator";
 import { ScalableContainer } from "./components/ScalableContainer";
 import { Button } from "./components/ui/button";
 import {
@@ -125,9 +124,6 @@ function App() {
       {/* カードアニメーション（ScalableContainerの外でビューポート基準で表示） */}
       {(screen.screen === "game" || screen.screen === "waitingRoom") && (
         <CardPlayAnimation />
-      )}
-      {(screen.screen === "game" || screen.screen === "waitingRoom") && (
-        <DrawCountIndicator />
       )}
     </>
   );
