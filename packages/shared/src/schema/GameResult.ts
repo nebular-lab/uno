@@ -7,5 +7,6 @@ export class GameResult extends Schema {
   @type({ map: "string" }) playerNames = new MapSchema<string>(); // sessionId -> プレイヤー名（退席後も成績表に名前を出すため）
   @type("number") timestamp: number = 0; // ゲーム終了時刻（ミリ秒）
   @type("string") winnerId: string = ""; // 勝者のsessionId
-  @type("string") finishType: string = ""; // "normal" | "dobon" | "dobonReturn"
+  @type("string") finishType: string = ""; // "normal" | "dobon" | "dobonReturn" | "deckOut"（流局）
+  @type("number") rateMultiplier: number = 1; // このゲームのレート倍率
 }

@@ -119,12 +119,16 @@ export async function simulateGames(
       // 同じ配牌は同じ人から始め、山札切れの倍率も持ち越さない
       room.state.nextGameStartPlayerId = "";
       room.state.rateMultiplier = 1;
+      room.state.consecutiveDeckouts = 0;
     }
     const outcome = await playOneGame(room, playerIds, deciders);
     if (outcome === "stall") stalls++;
 
-    const finished = room.state.gameHistory.length > historyLength;
     const result = room.state.gameHistory[room.state.gameHistory.length - 1];
+    // 山札切れ（流局）も履歴に残るので、誰かが上がった場合だけ finished とする
+    const finished =
+      room.state.gameHistory.length > historyLength &&
+      result.finishType !== "deckOut";
     if (!finished && outcome !== "stall") deckOuts++;
 
     const gameScores = entrants.map(() => ({ seats: 0, score: 0 }));

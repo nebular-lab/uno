@@ -353,7 +353,7 @@ function describeEvent(event: GameLogEvent, state: GameState): string {
 
 function describeResult(state: GameState): string {
   const result = state.gameHistory[state.gameHistory.length - 1];
-  if (!result) return "山札切れで終了";
+  if (!result || result.finishType === "deckOut") return "山札切れで終了";
   const type =
     result.finishType === "normal"
       ? "上がり"

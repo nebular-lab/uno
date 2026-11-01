@@ -310,5 +310,53 @@ describe("DrawCardCommand", () => {
       expect(room.state.deckCount).toBe(0);
       expect(room.state.phase).toBe("result");
     });
+
+    it("流局として全員0点の結果が追加され、次のゲームのレートが2倍になる", async () => {
+      const { room, owner, player2, player3 } = await setupWithHands(
+        testCards.red5,
+        dummyHand(100),
+        dummyHand(200),
+        dummyHand(300),
+        [testCards.red3],
+      );
+
+      owner.send("drawCard");
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      expect(room.state.gameHistory.length).toBe(1);
+      const result = room.state.gameHistory[0];
+      expect(result.finishType).toBe("deckOut");
+      expect(result.winnerId).toBe("");
+      expect(result.rateMultiplier).toBe(1);
+      for (const client of [owner, player2, player3]) {
+        expect(result.scoreChanges.get(client.sessionId)).toBe(0);
+        expect(room.state.players.get(client.sessionId)?.score).toBe(0);
+      }
+
+      expect(room.state.consecutiveDeckouts).toBe(1);
+      expect(room.state.rateMultiplier).toBe(2);
+      // 山札を引いた人の次の手番の人から始める
+      expect(room.state.nextGameStartPlayerId).toBe(player2.sessionId);
+    });
+
+    it("流局が続くとレートが4倍、8倍と倍増し、結果にはそのゲームのレートが残る", async () => {
+      const { room, owner } = await setupWithHands(
+        testCards.red5,
+        dummyHand(100),
+        dummyHand(200),
+        dummyHand(300),
+        [testCards.red3],
+      );
+      // すでに1回流局している想定
+      room.state.consecutiveDeckouts = 1;
+      room.state.rateMultiplier = 2;
+
+      owner.send("drawCard");
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      expect(room.state.gameHistory[0].rateMultiplier).toBe(2);
+      expect(room.state.consecutiveDeckouts).toBe(2);
+      expect(room.state.rateMultiplier).toBe(4);
+    });
   });
 });

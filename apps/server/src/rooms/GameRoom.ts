@@ -31,11 +31,19 @@ import { createDeck, shuffleDeck } from "../utils/deck";
 export type DeckProvider = () => Card[];
 
 /**
+ * 動作確認用: 環境変数 DEBUG_DECK_SIZE を指定すると、シャッフル後の山札をその枚数に減らす
+ * （例: 31 なら4人で配り終えて最初の場札を出した時点で山札が2枚残る）
+ */
+const debugDeckSize = Number(process.env.DEBUG_DECK_SIZE) || undefined;
+
+/**
  * デフォルトのDeckProvider（本番用）
  * 山札を生成してシャッフルする
  */
-export const defaultDeckProvider: DeckProvider = () =>
-  shuffleDeck(createDeck());
+export const defaultDeckProvider: DeckProvider = () => {
+  const deck = shuffleDeck(createDeck());
+  return debugDeckSize ? deck.slice(-debugDeckSize) : deck;
+};
 
 // プレイヤーの最大人数（観戦者は含まない）
 export const MAX_PLAYERS = 6;
@@ -576,7 +584,7 @@ export class GameRoom extends Room<{
 
   /**
    * ゲーム状態をリセットする（次のゲーム開始前の状態に戻す）
-   * NormalFinishCommand、DobonCommand、DobonReturnCommandから呼び出される
+   * NormalFinishCommand、DobonCommand、DobonReturnCommand、DeckOutCommandから呼び出される
    */
   resetGameState() {
     // プレイヤー状態のリセット

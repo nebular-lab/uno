@@ -18,7 +18,7 @@ type Props = {
   isCutIn?: boolean; // カットイン中かどうか
   isUno?: boolean; // UNO（残り1枚）表示
   isPass?: boolean; // パス表示
-  scoreResult?: { handPoints: number; change: number }; // 手札の合計点数と得点変動（resultフェーズの手札公開中に表示）
+  scoreResult?: { change: number }; // このゲームの得点変動（resultフェーズの手札公開中に表示）
 };
 
 // 6人の位置定義（0:上中央 → 時計回り）
@@ -317,28 +317,22 @@ export const PlayerSeat = ({
       {isWinner && (
         <WinnerLabel displayIndex={posIndex} finishType={finishType} />
       )}
-      {/* 手札の合計点数と得点変動ラベル（resultフェーズの手札公開中） */}
+      {/* 得点変動ラベル（resultフェーズの手札公開中） */}
       {scoreResult && (
         <div
           className={cn(
-            "absolute -top-5 -translate-x-1/2 flex items-center gap-2 whitespace-nowrap rounded-full bg-slate-800 px-3 py-1 text-sm font-bold text-white shadow-lg z-20",
+            "absolute -top-5 -translate-x-1/2 whitespace-nowrap rounded-full bg-slate-800 px-3 py-1 text-sm font-bold shadow-lg z-20",
             labelPos,
+            scoreResult.change > 0
+              ? "text-emerald-400"
+              : scoreResult.change < 0
+                ? "text-rose-400"
+                : "text-slate-400",
           )}
         >
-          <span>手札 {scoreResult.handPoints}点</span>
-          <span
-            className={cn(
-              scoreResult.change > 0
-                ? "text-emerald-400"
-                : scoreResult.change < 0
-                  ? "text-rose-400"
-                  : "text-slate-400",
-            )}
-          >
-            {scoreResult.change > 0
-              ? `+${scoreResult.change}`
-              : scoreResult.change}
-          </span>
+          {scoreResult.change > 0
+            ? `+${scoreResult.change}`
+            : scoreResult.change}
         </div>
       )}
       {/* 色選択中ラベル */}

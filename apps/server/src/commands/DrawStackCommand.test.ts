@@ -396,6 +396,11 @@ describe("DrawStackCommand", () => {
       expect(room.state.deckCount).toBe(0);
       // ゲーム終了
       expect(room.state.phase).toBe("result");
+      // 流局として記録され、次のゲームのレートが2倍になる
+      expect(room.state.gameHistory[0].finishType).toBe("deckOut");
+      expect(room.state.rateMultiplier).toBe(2);
+      // 引ききれなかった累積は残さない
+      expect(room.state.drawStack).toBe(0);
     });
 
     it("累積分を全て引いた後に山札が0枚になった場合、ゲーム終了", async () => {
@@ -430,6 +435,9 @@ describe("DrawStackCommand", () => {
       expect(room.state.deckCount).toBe(0);
       // ゲーム終了
       expect(room.state.phase).toBe("result");
+      // 流局として記録され、次のゲームのレートが2倍になる
+      expect(room.state.gameHistory[0].finishType).toBe("deckOut");
+      expect(room.state.rateMultiplier).toBe(2);
     });
   });
 

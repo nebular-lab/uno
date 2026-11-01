@@ -53,7 +53,7 @@ export function calculateTotalHandPoints(
 /**
  * GameResultを作成
  * @param state ゲーム状態
- * @param winnerId 勝者のsessionId
+ * @param winnerId 勝者のsessionId（流局の場合は空文字）
  * @param finishType 終了タイプ
  * @param scoreChanges 各プレイヤーのスコア変動
  * @returns 作成されたGameResult
@@ -61,13 +61,14 @@ export function calculateTotalHandPoints(
 export function createGameResult(
   state: GameState,
   winnerId: string,
-  finishType: "normal" | "dobon" | "dobonReturn",
+  finishType: "normal" | "dobon" | "dobonReturn" | "deckOut",
   scoreChanges: Map<string, number>,
 ): GameResult {
   const result = new GameResult();
   result.gameNumber = state.gameHistory.length + 1;
   result.winnerId = winnerId;
   result.finishType = finishType;
+  result.rateMultiplier = state.rateMultiplier;
   result.timestamp = Date.now();
 
   for (const [playerId, change] of scoreChanges.entries()) {
