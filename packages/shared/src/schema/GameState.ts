@@ -41,6 +41,7 @@ export class GameState extends Schema {
   // ドボン関連
   @type("string") dobonTargetId: string = ""; // ドボンされた人のsessionId
   @type(["string"]) dobonPlayerIds = new ArraySchema<string>(); // ドボンした人のsessionIdリスト
+  @type("boolean") waitingForDobon: boolean = false; // ドボンできる人の判断待ち（その間はゲーム進行を止める）
 
   // ホスト設定
   @type("boolean") showTotalPoints: boolean = true; // 合計ポイント表示

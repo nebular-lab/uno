@@ -17,6 +17,8 @@ import { DrawStackCommand } from "../commands/DrawStackCommand";
 import { PassCommand } from "../commands/PassCommand";
 // Commands
 import { PlayCardCommand } from "../commands/PlayCardCommand";
+import { ResolveDobonWaitCommand } from "../commands/ResolveDobonWaitCommand";
+import { SkipDobonCommand } from "../commands/SkipDobonCommand";
 import { StartGameCommand } from "../commands/StartGameCommand";
 import { CPUPlayerService } from "../cpu/CPUPlayerService";
 import { GameLog } from "../cpu/GameLog";
@@ -145,6 +147,13 @@ export class GameRoom extends Room<{
     // ドボン
     this.onMessage("dobon", (client) => {
       this.dispatcher.dispatch(new DobonCommand(), {
+        sessionId: client.sessionId,
+      });
+    });
+
+    // ドボンしない
+    this.onMessage("skipDobon", (client) => {
+      this.dispatcher.dispatch(new SkipDobonCommand(), {
         sessionId: client.sessionId,
       });
     });
@@ -522,6 +531,11 @@ export class GameRoom extends Room<{
     const wasOwner = player.isOwner;
     this.state.players.delete(client.sessionId);
 
+    // ドボン待ちの間に抜けた場合、残りの人の判断で待ちを解決する
+    if (this.state.phase === "playing" && this.state.waitingForDobon) {
+      this.dispatcher.dispatch(new ResolveDobonWaitCommand());
+    }
+
     // 人間プレイヤーがいなくなったらCPUも削除（ルーム自動破棄のため）
     const hasHumanPlayer = Array.from(this.state.players.values()).some(
       (p) => !p.isCpu,
@@ -591,16 +605,21 @@ export class GameRoom extends Room<{
   async checkCPUTurn(): Promise<void> {
     if (this.state.phase !== "playing") return;
 
-    // 手番でないCPUのドボン・ドボン返し（カットインはしない）
+    // CPUのドボン・ドボン返しの判断（手番かどうかに関わらない。カットインはしない）
+    let isWaitingForDobonReturn = false;
     for (const player of this.state.players.values()) {
-      if (
-        player.isCpu &&
-        player.sessionId !== this.state.currentTurnPlayerId &&
-        (player.canDobon || player.canDobonReturn)
-      ) {
-        void this.cpuService.handleOffTurn(this.state, player, this.dispatcher);
+      if (player.canDobonReturn) isWaitingForDobonReturn = true;
+      if (player.isCpu && (player.canDobon || player.canDobonReturn)) {
+        void this.cpuService.handleDobonDecision(
+          this.state,
+          player,
+          this.dispatcher,
+        );
       }
     }
+
+    // ドボン待ち・ドボン返し待ちの間はゲームを進めない
+    if (this.state.waitingForDobon || isWaitingForDobonReturn) return;
 
     const currentPlayer = this.state.players.get(
       this.state.currentTurnPlayerId,
@@ -637,6 +656,7 @@ export class GameRoom extends Room<{
       player.playableCards.clear();
       player.timeRemaining = 0;
       player.drewCardSinceLastPlay = false;
+      player.declinedDobon = false;
     }
 
     // ゲーム状態のリセット
@@ -657,6 +677,7 @@ export class GameRoom extends Room<{
     // ドボン状態のリセット
     this.state.dobonTargetId = "";
     this.state.dobonPlayerIds.splice(0, this.state.dobonPlayerIds.length);
+    this.state.waitingForDobon = false;
 
     // 山札をクリア
     this.deck = [];

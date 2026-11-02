@@ -69,6 +69,7 @@ export const MyHand = ({ disabled }: Props) => {
     canDobon,
     canDobonReturn,
     dobon,
+    skipDobon,
     dobonReturn,
     showTotalPoints,
     highlightPlayableCards,
@@ -220,14 +221,22 @@ export const MyHand = ({ disabled }: Props) => {
         </div>
       )}
       {/* ドボンできるときだけ画面中央に大きく表示する（観戦中は出さない） */}
+      {/* 判断するまでゲームは止まるので、ドボンしないボタンも並べる */}
       {!isSpectator && canDobon && (
-        <div className="fixed left-1/2 top-[53%] z-50 -translate-x-1/2 -translate-y-1/2 animate-in fade-in zoom-in-90 duration-300">
+        <div className="fixed left-1/2 top-[53%] z-50 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-3 animate-in fade-in zoom-in-90 duration-300">
           <Button
             className="dobon-glow h-[96px] w-[240px] rounded-2xl border-4 border-yellow-300 bg-purple-600 text-white hover:bg-purple-500"
             onClick={dobon}
             variant="ghost"
           >
             <span className="text-5xl font-black tracking-widest">ドボン</span>
+          </Button>
+          <Button
+            className="h-[44px] w-[160px] rounded-xl bg-gray-600/90 text-white hover:bg-gray-500"
+            onClick={skipDobon}
+            variant="ghost"
+          >
+            <span className="text-base font-bold">ドボンしない</span>
           </Button>
         </div>
       )}
