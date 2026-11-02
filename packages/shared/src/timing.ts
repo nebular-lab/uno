@@ -1,7 +1,7 @@
-/** CPUの思考時間として選べる値（ミリ秒）。先頭がデフォルト */
+/** CPUの思考時間として選べる値（ミリ秒） */
 export const CPU_THINKING_TIME_OPTIONS = [3000, 1500] as const;
 /** CPUの思考時間のデフォルト（ミリ秒） */
-export const DEFAULT_CPU_THINKING_TIME = CPU_THINKING_TIME_OPTIONS[0];
+export const DEFAULT_CPU_THINKING_TIME: (typeof CPU_THINKING_TIME_OPTIONS)[number] = 1500;
 
 /**
  * ゲーム終了後（resultフェーズ）の表示タイミング

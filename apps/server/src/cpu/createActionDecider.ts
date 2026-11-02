@@ -3,7 +3,7 @@ import type { GameLog } from "./GameLog";
 import { SearchActionDecider } from "./search/SearchActionDecider";
 
 // 先読みの量は Render の無料プラン（CPU 0.1コア・メモリ512MB）で賄える範囲にする。
-// 1000通りの仮定は1コアで約40ms、0.1コアで約0.4秒（思考時間の演出3秒に収まる）。
+// 1000通りの仮定は1コアで約40ms、0.1コアで約0.4秒（思考時間の演出1.5秒に収まる）。
 // CPU同士の対戦では、評価関数だけのCPUに1席あたり約+3点
 const SEARCH_SAMPLES = 1000;
 // CPUが遅い・混んでいるときの上限（ms）
