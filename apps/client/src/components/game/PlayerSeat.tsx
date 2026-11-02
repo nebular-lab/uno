@@ -317,17 +317,13 @@ export const PlayerSeat = ({
       {isWinner && (
         <WinnerLabel displayIndex={posIndex} finishType={finishType} />
       )}
-      {/* 得点変動ラベル（resultフェーズの手札公開中） */}
-      {scoreResult && (
+      {/* 得点変動ラベル（resultフェーズの手札公開中。収支が変わらない人には出さない） */}
+      {scoreResult && scoreResult.change !== 0 && (
         <div
           className={cn(
             "absolute -top-5 -translate-x-1/2 whitespace-nowrap rounded-full bg-slate-800 px-3 py-1 text-sm font-bold shadow-lg z-20",
             labelPos,
-            scoreResult.change > 0
-              ? "text-emerald-400"
-              : scoreResult.change < 0
-                ? "text-rose-400"
-                : "text-slate-400",
+            scoreResult.change > 0 ? "text-emerald-400" : "text-rose-400",
           )}
         >
           {scoreResult.change > 0
