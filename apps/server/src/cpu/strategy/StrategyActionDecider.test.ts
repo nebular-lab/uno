@@ -189,4 +189,31 @@ describe("StrategyActionDecider", () => {
       params: { color: "green" },
     });
   });
+
+  it("カットインして上がれるならカットインする", () => {
+    const cpu = createPlayer("cpu", [new Card("r7-2", "red", "7", 7)]);
+    setPlayable(cpu, "r7-2");
+    const state = createState(cpu, { b: 7, c: 7 });
+    state.currentTurnPlayerId = "c";
+
+    expect(
+      new StrategyActionDecider(new GameLog(), handTuned).decideCutIn(
+        state,
+        cpu,
+      ),
+    ).toEqual({ action: "playCard", params: { cardIds: ["r7-2"] } });
+  });
+
+  it("カットインできるカードがなければカットインしない", () => {
+    const cpu = createPlayer("cpu", [new Card("r5", "red", "5", 5)]);
+    const state = createState(cpu, { b: 7 });
+    state.currentTurnPlayerId = "b";
+
+    expect(
+      new StrategyActionDecider(new GameLog(), handTuned).decideCutIn(
+        state,
+        cpu,
+      ),
+    ).toBeUndefined();
+  });
 });

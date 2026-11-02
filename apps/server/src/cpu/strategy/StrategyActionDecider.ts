@@ -110,7 +110,6 @@ export type DecisionTraceListener = (
 
 /**
  * 公開情報と行動履歴から相手の手札合計を確率で読み、評価関数で行動を決めるCPU。
- * カットインはしない。
  */
 export class StrategyActionDecider implements ActionDecider {
   private readonly weights: StrategyWeights;
@@ -173,6 +172,33 @@ export class StrategyActionDecider implements ActionDecider {
       );
     }
     return dobon;
+  }
+
+  /**
+   * カットインするか。カードを出す手の評価が、出さずに手札を持ち続ける価値を上回るときだけする。
+   * （出した点数ちょうどの手札の人にドボンされそうなら見送る）
+   */
+  decideCutIn(state: GameState, me: Player): CPUDecision | undefined {
+    const hand = [...me.myHand];
+    const plays = listPlays(hand, me);
+    if (plays.length === 0) return undefined;
+
+    const view = this.observe(state, me);
+    const myTotal = sumPoints(hand);
+    let best: Card[] | undefined;
+    let bestScore = this.holdValue(myTotal, hand.length, view);
+    for (const cards of plays) {
+      const { score } = this.scorePlay(cards, hand.length, myTotal, view);
+      if (score > bestScore) {
+        best = cards;
+        bestScore = score;
+      }
+    }
+    if (!best) return undefined;
+    return {
+      action: "playCard",
+      params: { cardIds: best.map((c) => c.id) },
+    };
   }
 
   private trace(

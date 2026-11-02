@@ -10,4 +10,6 @@ export interface ActionDecider {
   decide(state: GameState, cpuPlayer: Player): Promise<CPUDecision>;
   // ドボンできるときに宣言するか（未実装なら常にドボンする）
   decideDobon?(state: GameState, cpuPlayer: Player): boolean;
+  // 手番でないときにカットインするか（カットインする手を返す。しないならundefined）
+  decideCutIn?(state: GameState, cpuPlayer: Player): CPUDecision | undefined;
 }

@@ -56,7 +56,7 @@ interface SearchProblem {
  * 読みに沿って相手の手札と山札を何通りも仮定し、ゲームの最後まで打ち切った点数を比べる。
  * 先読みの結果はばらつきが大きいので、同じ仮定の世界での点数差を取り、
  * 評価関数1位の手よりはっきり良いときだけ手を変える。
- * ドボン・ドボン返し・色選択は評価関数のCPUと同じ判断をする。
+ * ドボン・ドボン返し・色選択・カットインは評価関数のCPUと同じ判断をする。
  */
 export class SearchActionDecider implements ActionDecider {
   private readonly base: StrategyActionDecider;
@@ -104,6 +104,10 @@ export class SearchActionDecider implements ActionDecider {
 
   decideDobon(state: GameState, me: Player): boolean {
     return this.base.decideDobon(state, me);
+  }
+
+  decideCutIn(state: GameState, me: Player): CPUDecision | undefined {
+    return this.base.decideCutIn(state, me);
   }
 
   /** 候補手の番号を返す（0 は評価関数の1位） */

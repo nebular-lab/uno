@@ -605,7 +605,7 @@ export class GameRoom extends Room<{
   async checkCPUTurn(): Promise<void> {
     if (this.state.phase !== "playing") return;
 
-    // CPUのドボン・ドボン返しの判断（手番かどうかに関わらない。カットインはしない）
+    // CPUのドボン・ドボン返しの判断（手番かどうかに関わらない）
     let isWaitingForDobonReturn = false;
     for (const player of this.state.players.values()) {
       if (player.canDobonReturn) isWaitingForDobonReturn = true;
@@ -620,6 +620,13 @@ export class GameRoom extends Room<{
 
     // ドボン待ち・ドボン返し待ちの間はゲームを進めない
     if (this.state.waitingForDobon || isWaitingForDobonReturn) return;
+
+    // 手番でないCPUのカットインの判断
+    for (const player of this.state.players.values()) {
+      if (player.isCpu && player.sessionId !== this.state.currentTurnPlayerId) {
+        void this.cpuService.handleCutIn(this.state, player, this.dispatcher);
+      }
+    }
 
     const currentPlayer = this.state.players.get(
       this.state.currentTurnPlayerId,
