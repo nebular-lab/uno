@@ -3,6 +3,7 @@ import type { Card, PlayCardAnimationEvent } from "@dobon-uno/shared";
 import { CardEffectRegistry } from "../effects";
 import type { GameRoom } from "../rooms/GameRoom";
 import { CardEffectContextFactory } from "../services/CardEffectContextFactory";
+import { DobonWaitService } from "../services/DobonWaitService";
 import { PlayerActionUpdater } from "../services/PlayerActionUpdater";
 import { TimeoutHandler } from "../services/TimeoutHandler";
 import { advanceToNextPlayer, isSymbolCard } from "../utils/playerActions";
@@ -75,10 +76,11 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
     // カードを出したのでフラグをリセット
     player.hasDrawnCard = false;
 
-    // カードが出されたので全プレイヤーのdrewCardSinceLastPlayをリセット
-    // （カードを引いた後でも、誰かがカードを出したらドボン可能になる）
+    // カードが出されたので全プレイヤーのdrewCardSinceLastPlayとdeclinedDobonをリセット
+    // （カードを引いた後やドボンを見送った後でも、誰かがカードを出したらドボン可能になる）
     for (const p of this.state.players.values()) {
       p.drewCardSinceLastPlay = false;
+      p.declinedDobon = false;
     }
 
     // 重ね出し表示用に出したカード枚数を記録
@@ -133,6 +135,9 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
       cardPlayerId: sessionId,
       totalPlayedPoints,
     });
+
+    // ドボンできる人がいれば、全員の判断が出揃うまでゲーム進行を止める
+    if (new DobonWaitService(this.room).startIfNeeded()) return;
 
     // タイマー開始
     this.startCurrentPlayerTimer();
@@ -240,7 +245,6 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
     const totalPoints = playedCards.reduce((sum, card) => sum + card.points, 0);
 
     // 全プレイヤーのアクションをリセット
-    let anyoneCanDobon = false;
     for (const [sessionId, player] of this.state.players.entries()) {
       // playableCardsをクリア（カットイン不可）
       player.playableCards.clear();
@@ -252,7 +256,6 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
           0,
         );
         player.canDobon = handTotal === totalPoints;
-        if (player.canDobon) anyoneCanDobon = true;
       } else {
         player.canDobon = false;
       }
@@ -265,15 +268,12 @@ export class PlayCardCommand extends Command<GameRoom, Payload> {
       player.canDobonReturn = false;
     }
 
+    // ドボンできる人がいれば判断を待つ（誰もドボンしなければその時点で上がり確定）
     // 誰もドボンできない場合は即座に上がり確定
-    if (!anyoneCanDobon) {
+    if (!new DobonWaitService(this.room).startIfNeeded()) {
       this.room.dispatcher.dispatch(new NormalFinishCommand(), {
         sessionId: finishingPlayerId,
       });
-    } else {
-      // ドボン可能なプレイヤーがいる場合
-      // CPUプレイヤーのドボンをチェック
-      this.room.checkCPUTurn();
     }
   }
 

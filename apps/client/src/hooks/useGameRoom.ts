@@ -80,6 +80,11 @@ export const useGameRoom = () => {
     gameRoomState.room.send("dobon");
   }, [gameRoomState]);
 
+  const skipDobon = useCallback(() => {
+    if (gameRoomState.status !== "connected") return;
+    gameRoomState.room.send("skipDobon");
+  }, [gameRoomState]);
+
   const dobonReturn = useCallback(() => {
     if (gameRoomState.status !== "connected") return;
     gameRoomState.room.send("dobonReturn");
@@ -195,6 +200,7 @@ export const useGameRoom = () => {
     drawCard,
     drawStack,
     dobon,
+    skipDobon,
     dobonReturn,
     chooseColor,
     playCard,

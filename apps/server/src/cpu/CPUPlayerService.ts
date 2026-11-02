@@ -2,6 +2,7 @@ import type { Dispatcher } from "@colyseus/command";
 import type { GameState, Player } from "@dobon-uno/shared";
 import { DobonCommand } from "../commands/DobonCommand";
 import { DobonReturnCommand } from "../commands/DobonReturnCommand";
+import { SkipDobonCommand } from "../commands/SkipDobonCommand";
 import type { GameRoom } from "../rooms/GameRoom";
 import type { ActionDecider } from "./ActionDecider";
 import { createActionDecider } from "./createActionDecider";
@@ -14,13 +15,11 @@ import type { GameLog } from "./GameLog";
 
 export class CPUPlayerService {
   private decider: ActionDecider;
-  private quickActionDelay = 200; // 即決アクションの遅延（ms）
   private dobonReturnDelay = 3000; // ドボン返しの遅延（ms）
-  private dobonWaitDelay = 5000; // 他プレイヤーのドボン待ち時間（ms）
-  private offTurnDobonDelay = 1000; // 手番外のドボンの遅延（ms）
+  private dobonDecisionDelay = 1000; // ドボンする・しないを決めるまでの遅延（ms）
 
-  // 手番外のドボン・ドボン返しを待っているCPU（二重に宣言しないため）
-  private pendingOffTurn = new Set<string>();
+  // ドボン・ドボン返しの宣言を待っているCPU（二重に宣言しないため）
+  private pendingDobonDecision = new Set<string>();
 
   constructor(
     private readonly log: GameLog,
@@ -38,38 +37,10 @@ export class CPUPlayerService {
     if (!cpuPlayer.isCpu) return;
 
     // ドボン待ちなどで取れる行動がない
+    // （ドボン・ドボン返しは handleDobonDecision で扱う）
     if (!hasAnyAction(cpuPlayer)) return;
 
-    // ドボン返しが可能な場合は3秒後に実行
-    if (cpuPlayer.canDobonReturn) {
-      await this.delay(this.dobonReturnDelay);
-      await dispatcher.dispatch(new DobonReturnCommand(), {
-        sessionId: cpuPlayer.sessionId,
-      });
-      return;
-    }
-
-    // ドボンが可能な場合は即座に実行（ドボン返しされそうなら見送って手番を続ける）
-    if (cpuPlayer.canDobon && this.wantsDobon(state, cpuPlayer)) {
-      await this.delay(this.quickActionDelay);
-      await dispatcher.dispatch(new DobonCommand(), {
-        sessionId: cpuPlayer.sessionId,
-      });
-      return;
-    }
-
-    // 他のプレイヤーがドボン可能かチェック
-    const otherPlayersCanDobon = this.checkOtherPlayersCanDobon(
-      state,
-      cpuPlayer.sessionId,
-    );
-
-    // 他のプレイヤーがドボン可能な場合は5秒待つ
-    if (otherPlayersCanDobon) {
-      await this.delay(this.dobonWaitDelay);
-    }
-
-    // 待っている間にドボンなどで手番が終わっていれば何もしない
+    // 考えている間にドボンなどで手番が終わっていれば何もしない
     const stillMyTurn = () =>
       state.phase === "playing" &&
       state.currentTurnPlayerId === cpuPlayer.sessionId &&
@@ -97,36 +68,42 @@ export class CPUPlayerService {
   }
 
   /**
-   * 手番でないときのドボン・ドボン返し（カットインはしない）
+   * ドボン待ち・ドボン返し待ちでの判断（手番かどうかに関わらない。カットインはしない）
+   * ドボンできるときは、ドボンするかしないかを必ず宣言してゲーム進行を再開させる
    */
-  async handleOffTurn(
+  async handleDobonDecision(
     state: GameState,
     cpuPlayer: Player,
     dispatcher: Dispatcher<GameRoom>,
   ): Promise<void> {
     const { sessionId } = cpuPlayer;
-    if (this.pendingOffTurn.has(sessionId)) return;
+    if (this.pendingDobonDecision.has(sessionId)) return;
 
     if (cpuPlayer.canDobonReturn) {
-      this.pendingOffTurn.add(sessionId);
+      this.pendingDobonDecision.add(sessionId);
       try {
         await this.delay(this.dobonReturnDelay);
         dispatcher.dispatch(new DobonReturnCommand(), { sessionId });
       } finally {
-        this.pendingOffTurn.delete(sessionId);
+        this.pendingDobonDecision.delete(sessionId);
       }
       return;
     }
 
-    if (!cpuPlayer.canDobon || !this.wantsDobon(state, cpuPlayer)) return;
+    if (!cpuPlayer.canDobon) return;
 
-    this.pendingOffTurn.add(sessionId);
+    // ドボン返しされそうなら見送る
+    const wantsDobon = this.wantsDobon(state, cpuPlayer);
+    this.pendingDobonDecision.add(sessionId);
     try {
-      await this.delay(this.offTurnDobonDelay);
-      // 待っている間に次の人が動いてドボンできなくなっていれば、validateで弾かれる
-      dispatcher.dispatch(new DobonCommand(), { sessionId });
+      await this.delay(this.dobonDecisionDelay);
+      // 待っている間にドボン待ちが終わっていれば、validateで弾かれる
+      dispatcher.dispatch(
+        wantsDobon ? new DobonCommand() : new SkipDobonCommand(),
+        { sessionId },
+      );
     } finally {
-      this.pendingOffTurn.delete(sessionId);
+      this.pendingDobonDecision.delete(sessionId);
     }
   }
 
@@ -137,18 +114,6 @@ export class CPUPlayerService {
       console.error("CPU dobon decision error:", error);
       return true;
     }
-  }
-
-  private checkOtherPlayersCanDobon(
-    state: GameState,
-    cpuSessionId: string,
-  ): boolean {
-    for (const [sessionId, player] of state.players.entries()) {
-      if (sessionId !== cpuSessionId && player.canDobon) {
-        return true;
-      }
-    }
-    return false;
   }
 
   private delay(ms: number): Promise<void> {

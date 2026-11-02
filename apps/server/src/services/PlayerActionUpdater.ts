@@ -130,6 +130,12 @@ export class PlayerActionUpdater {
       return;
     }
 
+    // このカードへのドボンを見送った場合はドボン不可
+    if (player.declinedDobon) {
+      player.canDobon = false;
+      return;
+    }
+
     // カードを引いた後、まだ誰もカードを出していない場合はドボン不可
     if (player.drewCardSinceLastPlay) {
       player.canDobon = false;

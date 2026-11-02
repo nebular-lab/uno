@@ -41,7 +41,7 @@ export class DobonReturnCommand extends Command<GameRoom, Payload> {
     if (!player) return;
 
     // タイマー停止
-    this.room.turnTimerService.stopTimer(this.state.currentTurnPlayerId);
+    this.room.turnTimerService.stopTimer(sessionId);
 
     // ドボン返しフラグをオフに
     player.canDobonReturn = false;

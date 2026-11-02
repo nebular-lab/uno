@@ -3,6 +3,7 @@ import { Card, GameState, Player } from "@dobon-uno/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DobonCommand } from "../commands/DobonCommand";
 import { DobonReturnCommand } from "../commands/DobonReturnCommand";
+import { SkipDobonCommand } from "../commands/SkipDobonCommand";
 import type { GameRoom } from "../rooms/GameRoom";
 import type { ActionDecider } from "./ActionDecider";
 import { CPUPlayerService } from "./CPUPlayerService";
@@ -25,7 +26,7 @@ function createDispatcher() {
   };
 }
 
-describe("CPUPlayerService.handleOffTurn", () => {
+describe("CPUPlayerService.handleDobonDecision", () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -45,7 +46,7 @@ describe("CPUPlayerService.handleOffTurn", () => {
     cpu.playableCards.set("r5", true);
     const { dispatch, dispatcher } = createDispatcher();
 
-    const done = service.handleOffTurn(new GameState(), cpu, dispatcher);
+    const done = service.handleDobonDecision(new GameState(), cpu, dispatcher);
     await vi.runAllTimersAsync();
     await done;
 
@@ -54,7 +55,7 @@ describe("CPUPlayerService.handleOffTurn", () => {
     expect(decider.decide).not.toHaveBeenCalled();
   });
 
-  it("ドボンを見送ると判断したら宣言しない", async () => {
+  it("ドボンを見送ると判断したらドボンしないを宣言する", async () => {
     const service = new CPUPlayerService(new GameLog(), {
       decide: vi.fn(),
       decideDobon: () => false,
@@ -63,11 +64,12 @@ describe("CPUPlayerService.handleOffTurn", () => {
     cpu.canDobon = true;
     const { dispatch, dispatcher } = createDispatcher();
 
-    const done = service.handleOffTurn(new GameState(), cpu, dispatcher);
+    const done = service.handleDobonDecision(new GameState(), cpu, dispatcher);
     await vi.runAllTimersAsync();
     await done;
 
-    expect(dispatch).not.toHaveBeenCalled();
+    expect(dispatch).toHaveBeenCalledTimes(1);
+    expect(dispatch.mock.calls[0][0]).toBeInstanceOf(SkipDobonCommand);
   });
 
   it("手番でなくてもドボン返しする", async () => {
@@ -76,7 +78,7 @@ describe("CPUPlayerService.handleOffTurn", () => {
     cpu.canDobonReturn = true;
     const { dispatch, dispatcher } = createDispatcher();
 
-    const done = service.handleOffTurn(new GameState(), cpu, dispatcher);
+    const done = service.handleDobonDecision(new GameState(), cpu, dispatcher);
     await vi.runAllTimersAsync();
     await done;
 
@@ -92,8 +94,12 @@ describe("CPUPlayerService.handleOffTurn", () => {
     cpu.canDobon = true;
     const { dispatch, dispatcher } = createDispatcher();
 
-    const first = service.handleOffTurn(new GameState(), cpu, dispatcher);
-    const second = service.handleOffTurn(new GameState(), cpu, dispatcher);
+    const first = service.handleDobonDecision(new GameState(), cpu, dispatcher);
+    const second = service.handleDobonDecision(
+      new GameState(),
+      cpu,
+      dispatcher,
+    );
     await vi.runAllTimersAsync();
     await Promise.all([first, second]);
 

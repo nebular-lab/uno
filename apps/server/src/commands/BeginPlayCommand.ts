@@ -2,6 +2,7 @@ import { Command } from "@colyseus/command";
 import { CardEffectRegistry } from "../effects";
 import type { GameRoom } from "../rooms/GameRoom";
 import { CardEffectContextFactory } from "../services/CardEffectContextFactory";
+import { DobonWaitService } from "../services/DobonWaitService";
 import { PlayerActionUpdater } from "../services/PlayerActionUpdater";
 import { TimeoutHandler } from "../services/TimeoutHandler";
 
@@ -31,6 +32,9 @@ export class BeginPlayCommand extends Command<GameRoom> {
     // 各プレイヤーのアクション可否を更新
     const actionUpdater = new PlayerActionUpdater(this.state);
     actionUpdater.update({ isFirstCardWild });
+
+    // 最初の場札でドボンできる人がいれば、全員の判断が出揃うまでゲーム進行を止める
+    if (new DobonWaitService(this.room).startIfNeeded()) return;
 
     // タイマー開始
     this.startCurrentPlayerTimer();
