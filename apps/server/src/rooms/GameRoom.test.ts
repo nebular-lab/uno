@@ -1,4 +1,6 @@
 import type { ColyseusTestServer } from "@colyseus/testing";
+import type { GameState } from "@dobon-uno/shared";
+import { matchMaker } from "colyseus";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { bootTestServer } from "../test/setup";
 import { RESULT_DISPLAY_DURATION } from "../utils/finishGame";
@@ -373,6 +375,62 @@ describe("GameRoom", () => {
 
       await owner.leave();
       await expect(left).resolves.toBeTypeOf("number");
+    });
+  });
+
+  describe("シングルプレイ", () => {
+    const wait = (ms: number) =>
+      new Promise((resolve) => setTimeout(resolve, ms));
+
+    it("作成者が参加するとCPU4人が揃い、非公開になる", async () => {
+      const room = await colyseus.createRoom<GameState>("game", {
+        singlePlay: true,
+      });
+      await colyseus.connectTo(room, { playerName: "あなた" });
+
+      const players = Array.from(room.state.players.values());
+      expect(room.state.isSinglePlay).toBe(true);
+      expect(players).toHaveLength(5);
+      expect(players.filter((p) => p.isCpu)).toHaveLength(4);
+      // 作成者は席1、CPUは時計回りに席2・3・5・6（正面の席4が空席）
+      expect(players.find((p) => !p.isCpu)?.seatId).toBe(1);
+      expect(
+        players
+          .filter((p) => p.isCpu)
+          .map((p) => p.seatId)
+          .sort(),
+      ).toEqual([2, 3, 5, 6]);
+      // ロビーに表示されない
+      const publicRooms = await matchMaker.query({ private: false });
+      expect(publicRooms.some((r) => r.roomId === room.roomId)).toBe(false);
+    });
+
+    it("作成者以外は参加も観戦もできない", async () => {
+      const room = await colyseus.createRoom<GameState>("game", {
+        singlePlay: true,
+      });
+      await colyseus.connectTo(room, { playerName: "あなた" });
+
+      await expect(
+        colyseus.connectTo(room, { playerName: "Other" }),
+      ).rejects.toThrow("シングルプレイのルームには参加できません");
+      await expect(
+        colyseus.connectTo(room, { playerName: "Viewer", spectate: true }),
+      ).rejects.toThrow("シングルプレイのルームには参加できません");
+    });
+
+    it("CPUの追加・削除はできない", async () => {
+      const room = await colyseus.createRoom<GameState>("game", {
+        singlePlay: true,
+      });
+      const owner = await colyseus.connectTo(room, { playerName: "あなた" });
+      const cpu = Array.from(room.state.players.values()).find((p) => p.isCpu);
+
+      owner.send("addCpu", { seatId: 6 });
+      owner.send("removeCpu", { sessionId: cpu?.sessionId });
+      await wait(100);
+
+      expect(room.state.players.size).toBe(5);
     });
   });
 });

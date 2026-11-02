@@ -54,6 +54,12 @@ export const MAX_SPECTATORS = 10;
 // 参加を拒否したときのエラーコード
 export const JOIN_REJECTED_CODE = 4403;
 
+// シングルプレイでCPUを座らせる席（作成者の席1から時計回り。正面の席4は空席にする）
+export const SINGLE_PLAY_CPU_SEATS = [2, 3, 5, 6];
+
+// シングルプレイのCPUの表示名
+const SINGLE_PLAY_CPU_NAME = "CPU";
+
 export class GameRoom extends Room<{
   state: GameState;
   metadata: RoomMetadata;
@@ -86,9 +92,15 @@ export class GameRoom extends Room<{
   // 前回設定したメタデータ（変化がなければsetMetadataしない）
   private lastMetadataJson = "";
 
-  onCreate(_options: CreateRoomOptions) {
+  onCreate(options: CreateRoomOptions) {
     this.state = new GameState();
     this.state.roomId = this.roomId;
+
+    // シングルプレイはロビーに表示せず、作成者以外は参加・観戦できない
+    if (options?.singlePlay) {
+      this.state.isSinglePlay = true;
+      void this.setPrivate(true);
+    }
 
     // ターンタイマーサービスを初期化
     this.turnTimerService = new TurnTimerService(this.state);
@@ -172,6 +184,9 @@ export class GameRoom extends Room<{
       const player = this.state.players.get(client.sessionId);
       if (!player?.isOwner) return;
 
+      // シングルプレイはCPUの人数を固定する
+      if (this.state.isSinglePlay) return;
+
       // ゲーム中は追加不可
       if (this.state.phase !== "waiting") return;
 
@@ -222,6 +237,9 @@ export class GameRoom extends Room<{
       // ホストのみ実行可能
       const player = this.state.players.get(client.sessionId);
       if (!player?.isOwner) return;
+
+      // シングルプレイはCPUの人数を固定する
+      if (this.state.isSinglePlay) return;
 
       // ゲーム中は削除不可
       if (this.state.phase !== "waiting") return;
@@ -374,6 +392,14 @@ export class GameRoom extends Room<{
    * - 観戦者: ゲーム開始後のみ
    */
   onAuth(_client: Client, options: JoinRoomOptions) {
+    // シングルプレイは作成者のみ（観戦も不可）
+    if (this.state.isSinglePlay && this.state.players.size > 0) {
+      throw new ServerError(
+        JOIN_REJECTED_CODE,
+        "シングルプレイのルームには参加できません",
+      );
+    }
+
     if (options?.spectate) {
       if (!this.isStarted()) {
         throw new ServerError(
@@ -433,6 +459,13 @@ export class GameRoom extends Room<{
 
     // プレイヤーを追加
     this.state.players.set(client.sessionId, player);
+
+    // シングルプレイは作成者の参加と同時にCPUを揃える
+    if (this.state.isSinglePlay) {
+      for (const seatId of SINGLE_PLAY_CPU_SEATS) {
+        this.addCPUPlayer(SINGLE_PLAY_CPU_NAME, seatId);
+      }
+    }
 
     // メタデータを更新
     this.updateMetadata();
