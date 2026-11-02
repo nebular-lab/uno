@@ -68,6 +68,7 @@ export type GamePlayState = {
   mySessionId: string; // 観戦時は視点に選んだプレイヤーのsessionId
   isSpectator: boolean; // 観戦者として参加しているか
   spectatorCount: number;
+  isSinglePlay: boolean; // シングルプレイ（CPU4人と対戦）のルームか
   myHand: ClientCard[];
 
   // ゲーム進行状態

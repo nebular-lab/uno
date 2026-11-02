@@ -20,6 +20,7 @@ import { SettingsDialog } from "@/components/game/SettingsDialog";
 import { Table } from "@/components/game/Table";
 import { TableContainer } from "@/components/game/TableContainer";
 import { TurnDirectionIndicator } from "@/components/game/TurnDirectionIndicator";
+import { SinglePlayRecordDialog } from "@/components/SinglePlayRecordDialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -85,7 +86,11 @@ export const GameScreen = () => {
     spectatorCount,
     viewpointPlayer,
     setViewpointSessionId,
+    isSinglePlay,
   } = useGameRoom();
+
+  // 待機中のホストは席をクリックしてCPUを追加・削除できる（シングルプレイはCPUの人数が固定）
+  const canEditCpu = phase === "waiting" && isHost && !isSinglePlay;
 
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
   const [showViewpointDialog, setShowViewpointDialog] = useState(false);
@@ -422,7 +427,7 @@ export const GameScreen = () => {
             );
           }
           // waitingフェーズでCPUプレイヤーの場合、ホストはクリックで削除可能
-          if (phase === "waiting" && player.isCpu && isHost) {
+          if (canEditCpu && player.isCpu) {
             return (
               <button
                 className="cursor-pointer bg-transparent border-0 p-0"
@@ -470,7 +475,7 @@ export const GameScreen = () => {
         }
 
         // 空席の場合、waitingフェーズでホストはクリックでCPU追加可能
-        if (phase === "waiting" && isHost) {
+        if (canEditCpu) {
           return (
             <button
               className="cursor-pointer bg-transparent border-0 p-0"
@@ -483,6 +488,8 @@ export const GameScreen = () => {
             </button>
           );
         }
+        // シングルプレイの空席は表示しない
+        if (isSinglePlay) return null;
         return (
           <EmptySeat
             displayIndex={displayIndex}
@@ -655,7 +662,7 @@ export const GameScreen = () => {
       {phase === "waiting" && (
         <>
           {/* CPU追加の説明（下中央、ホストのみ表示） */}
-          {isHost && (
+          {canEditCpu && (
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-center text-sm text-slate-400">
               <p>空席のエリアをクリックするとCPUを追加できます。</p>
               <p>もう一度クリックすると削除できます。</p>
@@ -851,13 +858,20 @@ export const GameScreen = () => {
         </div>
       )}
 
-      {/* スコアパネル */}
-      <ScorePanel
-        gameHistory={gameHistory}
-        isOpen={showScorePanel}
-        onClose={() => setShowScorePanel(false)}
-        players={players}
-      />
+      {/* スコアパネル（シングルプレイはこれまでの通算成績を表示する） */}
+      {isSinglePlay ? (
+        <SinglePlayRecordDialog
+          onOpenChange={setShowScorePanel}
+          open={showScorePanel}
+        />
+      ) : (
+        <ScorePanel
+          gameHistory={gameHistory}
+          isOpen={showScorePanel}
+          onClose={() => setShowScorePanel(false)}
+          players={players}
+        />
+      )}
 
       {/* ルールブック */}
       <Dialog onOpenChange={setShowRuleBook} open={showRuleBook}>
