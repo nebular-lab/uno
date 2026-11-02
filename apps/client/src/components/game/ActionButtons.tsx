@@ -3,13 +3,16 @@ import { useGameRoom } from "@/hooks/useGameRoom";
 
 export const ActionButtons = () => {
   const {
+    canDobon,
     canDraw,
     canDrawStack,
     canPass,
     drawCard,
     drawStack,
     drawStackCount,
+    isSpectator,
     pass,
+    skipDobon,
   } = useGameRoom();
 
   return (
@@ -44,6 +47,21 @@ export const ActionButtons = () => {
           variant="ghost"
         >
           <span className="text-sm font-bold">パス</span>
+        </Button>
+      )}
+
+      {/* ドボンしないボタン（ドボンボタンは画面中央に表示する） */}
+      {!isSpectator && canDobon && (
+        <Button
+          className="size-[80px] bg-gray-600/90 text-white hover:bg-gray-500"
+          onClick={skipDobon}
+          variant="ghost"
+        >
+          <span className="text-sm font-bold leading-tight">
+            ドボン
+            <br />
+            しない
+          </span>
         </Button>
       )}
     </div>
