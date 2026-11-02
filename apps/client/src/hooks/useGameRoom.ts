@@ -1,7 +1,7 @@
 import type { CardColor } from "@dobon-uno/shared";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useCallback } from "react";
-import { navigateToLobbyAtom } from "../atoms/appAtoms";
+import { navigateToLobbyAtom, navigateToTitleAtom } from "../atoms/appAtoms";
 import {
   gamePlayStateAtom,
   gameStateAtom,
@@ -15,14 +15,20 @@ export const useGameRoom = () => {
   const gameRoomState = useAtomValue(gameStateAtom);
   const gamePlayState = useAtomValue(gamePlayStateAtom);
   const navigateToLobby = useSetAtom(navigateToLobbyAtom);
+  const navigateToTitle = useSetAtom(navigateToTitleAtom);
   const setViewpointSessionId = useSetAtom(viewpointSessionIdAtom);
 
-  // 退席
+  // 退席（シングルプレイはロビーを経由しないのでタイトルへ戻る）
+  const isSinglePlay = gamePlayState.isSinglePlay;
   const leaveRoom = useCallback(async () => {
     if (gameRoomState.status !== "connected") return;
     gameRoomState.room.send("leaveRoom");
-    navigateToLobby();
-  }, [gameRoomState, navigateToLobby]);
+    if (isSinglePlay) {
+      navigateToTitle();
+    } else {
+      navigateToLobby();
+    }
+  }, [gameRoomState, isSinglePlay, navigateToLobby, navigateToTitle]);
 
   // ゲーム開始
   const startGame = useCallback(() => {
@@ -147,6 +153,7 @@ export const useGameRoom = () => {
     leaveRoom,
     startGame,
     isConnected: gameRoomState.status === "connected",
+    isSinglePlay,
     // 観戦用
     isSpectator,
     spectatorCount: gamePlayState.spectatorCount,

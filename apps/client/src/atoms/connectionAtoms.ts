@@ -1,5 +1,6 @@
 import type { Room, RoomAvailable } from "@colyseus/sdk";
 import type {
+  CreateRoomOptions,
   DrawCardAnimationEvent,
   GameState,
   JoinRoomOptions,
@@ -31,6 +32,7 @@ import {
   fieldCardPositionAtom,
   playerSeatPositionsAtom,
 } from "./cardPositionAtom";
+import { addSinglePlayRecordAtom } from "./singlePlayRecordAtom";
 
 // Jotaiのデフォルトストア（アニメーション用）
 const store = getDefaultStore();
@@ -50,6 +52,7 @@ const initialGamePlayState: GamePlayState = {
   mySessionId: "",
   isSpectator: false,
   spectatorCount: 0,
+  isSinglePlay: false,
   myHand: [],
   phase: "waiting",
   dealingRound: 0,
@@ -184,6 +187,7 @@ const setupRoomStateSync = (
       mySessionId: viewSessionId,
       isSpectator,
       spectatorCount: state.spectatorCount ?? 0,
+      isSinglePlay: state.isSinglePlay ?? false,
       myHand: myServerPlayer?.myHand
         ? Array.from(myServerPlayer.myHand).map(convertCard)
         : [],
@@ -451,6 +455,59 @@ export const createRoomAtom = atom(null, async (get, set) => {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "ルームの作成に失敗しました";
+    set(gameStateAtom, { status: "error", error: message });
+  }
+});
+
+// シングルプレイでの表示名（名前の入力は不要）
+const SINGLE_PLAY_PLAYER_NAME = "あなた";
+
+// シングルプレイを開始する（CPU4人がいる非公開ルームを作成）
+export const createSinglePlayRoomAtom = atom(null, async (_get, set) => {
+  set(gameStateAtom, { status: "joining" });
+
+  try {
+    const options: CreateRoomOptions = {
+      playerName: SINGLE_PLAY_PLAYER_NAME,
+      singlePlay: true,
+    };
+    const room = await colyseusClient.create<GameState>("game", options);
+
+    set(gameStateAtom, { status: "connected", room });
+    setupRoomStateSync(room, set, false);
+
+    // ゲームが終わるたびに自分の収支をブラウザに保存する
+    let recordedCount = 0;
+    room.onStateChange((state) => {
+      const history = state.gameHistory;
+      if (!history) return;
+      for (; recordedCount < history.length; recordedCount++) {
+        const result = history[recordedCount];
+        set(addSinglePlayRecordAtom, {
+          timestamp: result.timestamp,
+          scoreChange: result.scoreChanges.get(room.sessionId) ?? 0,
+          rateMultiplier: result.rateMultiplier,
+          finishType: result.finishType,
+          isWinner: result.winnerId === room.sessionId,
+        });
+      }
+    });
+
+    room.onLeave((code) => {
+      if (code === 1000) {
+        set(gameStateAtom, { status: "idle" });
+        set(gamePlayStateAtom, initialGamePlayState);
+      } else {
+        set(gameStateAtom, { status: "disconnected" });
+      }
+    });
+
+    set(screenAtom, { screen: "waitingRoom", roomId: room.roomId });
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "シングルプレイの開始に失敗しました";
     set(gameStateAtom, { status: "error", error: message });
   }
 });
