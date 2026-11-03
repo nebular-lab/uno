@@ -1,6 +1,6 @@
 import type { ColyseusTestServer } from "@colyseus/testing";
+import { TIMING } from "@dobon-uno/game-core";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { TIMING } from "../config/timing";
 import { bootTestServer } from "../test/setup";
 
 // テスト用カードデータ

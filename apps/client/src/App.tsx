@@ -1,29 +1,28 @@
-import { useAtomValue, useSetAtom } from "jotai";
-import { useEffect } from "react";
 import {
-  navigateToGameAtom,
-  navigateToTitleAtom,
-  screenAtom,
-} from "./atoms/appAtoms";
-import {
-  gameStateAtom,
-  lobbyStateAtom,
-  resetDisconnectedAtom,
-} from "./atoms/connectionAtoms";
-import { CardPlayAnimation } from "./components/game/CardPlayAnimation";
-import { ScalableContainer } from "./components/ScalableContainer";
-import { Button } from "./components/ui/button";
-import {
+  Button,
+  CardPlayAnimation,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "./components/ui/dialog";
+  GameScreen,
+  gameStateAtom,
+  leaveRoomHandlerAtom,
+  ScalableContainer,
+} from "@dobon-uno/game-ui";
+import { useAtomValue, useSetAtom } from "jotai";
+import { useEffect } from "react";
+import {
+  navigateToGameAtom,
+  navigateToLobbyAtom,
+  navigateToTitleAtom,
+  screenAtom,
+} from "./atoms/appAtoms";
+import { lobbyStateAtom, resetDisconnectedAtom } from "./atoms/connectionAtoms";
 import { useBeforeUnload } from "./hooks/useBeforeUnload";
 import { CreateRoomScreen } from "./screens/CreateRoomScreen";
-import { GameScreen } from "./screens/GameScreen";
 import { LobbyScreen } from "./screens/LobbyScreen";
 import { TitleScreen } from "./screens/TitleScreen";
 
@@ -34,6 +33,13 @@ function App() {
   const navigateToTitle = useSetAtom(navigateToTitleAtom);
   const navigateToGame = useSetAtom(navigateToGameAtom);
   const resetDisconnected = useSetAtom(resetDisconnectedAtom);
+  const navigateToLobby = useSetAtom(navigateToLobbyAtom);
+  const setLeaveRoomHandler = useSetAtom(leaveRoomHandlerAtom);
+
+  // ゲーム画面から退席したらロビーへ戻る
+  useEffect(() => {
+    setLeaveRoomHandler({ onLeave: navigateToLobby });
+  }, [setLeaveRoomHandler, navigateToLobby]);
 
   // ブラウザ離脱防止（タイトル画面以外でリロード・タブ閉じ・戻るボタン時に確認表示）
   useBeforeUnload({

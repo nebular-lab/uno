@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@colyseus/sdk": "0.18.9",
+    "@dobon-uno/game-ui": "workspace:*",
     "@dobon-uno/shared": "workspace:*",
     "@radix-ui/react-dialog": "1.3.1",
     "@radix-ui/react-slot": "1.5.0",

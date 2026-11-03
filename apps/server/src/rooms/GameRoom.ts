@@ -1,36 +1,18 @@
-import { Dispatcher } from "@colyseus/command";
+import {
+  createDeck,
+  type DeckProvider,
+  GameEngine,
+  ResolveDobonWaitCommand,
+  shuffleDeck,
+} from "@dobon-uno/game-core";
 import {
   Card,
-  CPU_THINKING_TIME_OPTIONS,
-  type CreateRoomOptions,
-  GameState,
+  type GameState,
   type JoinRoomOptions,
   Player,
   type RoomMetadata,
 } from "@dobon-uno/shared";
 import { type Client, Room, ServerError } from "colyseus";
-import { ChooseColorCommand } from "../commands/ChooseColorCommand";
-import { DobonCommand } from "../commands/DobonCommand";
-import { DobonReturnCommand } from "../commands/DobonReturnCommand";
-import { DrawCardCommand } from "../commands/DrawCardCommand";
-import { DrawStackCommand } from "../commands/DrawStackCommand";
-import { PassCommand } from "../commands/PassCommand";
-// Commands
-import { PlayCardCommand } from "../commands/PlayCardCommand";
-import { ResolveDobonWaitCommand } from "../commands/ResolveDobonWaitCommand";
-import { SkipDobonCommand } from "../commands/SkipDobonCommand";
-import { StartGameCommand } from "../commands/StartGameCommand";
-import { CPUPlayerService } from "../cpu/CPUPlayerService";
-import { GameLog } from "../cpu/GameLog";
-import { PlayerActionUpdater } from "../services/PlayerActionUpdater";
-import { TurnTimerService } from "../services/TurnTimerService";
-import { createDeck, shuffleDeck } from "../utils/deck";
-
-/**
- * 山札を生成する関数の型
- * テスト時にモックを注入するために使用
- */
-export type DeckProvider = () => Card[];
 
 /**
  * 動作確認用: 環境変数 DEBUG_DECK_SIZE を指定すると、シャッフル後の山札をその枚数に減らす
@@ -42,7 +24,7 @@ const debugDeckSize = Number(process.env.DEBUG_DECK_SIZE) || undefined;
  * デフォルトのDeckProvider（本番用）
  * 山札を生成してシャッフルする
  */
-export const defaultDeckProvider: DeckProvider = () => {
+const defaultDeckProvider: DeckProvider = () => {
   const deck = shuffleDeck(createDeck());
   return debugDeckSize ? deck.slice(-debugDeckSize) : deck;
 };
@@ -56,34 +38,29 @@ export const MAX_SPECTATORS = 10;
 // 参加を拒否したときのエラーコード
 export const JOIN_REJECTED_CODE = 4403;
 
-// シングルプレイでCPUを座らせる席（作成者の席1から時計回り。正面の席4は空席にする）
-export const SINGLE_PLAY_CPU_SEATS = [2, 3, 5, 6];
-
-// シングルプレイのCPUの表示名
-const SINGLE_PLAY_CPU_NAME = "CPU";
+// ゲーム操作のメッセージ（GameEngineに渡す）
+const GAME_ACTION_TYPES = [
+  "playCard",
+  "drawCard",
+  "drawStack",
+  "pass",
+  "dobon",
+  "skipDobon",
+  "dobonReturn",
+  "chooseColor",
+  "startGame",
+  "updateGameSettings",
+];
 
 export class GameRoom extends Room<{
   state: GameState;
   metadata: RoomMetadata;
 }> {
-  dispatcher = new Dispatcher(this);
   // 観戦者も1クライアントとして数えられるため、プレイヤー上限は MAX_PLAYERS で別に判定する
   maxClients = MAX_PLAYERS + MAX_SPECTATORS;
 
-  // 山札（サーバー側のみ保持、クライアントには同期しない）
-  deck: Card[] = [];
-
-  // 山札生成関数（DI可能）
-  private deckProvider: DeckProvider = defaultDeckProvider;
-
-  // ターンタイマーサービス
-  turnTimerService!: TurnTimerService;
-
-  // 全員に見えている行動の履歴（CPUの推論に使う）
-  gameLog = new GameLog();
-
-  // CPUプレイヤーサービス
-  private cpuService = new CPUPlayerService(this.gameLog);
+  // ゲームの状態と進行（ルール処理・CPU）
+  private engine!: GameEngine;
 
   // 一度でもゲームを開始したか（開始後はwaitingに戻ってもプレイヤーとして参加できない）
   private hasStarted = false;
@@ -94,18 +71,14 @@ export class GameRoom extends Room<{
   // 前回設定したメタデータ（変化がなければsetMetadataしない）
   private lastMetadataJson = "";
 
-  onCreate(options: CreateRoomOptions) {
-    this.state = new GameState();
+  onCreate() {
+    this.engine = new GameEngine({
+      clock: this.clock,
+      broadcast: (type, message) => this.broadcast(type, message),
+      deckProvider: defaultDeckProvider,
+    });
+    this.state = this.engine.state;
     this.state.roomId = this.roomId;
-
-    // シングルプレイはロビーに表示せず、作成者以外は参加・観戦できない
-    if (options?.singlePlay) {
-      this.state.isSinglePlay = true;
-      void this.setPrivate(true);
-    }
-
-    // ターンタイマーサービスを初期化
-    this.turnTimerService = new TurnTimerService(this.state);
 
     // クライアント → サーバー: メッセージハンドラー登録
     this.registerMessageHandlers();
@@ -115,76 +88,16 @@ export class GameRoom extends Room<{
    * クライアントからのメッセージハンドラーを登録
    */
   private registerMessageHandlers() {
-    // カードを出す（重ね出し対応）
-    this.onMessage("playCard", (client, message: { cardIds: string[] }) => {
-      this.dispatcher.dispatch(new PlayCardCommand(), {
-        sessionId: client.sessionId,
-        cardIds: message.cardIds,
+    // ゲーム操作（カードを出す・引く・ドボンなど）
+    for (const type of GAME_ACTION_TYPES) {
+      this.onMessage(type, (client, message) => {
+        this.engine.handleAction(client.sessionId, type, message);
       });
-    });
-
-    // 山札を引く
-    this.onMessage("drawCard", (client) => {
-      this.dispatcher.dispatch(new DrawCardCommand(), {
-        sessionId: client.sessionId,
-      });
-    });
-
-    // 累積カードを引く
-    this.onMessage("drawStack", (client) => {
-      this.dispatcher.dispatch(new DrawStackCommand(), {
-        sessionId: client.sessionId,
-      });
-    });
-
-    // パス
-    this.onMessage("pass", (client) => {
-      this.dispatcher.dispatch(new PassCommand(), {
-        sessionId: client.sessionId,
-      });
-    });
-
-    // ドボン
-    this.onMessage("dobon", (client) => {
-      this.dispatcher.dispatch(new DobonCommand(), {
-        sessionId: client.sessionId,
-      });
-    });
-
-    // ドボンしない
-    this.onMessage("skipDobon", (client) => {
-      this.dispatcher.dispatch(new SkipDobonCommand(), {
-        sessionId: client.sessionId,
-      });
-    });
-
-    // ドボン返し
-    this.onMessage("dobonReturn", (client) => {
-      this.dispatcher.dispatch(new DobonReturnCommand(), {
-        sessionId: client.sessionId,
-      });
-    });
-
-    // 色を選択
-    this.onMessage("chooseColor", (client, color: string) => {
-      this.dispatcher.dispatch(new ChooseColorCommand(), {
-        sessionId: client.sessionId,
-        color: color,
-      });
-    });
+    }
 
     // 退席
     this.onMessage("leaveRoom", (client) => {
       client.leave(1000); // コード1000（正常終了）
-    });
-
-    // ゲーム開始
-    this.onMessage("startGame", (client) => {
-      this.dispatcher.dispatch(new StartGameCommand(), {
-        sessionId: client.sessionId,
-        startPlayerId: this.state.nextGameStartPlayerId || undefined,
-        rateMultiplier: this.state.rateMultiplier,
-      });
     });
 
     // CPUを追加
@@ -192,9 +105,6 @@ export class GameRoom extends Room<{
       // ホストのみ実行可能
       const player = this.state.players.get(client.sessionId);
       if (!player?.isOwner) return;
-
-      // シングルプレイはCPUの人数を固定する
-      if (this.state.isSinglePlay) return;
 
       // ゲーム中は追加不可
       if (this.state.phase !== "waiting") return;
@@ -210,45 +120,14 @@ export class GameRoom extends Room<{
       if (seatOccupied) return;
 
       // CPUプレイヤーを追加
-      this.addCPUPlayer(`CPU ${message.seatId}`, message.seatId);
+      this.engine.addCPUPlayer(`CPU ${message.seatId}`, message.seatId);
     });
-
-    // ゲーム全体設定を更新
-    this.onMessage(
-      "updateGameSettings",
-      (
-        client,
-        message: {
-          showTotalPoints?: boolean;
-          highlightPlayableCards?: boolean;
-          cpuThinkingTime?: number;
-        },
-      ) => {
-        const player = this.state.players.get(client.sessionId);
-        if (!player?.isOwner) return;
-
-        if (typeof message.showTotalPoints === "boolean") {
-          this.state.showTotalPoints = message.showTotalPoints;
-        }
-        if (typeof message.highlightPlayableCards === "boolean") {
-          this.state.highlightPlayableCards = message.highlightPlayableCards;
-        }
-        if (
-          CPU_THINKING_TIME_OPTIONS.some((t) => t === message.cpuThinkingTime)
-        ) {
-          this.state.cpuThinkingTime = message.cpuThinkingTime as number;
-        }
-      },
-    );
 
     // CPUを削除
     this.onMessage("removeCpu", (client, message: { sessionId: string }) => {
       // ホストのみ実行可能
       const player = this.state.players.get(client.sessionId);
       if (!player?.isOwner) return;
-
-      // シングルプレイはCPUの人数を固定する
-      if (this.state.isSinglePlay) return;
 
       // ゲーム中は削除不可
       if (this.state.phase !== "waiting") return;
@@ -271,7 +150,7 @@ export class GameRoom extends Room<{
         const deck = cards.map(
           (c) => new Card(c.id, c.color, c.value, c.points),
         );
-        this.setDeckProvider(() => deck);
+        this.engine.setDeckProvider(() => deck);
       },
     );
 
@@ -292,7 +171,7 @@ export class GameRoom extends Room<{
 
           // playableCards と canDobon を更新
           if (this.state.phase === "playing") {
-            this.updateAllPlayerActions();
+            this.engine.updateAllPlayerActions();
           }
         }
       },
@@ -303,18 +182,18 @@ export class GameRoom extends Room<{
       this.state.hasDrawnThisTurn = value;
       // canPass を更新
       if (this.state.phase === "playing") {
-        this.updateAllPlayerActions();
+        this.engine.updateAllPlayerActions();
       }
     });
 
     // テスト用: 現在のプレイヤーのタイマーを停止
     this.onMessage("__stopTimer", () => {
-      this.turnTimerService.stopTimer(this.state.currentTurnPlayerId);
+      this.engine.turnTimerService.stopTimer(this.state.currentTurnPlayerId);
     });
 
     // テスト用: ターンタイムアウト時間を設定
     this.onMessage("__setTurnTimeout", (_client, timeout: number) => {
-      this.turnTimerService.setTurnTimeout(timeout);
+      this.engine.turnTimerService.setTurnTimeout(timeout);
     });
 
     // テスト用: 場札を設定
@@ -336,34 +215,10 @@ export class GameRoom extends Room<{
 
         // アクション可否を更新
         if (this.state.phase === "playing") {
-          this.updateAllPlayerActions();
+          this.engine.updateAllPlayerActions();
         }
       },
     );
-  }
-
-  /**
-   * 山札を生成する（DeckProviderを使用）
-   */
-  createDeck(): Card[] {
-    return this.deckProvider();
-  }
-
-  /**
-   * DeckProviderを設定する（テスト用）
-   */
-  setDeckProvider(provider: DeckProvider) {
-    this.deckProvider = provider;
-  }
-
-  /**
-   * 全プレイヤーのアクション可否を更新する（テスト用）
-   */
-  private updateAllPlayerActions() {
-    // 色が未決定（最初のカードがwild/draw4で引いた場合等）なら何でも出せる
-    const isColorNotSet = this.state.currentColor === "";
-    const actionUpdater = new PlayerActionUpdater(this.state);
-    actionUpdater.update({ isFirstCardWild: isColorNotSet });
   }
 
   // 席の配置優先順（1, 3, 5, 2, 4, 6 の順）
@@ -401,14 +256,6 @@ export class GameRoom extends Room<{
    * - 観戦者: ゲーム開始後のみ
    */
   onAuth(_client: Client, options: JoinRoomOptions) {
-    // シングルプレイは作成者のみ（観戦も不可）
-    if (this.state.isSinglePlay && this.state.players.size > 0) {
-      throw new ServerError(
-        JOIN_REJECTED_CODE,
-        "シングルプレイのルームには参加できません",
-      );
-    }
-
     if (options?.spectate) {
       if (!this.isStarted()) {
         throw new ServerError(
@@ -469,13 +316,6 @@ export class GameRoom extends Room<{
     // プレイヤーを追加
     this.state.players.set(client.sessionId, player);
 
-    // シングルプレイは作成者の参加と同時にCPUを揃える
-    if (this.state.isSinglePlay) {
-      for (const seatId of SINGLE_PLAY_CPU_SEATS) {
-        this.addCPUPlayer(SINGLE_PLAY_CPU_NAME, seatId);
-      }
-    }
-
     // メタデータを更新
     this.updateMetadata();
   }
@@ -523,7 +363,7 @@ export class GameRoom extends Room<{
     }
 
     // 退出プレイヤーのタイマーを停止
-    this.turnTimerService.stopTimer(client.sessionId);
+    this.engine.turnTimerService.stopTimer(client.sessionId);
 
     const player = this.state.players.get(client.sessionId);
     if (!player) return;
@@ -533,7 +373,7 @@ export class GameRoom extends Room<{
 
     // ドボン待ちの間に抜けた場合、残りの人の判断で待ちを解決する
     if (this.state.phase === "playing" && this.state.waitingForDobon) {
-      this.dispatcher.dispatch(new ResolveDobonWaitCommand());
+      this.engine.dispatcher.dispatch(new ResolveDobonWaitCommand());
     }
 
     // 人間プレイヤーがいなくなったらCPUも削除（ルーム自動破棄のため）
@@ -578,118 +418,7 @@ export class GameRoom extends Room<{
   }
 
   onDispose() {
-    // 全タイマーを停止
-    this.turnTimerService.stopAllTimers();
-
-    // Dispatcherの停止
-    this.dispatcher.stop();
-  }
-
-  /**
-   * CPUプレイヤーを追加する
-   */
-  private addCPUPlayer(name: string, seatId: number): void {
-    const sessionId = `cpu-${crypto.randomUUID()}`;
-    const player = new Player();
-    player.sessionId = sessionId;
-    player.name = name;
-    player.isCpu = true;
-    player.seatId = seatId;
-    this.state.players.set(sessionId, player);
-  }
-
-  /**
-   * CPUターンをチェックして実行する
-   * PlayerActionUpdater.update() 後に呼び出す
-   */
-  async checkCPUTurn(): Promise<void> {
-    if (this.state.phase !== "playing") return;
-
-    // CPUのドボン・ドボン返しの判断（手番かどうかに関わらない）
-    let isWaitingForDobonReturn = false;
-    for (const player of this.state.players.values()) {
-      if (player.canDobonReturn) isWaitingForDobonReturn = true;
-      if (player.isCpu && (player.canDobon || player.canDobonReturn)) {
-        void this.cpuService.handleDobonDecision(
-          this.state,
-          player,
-          this.dispatcher,
-        );
-      }
-    }
-
-    // ドボン待ち・ドボン返し待ちの間はゲームを進めない
-    if (this.state.waitingForDobon || isWaitingForDobonReturn) return;
-
-    // 手番でないCPUのカットインの判断
-    for (const player of this.state.players.values()) {
-      if (player.isCpu && player.sessionId !== this.state.currentTurnPlayerId) {
-        void this.cpuService.handleCutIn(this.state, player, this.dispatcher);
-      }
-    }
-
-    const currentPlayer = this.state.players.get(
-      this.state.currentTurnPlayerId,
-    );
-
-    if (currentPlayer?.isCpu) {
-      await this.cpuService.handleTurn(
-        this.state,
-        currentPlayer,
-        this.dispatcher,
-      );
-    }
-  }
-
-  /**
-   * ゲーム状態をリセットする（次のゲーム開始前の状態に戻す）
-   * NormalFinishCommand、DobonCommand、DobonReturnCommand、DeckOutCommandから呼び出される
-   */
-  resetGameState() {
-    // プレイヤー状態のリセット
-    for (const player of this.state.players.values()) {
-      // 手札をクリア
-      player.myHand.splice(0, player.myHand.length);
-      player.handCount = 0;
-      player.revealedHand.splice(0, player.revealedHand.length);
-
-      // アクションフラグをリセット
-      player.canPass = false;
-      player.canDraw = false;
-      player.canChooseColor = false;
-      player.canDobon = false;
-      player.canDobonReturn = false;
-      player.canDrawStack = false;
-      player.playableCards.clear();
-      player.timeRemaining = 0;
-      player.drewCardSinceLastPlay = false;
-      player.declinedDobon = false;
-    }
-
-    // ゲーム状態のリセット
-    this.state.fieldCards.splice(0, this.state.fieldCards.length);
-    this.state.discardPile.splice(0, this.state.discardPile.length);
-    this.state.deckCount = 0;
-    this.state.currentColor = "";
-    this.state.currentTurnPlayerId = "";
-    this.state.turnDirection = 1;
-    this.state.drawStack = 0;
-    this.state.waitingForColorChoice = false;
-    this.state.hasDrawnThisTurn = false;
-    this.state.lastPlayedCount = 1;
-    this.state.firstCard = null;
-    this.state.dealingRound = 0;
-    this.state.countdown = 0;
-
-    // ドボン状態のリセット
-    this.state.dobonTargetId = "";
-    this.state.dobonPlayerIds.splice(0, this.state.dobonPlayerIds.length);
-    this.state.waitingForDobon = false;
-
-    // 山札をクリア
-    this.deck = [];
-
-    // 行動履歴をクリア
-    this.gameLog.reset();
+    // 全タイマーとDispatcherを停止
+    this.engine.stop();
   }
 }

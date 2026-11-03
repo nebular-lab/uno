@@ -13,7 +13,8 @@ pnpm check
 # 2. TypeScript型チェック
 pnpm typecheck
 
-# 3. テスト実行（サーバー）
+# 3. テスト実行（ルール処理・CPU、サーバー）
+cd packages/game-core && pnpm test
 cd apps/server && pnpm test
 ```
 
@@ -37,13 +38,16 @@ TDDで先にテストを書く場合は、テストが失敗している状態�
 ```
 dobon-uno/
 ├── apps/
-│   ├── server/              # Colyseusサーバー
-│   └── client/              # フロントエンド（React + Vite）
+│   ├── server/              # Colyseusサーバー（マルチプレイ用）
+│   ├── client/              # ドボンUNO マルチプレイ（React + Vite）
+│   └── single/              # ドボンUNO シングルプレイ（サーバー不要。ブラウザ内でCPUと対戦）
 ├── packages/
-│   └── shared/              # @dobon-uno/shared - 共通型定義・定数
-│       └── src/
-│           ├── schema/      # Colyseusスキーマクラス
-│           └── card.ts      # カード定数
+│   ├── shared/              # @dobon-uno/shared - 共通型定義・定数
+│   │   └── src/
+│   │       ├── schema/      # Colyseusスキーマクラス
+│   │       └── card.ts      # カード定数
+│   ├── game-core/           # @dobon-uno/game-core - ルール処理・CPU（サーバーとブラウザで共有）
+│   └── game-ui/             # @dobon-uno/game-ui - ゲーム画面（client と single で共有）
 ├── doc/                     # ドキュメント
 │   └── spec/                # 仕様書
 ├── .husky/                  # Git hooks

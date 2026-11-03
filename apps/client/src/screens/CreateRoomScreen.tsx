@@ -1,8 +1,7 @@
+import { Button, gameStateAtom, Spinner } from "@dobon-uno/game-ui";
 import { useAtomValue, useSetAtom } from "jotai";
-import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
 import { navigateToLobbyAtom } from "../atoms/appAtoms";
-import { createRoomAtom, gameStateAtom } from "../atoms/connectionAtoms";
+import { createRoomAtom } from "../atoms/connectionAtoms";
 
 export function CreateRoomScreen() {
   const gameState = useAtomValue(gameStateAtom);

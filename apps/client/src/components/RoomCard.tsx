@@ -1,8 +1,7 @@
 import type { RoomAvailable } from "@colyseus/sdk";
+import { Button, cn } from "@dobon-uno/game-ui";
 import type { RoomMetadata } from "@dobon-uno/shared";
 import { Eye, Users } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 // ルームに参加できるプレイヤーの最大人数
 const MAX_PLAYERS = 6;

@@ -1,16 +1,14 @@
+import { Button, gameStateAtom, Spinner } from "@dobon-uno/game-ui";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useEffect } from "react";
-import { Button } from "@/components/ui/button";
 import { navigateToCreateRoomAtom, playerAtom } from "../atoms/appAtoms";
 import {
   connectToLobbyAtom,
   disconnectFromLobbyAtom,
-  gameStateAtom,
   joinRoomAtom,
   lobbyStateAtom,
 } from "../atoms/connectionAtoms";
 import { RoomCard } from "../components/RoomCard";
-import { Spinner } from "../components/ui/spinner";
 
 export function LobbyScreen() {
   const player = useAtomValue(playerAtom);
