@@ -69,6 +69,7 @@ export const SettingsDialog = ({ open, onOpenChange }: Props) => {
   const [playerSettings, setPlayerSettings] = useAtom(playerSettingsAtom);
   const {
     isHost,
+    isSinglePlay,
     showTotalPoints,
     highlightPlayableCards,
     cpuThinkingTime,
@@ -98,11 +99,13 @@ export const SettingsDialog = ({ open, onOpenChange }: Props) => {
         {isHost && (
           <div className="mt-6 space-y-1 border-t border-slate-600 pt-4">
             <h3 className="text-sm font-medium text-slate-400">
-              ゲーム全体設定（ホスト）
+              {isSinglePlay ? "ゲーム設定" : "ゲーム全体設定（ホスト）"}
             </h3>
-            <p className="text-xs text-yellow-400">
-              設定の変更がすぐにプレイヤー全員に反映されます。注意してください。
-            </p>
+            {!isSinglePlay && (
+              <p className="text-xs text-yellow-400">
+                設定の変更がすぐにプレイヤー全員に反映されます。注意してください。
+              </p>
+            )}
             <Toggle
               checked={showTotalPoints}
               label="合計ポイントの表示"

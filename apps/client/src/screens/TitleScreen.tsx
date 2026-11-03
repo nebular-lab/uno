@@ -1,4 +1,4 @@
-import { Button, Dialog, DialogContent, Input } from "@dobon-uno/game-ui";
+import { Button, Input, TutorialVideoDialog } from "@dobon-uno/game-ui";
 import { useSetAtom } from "jotai";
 import { useState } from "react";
 import { navigateToLobbyAtom, setPlayerNameAtom } from "../atoms/appAtoms";
@@ -77,19 +77,7 @@ export function TitleScreen() {
         ルール説明動画
       </Button>
 
-      <Dialog onOpenChange={setShowTutorial} open={showTutorial}>
-        <DialogContent className="max-w-[1024px] p-4">
-          {/* 動画は pnpm render:tutorial で書き出す */}
-          {/* biome-ignore lint/a11y/useMediaCaption: 字幕は映像に焼き込み済み */}
-          <video
-            className="w-full max-w-[960px] aspect-video bg-black"
-            controls
-            playsInline
-            preload="metadata"
-            src="/tutorial/tutorial.mp4"
-          />
-        </DialogContent>
-      </Dialog>
+      <TutorialVideoDialog onOpenChange={setShowTutorial} open={showTutorial} />
     </div>
   );
 }

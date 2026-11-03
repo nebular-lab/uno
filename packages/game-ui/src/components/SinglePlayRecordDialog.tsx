@@ -127,7 +127,7 @@ const SinglePlayRecordView = () => {
   if (records.length === 0) {
     return (
       <div className="flex flex-1 items-center justify-center text-slate-400">
-        まだ成績がありません。シングルプレイで対戦すると、ここに収支が記録されます。
+        まだ成績がありません。対戦すると、ここに収支が記録されます。
       </div>
     );
   }
@@ -173,9 +173,7 @@ export const SinglePlayRecordDialog = ({ open, onOpenChange }: Props) => (
       style={{ height: "520px" }}
     >
       <DialogHeader>
-        <DialogTitle className="text-xl font-bold text-white">
-          シングルプレイ成績
-        </DialogTitle>
+        <DialogTitle className="text-xl font-bold text-white">成績</DialogTitle>
       </DialogHeader>
       <SinglePlayRecordView />
     </DialogContent>

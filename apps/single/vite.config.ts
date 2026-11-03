@@ -24,10 +24,9 @@ export default defineConfig(({ mode }) => {
       VitePWA({
         registerType: "autoUpdate",
         manifest: {
-          name: "ドボンUNO シングルプレイ",
+          name: "ドボンUNO",
           short_name: "ドボンUNO",
-          description:
-            "ドボン UNO シングルプレイ - ブラウザだけでCPUと遊べるカードゲーム",
+          description: "ドボン UNO - CPUと遊べるカードゲーム",
           theme_color: "#1a1a2e",
           background_color: "#1a1a2e",
           display: "standalone",
