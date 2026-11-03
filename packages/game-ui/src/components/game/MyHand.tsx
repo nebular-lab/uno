@@ -203,11 +203,22 @@ export const MyHand = ({ disabled }: Props) => {
     const scrollContainer = scrollRef.current;
     if (!scrollContainer) return;
 
+    // マウスホイールの縦スクロールを横スクロールに変換する
+    // （トラックパッドの横スクロールはそのまま通す）
+    const handleWheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+      if (scrollContainer.scrollWidth <= scrollContainer.clientWidth) return;
+      e.preventDefault();
+      scrollContainer.scrollLeft += e.deltaY;
+    };
+
     scrollContainer.addEventListener("scroll", updateScrollState);
+    scrollContainer.addEventListener("wheel", handleWheel, { passive: false });
     window.addEventListener("resize", updateScrollState);
 
     return () => {
       scrollContainer.removeEventListener("scroll", updateScrollState);
+      scrollContainer.removeEventListener("wheel", handleWheel);
       window.removeEventListener("resize", updateScrollState);
     };
   }, [updateScrollState]);
