@@ -22,10 +22,7 @@ import {
   type DrawCardAnimation,
   passEventAtom,
 } from "./animationAtoms";
-import {
-  fieldCardPositionAtom,
-  playerSeatPositionsAtom,
-} from "./cardPositionAtom";
+import { fieldCardPositionAtom } from "./cardPositionAtom";
 
 // Jotaiのデフォルトストア（アニメーション用）
 const store = getDefaultStore();
@@ -245,22 +242,20 @@ export const setupRoomStateSync = (
       }
     } else {
       // 他プレイヤーの場合はシート位置を使用
-      // mySeatIndexを計算してdisplayIndexを求める
-      const gamePlayState = store.get(gamePlayStateAtom);
-      const mySeatIndex = gamePlayState.players.findIndex(
-        (p) => p !== null && p.sessionId === getViewSessionId(),
+      // 画面の大きさが変わると位置も変わるため、自分の手札と同じく出した瞬間の位置を実測する
+      const seatElement = document.querySelector(
+        `[data-seat-player-id="${event.playerId}"]`,
       );
-      const seatIndex = event.seatId - 1;
-      const displayIndex =
-        mySeatIndex === -1 ? seatIndex : (seatIndex - mySeatIndex + 3 + 6) % 6;
-      const seatPositions = store.get(playerSeatPositionsAtom);
-      const seatPos = seatPositions[displayIndex];
-      if (seatPos) {
+      if (seatElement) {
+        const rect = seatElement.getBoundingClientRect();
         // 他プレイヤーの場合は場のカードのサイズを使用
         const fieldPos = store.get(fieldCardPositionAtom);
-        const cardWidth = fieldPos?.width ?? 40;
-        const cardHeight = fieldPos?.height ?? 56;
-        startPosition = { ...seatPos, width: cardWidth, height: cardHeight };
+        startPosition = {
+          x: rect.left + rect.width / 2,
+          y: rect.top + rect.height / 2,
+          width: fieldPos?.width ?? 40,
+          height: fieldPos?.height ?? 56,
+        };
       }
     }
 

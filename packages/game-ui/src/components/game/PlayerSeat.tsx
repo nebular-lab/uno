@@ -1,6 +1,3 @@
-import { useSetAtom } from "jotai";
-import { useEffect, useRef } from "react";
-import { playerSeatPositionsAtom } from "../../atoms/cardPositionAtom";
 import { useGameRoom } from "../../hooks/useGameRoom";
 import { cn } from "../../lib/utils";
 import type { ClientPlayer } from "../../types/connection";
@@ -272,38 +269,20 @@ export const PlayerSeat = ({
   isPass,
   scoreResult,
 }: Props) => {
-  const ref = useRef<HTMLDivElement>(null);
-  const setPlayerSeatPositions = useSetAtom(playerSeatPositionsAtom);
   const { isSinglePlay } = useGameRoom();
   const posIndex = displayIndex ?? player.seatIndex;
   const seatPos = seatPositions[posIndex] ?? seatPositions[0];
   const avatarPos = avatarPositions[posIndex] ?? avatarPositions[0];
   const namePos = namePositions[posIndex] ?? namePositions[0];
 
-  // シート位置を報告
-  useEffect(() => {
-    const updatePosition = () => {
-      if (ref.current) {
-        const rect = ref.current.getBoundingClientRect();
-        setPlayerSeatPositions((prev) => ({
-          ...prev,
-          [posIndex]: {
-            x: rect.left + rect.width / 2,
-            y: rect.top + rect.height / 2,
-          },
-        }));
-      }
-    };
-
-    updatePosition();
-    window.addEventListener("resize", updatePosition);
-    return () => window.removeEventListener("resize", updatePosition);
-  }, [posIndex, setPlayerSeatPositions]);
-
   const labelPos = labelPositions[posIndex] ?? labelPositions[0];
 
   return (
-    <div className={cn("absolute size-fit", seatPos)} ref={ref}>
+    // data-seat-player-id はカードを出すアニメーションの開始位置の実測に使う
+    <div
+      className={cn("absolute size-fit", seatPos)}
+      data-seat-player-id={player.sessionId}
+    >
       {/* 手番プレイヤーのパルスアニメーション */}
       {isCurrentPlayer && (
         <div
