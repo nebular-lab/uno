@@ -16,7 +16,8 @@ export default defineConfig({
         /^node:/,
         /^@colyseus/,
         /^colyseus/,
-        /^@dobon-uno/,
+        // game-core は TypeScript のまま公開しているのでバンドルに含める
+        /^@dobon-uno\/shared/,
         /^express$/,
       ],
     },

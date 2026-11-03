@@ -1,7 +1,5 @@
+import { Card, Table, TableContainer } from "@dobon-uno/game-ui";
 import type { ReactNode } from "react";
-import { Card } from "@/components/game/Card";
-import { Table } from "@/components/game/Table";
-import { TableContainer } from "@/components/game/TableContainer";
 import { MockPlayerSeat } from "./MockPlayerSeat";
 import { SlideCard } from "./SlideCard";
 

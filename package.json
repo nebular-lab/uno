@@ -7,6 +7,7 @@
     "dev:server": "pnpm --filter server dev",
     "dev:server:deckout": "DEBUG_DECK_SIZE=31 pnpm --filter server dev",
     "dev:client": "pnpm --filter client dev",
+    "dev:single": "pnpm --filter single dev",
     "build": "pnpm -r build",
     "build:shared": "pnpm --filter @dobon-uno/shared build",
     "test": "pnpm -r test",

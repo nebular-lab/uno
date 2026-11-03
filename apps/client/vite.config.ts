@@ -24,9 +24,10 @@ export default defineConfig(({ mode }) => {
       VitePWA({
         registerType: "autoUpdate",
         manifest: {
-          name: "Dobon UNO",
+          name: "ドボンUNO マルチプレイ",
           short_name: "Dobon",
-          description: "ドボン UNO - オンラインで遊べるカードゲーム",
+          description:
+            "ドボン UNO マルチプレイ - オンラインで友人と遊べるカードゲーム",
           theme_color: "#1a1a2e",
           background_color: "#1a1a2e",
           display: "standalone",

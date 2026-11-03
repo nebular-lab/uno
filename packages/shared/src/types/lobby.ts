@@ -13,7 +13,6 @@ export interface RoomMetadata {
 // ルーム作成オプション
 export interface CreateRoomOptions {
   playerName: string;
-  singlePlay?: boolean; // シングルプレイ（CPU4人と対戦する非公開ルーム）
 }
 
 // ルーム参加オプション

@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn } from "@dobon-uno/game-ui";
 
 interface MockPlayerSeatProps {
   name: string;

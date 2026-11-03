@@ -13,11 +13,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "vite build",
     "test": "vitest run",
-    "test:watch": "vitest",
-    "simulate": "tsx src/cpu/simulation/cli.ts",
-    "cpu-report": "tsx src/cpu/simulation/report/cli.ts",
-    "tune": "tsx src/cpu/simulation/tuning/tune.ts",
-    "train-reading": "tsx src/cpu/simulation/reading/cli.ts"
+    "test:watch": "vitest"
   },
   "author": "",
   "license": "UNLICENSED",
@@ -30,10 +26,10 @@
     "vitest": "5.0.5"
   },
   "dependencies": {
-    "@colyseus/command": "0.3.2",
     "@colyseus/monitor": "0.18.7",
     "@colyseus/playground": "0.18.6",
     "@colyseus/tools": "0.18.11",
+    "@dobon-uno/game-core": "workspace:*",
     "@dobon-uno/shared": "workspace:*",
     "colyseus": "0.18.10"
   }

@@ -1,7 +1,7 @@
 import type { ColyseusTestServer } from "@colyseus/testing";
+import { RESULT_DISPLAY_DURATION } from "@dobon-uno/shared";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { bootTestServer } from "../test/setup";
-import { RESULT_DISPLAY_DURATION } from "../utils/finishGame";
 
 type CardData = { id: string; color: string; value: string; points: number };
 
