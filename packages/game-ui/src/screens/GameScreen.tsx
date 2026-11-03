@@ -370,6 +370,34 @@ export const GameScreen = () => {
         </div>
       )}
 
+      {/* 退席ボタン・設定ボタン・ルールボタン（プレイヤーの +N や点数の表示より下に重ねるため、プレイヤーシートより先に置く） */}
+      <div className="absolute left-4 top-4 flex gap-2">
+        <Button
+          className="size-[80px] bg-slate-700 text-white hover:bg-slate-600"
+          onClick={() => setShowLeaveDialog(true)}
+          size="icon"
+          variant="ghost"
+        >
+          <LogOut className="size-6" />
+        </Button>
+        <Button
+          className="size-[80px] bg-slate-700 text-white hover:bg-slate-600"
+          onClick={() => setShowSettingsDialog(true)}
+          size="icon"
+          variant="ghost"
+        >
+          <Settings className="size-6" />
+        </Button>
+        <Button
+          className="size-[80px] bg-slate-700 text-white hover:bg-slate-600"
+          onClick={() => setShowRuleBook(true)}
+          size="icon"
+          variant="ghost"
+        >
+          <BookOpen className="size-6" />
+        </Button>
+      </div>
+
       {/* プレイヤーシート */}
       {[0, 1, 2, 3, 4, 5].map((displayIndex) => {
         const actualIndex = getActualIndex(displayIndex);
@@ -710,34 +738,6 @@ export const GameScreen = () => {
           )}
         </>
       )}
-
-      {/* 退席ボタン・設定ボタン */}
-      <div className="absolute left-4 top-4 flex gap-2">
-        <Button
-          className="size-[80px] bg-slate-700 text-white hover:bg-slate-600"
-          onClick={() => setShowLeaveDialog(true)}
-          size="icon"
-          variant="ghost"
-        >
-          <LogOut className="size-6" />
-        </Button>
-        <Button
-          className="size-[80px] bg-slate-700 text-white hover:bg-slate-600"
-          onClick={() => setShowSettingsDialog(true)}
-          size="icon"
-          variant="ghost"
-        >
-          <Settings className="size-6" />
-        </Button>
-        <Button
-          className="size-[80px] bg-slate-700 text-white hover:bg-slate-600"
-          onClick={() => setShowRuleBook(true)}
-          size="icon"
-          variant="ghost"
-        >
-          <BookOpen className="size-6" />
-        </Button>
-      </div>
 
       {/* スコアボタン */}
       <ScoreButton onClick={() => setShowScorePanel(true)} />

@@ -76,6 +76,37 @@ export const SettingsDialog = ({ open, onOpenChange }: Props) => {
     updateGameSettings,
   } = useGameRoom();
 
+  const cardPointsSetting = (
+    <Toggle
+      checked={playerSettings.showCardPoints}
+      label="カードにポイントを表示"
+      onChange={(checked) => setPlayerSettings({ showCardPoints: checked })}
+    />
+  );
+
+  const gameSettings = (
+    <>
+      <Toggle
+        checked={showTotalPoints}
+        label="合計ポイントの表示"
+        onChange={(checked) => updateGameSettings({ showTotalPoints: checked })}
+      />
+      <Toggle
+        checked={highlightPlayableCards}
+        label="出せるカードのハイライト"
+        onChange={(checked) =>
+          updateGameSettings({ highlightPlayableCards: checked })
+        }
+      />
+      <SegmentedChoice
+        label="CPUの思考時間"
+        onChange={(ms) => updateGameSettings({ cpuThinkingTime: ms })}
+        options={cpuThinkingTimeOptions}
+        value={cpuThinkingTime}
+      />
+    </>
+  );
+
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent className="w-[420px] p-9">
@@ -85,48 +116,31 @@ export const SettingsDialog = ({ open, onOpenChange }: Props) => {
           </DialogTitle>
         </DialogHeader>
 
-        <div className="mt-4 space-y-1">
-          <h3 className="text-sm font-medium text-slate-400">個人設定</h3>
-          <Toggle
-            checked={playerSettings.showCardPoints}
-            label="カードにポイントを表示"
-            onChange={(checked) =>
-              setPlayerSettings({ showCardPoints: checked })
-            }
-          />
-        </div>
-
-        {isHost && (
-          <div className="mt-6 space-y-1 border-t border-slate-600 pt-4">
-            <h3 className="text-sm font-medium text-slate-400">
-              {isSinglePlay ? "ゲーム設定" : "ゲーム全体設定（ホスト）"}
-            </h3>
-            {!isSinglePlay && (
-              <p className="text-xs text-yellow-400">
-                設定の変更がすぐにプレイヤー全員に反映されます。注意してください。
-              </p>
-            )}
-            <Toggle
-              checked={showTotalPoints}
-              label="合計ポイントの表示"
-              onChange={(checked) =>
-                updateGameSettings({ showTotalPoints: checked })
-              }
-            />
-            <Toggle
-              checked={highlightPlayableCards}
-              label="出せるカードのハイライト"
-              onChange={(checked) =>
-                updateGameSettings({ highlightPlayableCards: checked })
-              }
-            />
-            <SegmentedChoice
-              label="CPUの思考時間"
-              onChange={(ms) => updateGameSettings({ cpuThinkingTime: ms })}
-              options={cpuThinkingTimeOptions}
-              value={cpuThinkingTime}
-            />
+        {isSinglePlay ? (
+          // シングルプレイは自分しかいないので、個人設定とゲーム設定を分けずに並べる
+          <div className="mt-4 space-y-1">
+            {cardPointsSetting}
+            {gameSettings}
           </div>
+        ) : (
+          <>
+            <div className="mt-4 space-y-1">
+              <h3 className="text-sm font-medium text-slate-400">個人設定</h3>
+              {cardPointsSetting}
+            </div>
+
+            {isHost && (
+              <div className="mt-6 space-y-1 border-t border-slate-600 pt-4">
+                <h3 className="text-sm font-medium text-slate-400">
+                  ゲーム全体設定（ホスト）
+                </h3>
+                <p className="text-xs text-yellow-400">
+                  設定の変更がすぐにプレイヤー全員に反映されます。注意してください。
+                </p>
+                {gameSettings}
+              </div>
+            )}
+          </>
         )}
       </DialogContent>
     </Dialog>
