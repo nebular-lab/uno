@@ -1,6 +1,7 @@
 import { useSetAtom } from "jotai";
 import { useEffect, useRef } from "react";
 import { playerSeatPositionsAtom } from "../../atoms/cardPositionAtom";
+import { useGameRoom } from "../../hooks/useGameRoom";
 import { cn } from "../../lib/utils";
 import type { ClientPlayer } from "../../types/connection";
 import { RevealedHand } from "./RevealedHand";
@@ -273,6 +274,7 @@ export const PlayerSeat = ({
 }: Props) => {
   const ref = useRef<HTMLDivElement>(null);
   const setPlayerSeatPositions = useSetAtom(playerSeatPositionsAtom);
+  const { isSinglePlay } = useGameRoom();
   const posIndex = displayIndex ?? player.seatIndex;
   const seatPos = seatPositions[posIndex] ?? seatPositions[0];
   const avatarPos = avatarPositions[posIndex] ?? avatarPositions[0];
@@ -419,7 +421,7 @@ export const PlayerSeat = ({
         <PlayerStatusBadge
           cardCount={player.cardCount}
           isCurrentPlayer={isCurrentPlayer}
-          isHost={player.isHost}
+          isHost={player.isHost && !isSinglePlay}
           isPlaying={isPlaying}
           size={70}
         />

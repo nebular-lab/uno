@@ -21,6 +21,7 @@ import { Table } from "../components/game/Table";
 import { TableContainer } from "../components/game/TableContainer";
 import { TurnDirectionIndicator } from "../components/game/TurnDirectionIndicator";
 import { SinglePlayRecordDialog } from "../components/SinglePlayRecordDialog";
+import { TutorialVideoDialog } from "../components/TutorialVideoDialog";
 import { Button } from "../components/ui/button";
 import {
   Dialog,
@@ -873,12 +874,19 @@ export const GameScreen = () => {
         />
       )}
 
-      {/* ルールブック */}
-      <Dialog onOpenChange={setShowRuleBook} open={showRuleBook}>
-        <DialogContent className="max-w-[480px] h-[520px] p-0 overflow-hidden">
-          <RuleBook />
-        </DialogContent>
-      </Dialog>
+      {/* ルール（シングルプレイはルール説明動画） */}
+      {isSinglePlay ? (
+        <TutorialVideoDialog
+          onOpenChange={setShowRuleBook}
+          open={showRuleBook}
+        />
+      ) : (
+        <Dialog onOpenChange={setShowRuleBook} open={showRuleBook}>
+          <DialogContent className="max-w-[480px] h-[520px] p-0 overflow-hidden">
+            <RuleBook />
+          </DialogContent>
+        </Dialog>
+      )}
     </TableContainer>
   );
 };

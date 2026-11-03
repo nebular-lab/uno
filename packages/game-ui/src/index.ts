@@ -21,6 +21,7 @@ export {
   useScalableContainer,
 } from "./components/ScalableContainer";
 export { SinglePlayRecordDialog } from "./components/SinglePlayRecordDialog";
+export { TutorialVideoDialog } from "./components/TutorialVideoDialog";
 export { Button, buttonVariants } from "./components/ui/button";
 export {
   Dialog,
