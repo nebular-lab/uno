@@ -20,6 +20,11 @@ import { NormalFinishCommand } from "./NormalFinishCommand";
  * - 「全員」にはドボンした人の手札も含む
  * - ドボンされた人が出したカードの点数も含む
  * - 複数人がドボンした場合、それぞれに全員分を支払う
+ *
+ * 最初の場札へのドボン（誰もカードを出していないので dobonTargetId が空）:
+ * - ドボン返しはない
+ * - 上がりと同じく、ドボンしていない各プレイヤーが、ドボンした人それぞれに自分の手札の合計点数を支払う
+ *   （最初の手番の人も他のプレイヤーと同じ扱い）
  */
 export class ResolveDobonWaitCommand extends Command {
   validate(): boolean {
@@ -36,7 +41,9 @@ export class ResolveDobonWaitCommand extends Command {
 
     if (this.state.dobonPlayerIds.length > 0) {
       this.room.turnTimerService.stopAllTimers();
-      if (this.checkCanDobonReturn()) {
+      if (this.state.dobonTargetId === "") {
+        this.finalizeFirstCardDobonFinish();
+      } else if (this.checkCanDobonReturn()) {
         this.setupDobonReturnWait();
       } else {
         this.finalizeDobonFinish();
@@ -178,17 +185,60 @@ export class ResolveDobonWaitCommand extends Command {
 
     // ドボンした人にスコアを加算
     const winnings = totalHandPoints * rateMultiplier;
-    let firstDobonPlayerId = "";
     for (const dobonPlayerId of this.state.dobonPlayerIds) {
       const dobonPlayer = this.state.players.get(dobonPlayerId);
       if (dobonPlayer) {
         dobonPlayer.score += winnings;
         scoreChanges.set(dobonPlayerId, winnings);
-        if (firstDobonPlayerId === "") {
-          firstDobonPlayerId = dobonPlayerId;
-        }
       }
     }
+
+    this.finishWithDobon(scoreChanges);
+  }
+
+  /**
+   * 最初の場札へのドボン確定処理（点数計算、result遷移）
+   * 上がりと同じく、ドボンしていない各プレイヤーが、ドボンした人それぞれに自分の手札の合計点数を支払う
+   */
+  private finalizeFirstCardDobonFinish(): void {
+    this.state.phase = "result";
+
+    const rateMultiplier = this.state.rateMultiplier;
+    const dobonPlayerIds = this.state.dobonPlayerIds.filter((id) =>
+      this.state.players.has(id),
+    );
+    const scoreChanges = new Map<string, number>();
+
+    let winnings = 0;
+    for (const [playerId, player] of this.state.players.entries()) {
+      if (dobonPlayerIds.includes(playerId)) continue;
+
+      const handTotal = player.myHand.reduce(
+        (sum, card) => sum + card.points,
+        0,
+      );
+      const loss = handTotal * rateMultiplier * dobonPlayerIds.length;
+      player.score -= loss;
+      scoreChanges.set(playerId, -loss);
+      winnings += handTotal * rateMultiplier;
+    }
+
+    for (const dobonPlayerId of dobonPlayerIds) {
+      const dobonPlayer = this.state.players.get(dobonPlayerId);
+      if (!dobonPlayer) continue;
+      dobonPlayer.score += winnings;
+      scoreChanges.set(dobonPlayerId, winnings);
+    }
+
+    this.finishWithDobon(scoreChanges);
+  }
+
+  /**
+   * ドボンでゲームを終える共通処理（結果の記録、次のゲームの準備）
+   */
+  private finishWithDobon(scoreChanges: Map<string, number>): void {
+    const firstDobonPlayerId =
+      this.state.dobonPlayerIds.find((id) => this.state.players.has(id)) ?? "";
 
     // GameResultを作成してgameHistoryに追加
     // 複数人ドボンの場合、最初にドボンした人をwinnerIdとする

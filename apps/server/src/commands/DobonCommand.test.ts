@@ -84,7 +84,14 @@ describe("DobonCommand", () => {
   /**
    * ゲームをplayingフェーズまで進め、setHand関数を返す
    */
-  async function setupGame(firstCard: CardData) {
+  async function setupGame(
+    firstCard: CardData,
+    hands: [CardData[], CardData[], CardData[]] = [
+      dummyHand(100),
+      dummyHand(200),
+      dummyHand(300),
+    ],
+  ) {
     const room = await colyseus.createRoom("game", {});
 
     const client1 = await colyseus.connectTo(room, { playerName: "Player1" });
@@ -92,12 +99,7 @@ describe("DobonCommand", () => {
     const client3 = await colyseus.connectTo(room, { playerName: "Player3" });
 
     // テスト用デッキを設定
-    const testDeck = createTestDeckWithPlayerHands(
-      firstCard,
-      dummyHand(100),
-      dummyHand(200),
-      dummyHand(300),
-    );
+    const testDeck = createTestDeckWithPlayerHands(firstCard, ...hands);
     client1.send("__setDeck", testDeck);
     await new Promise((resolve) => setTimeout(resolve, 50));
 
@@ -609,6 +611,115 @@ describe("DobonCommand", () => {
       expect(room.state.phase).toBe("result");
       expect(room.state.dobonPlayerIds.length).toBe(1);
       expect(room.state.dobonPlayerIds[0]).toBe(client1.sessionId);
+    });
+  });
+
+  describe("最初の場札へのドボン", () => {
+    // 合計5点の手札（最初の場札の赤5にドボンできる）
+    const fivePointHand = (prefix: string): CardData[] => [
+      { id: `${prefix}-r3`, color: "red", value: "3", points: 3 },
+      { id: `${prefix}-r2`, color: "red", value: "2", points: 2 },
+      ...Array.from({ length: 5 }, (_, i) => ({
+        id: `${prefix}-zero-${i}`,
+        color: "yellow",
+        value: "0",
+        points: 0,
+      })),
+    ];
+
+    const handTotal = (
+      room: Awaited<ReturnType<typeof setupGame>>["room"],
+      sessionId: string,
+    ) =>
+      (room.state.players.get(sessionId)?.myHand ?? []).reduce(
+        (sum: number, card: CardData) => sum + card.points,
+        0,
+      );
+
+    it("ドボンしていない各プレイヤーが、ドボンした人に自分の手札の合計点数を支払う", async () => {
+      const { room, client1, client2, client3 } = await setupGame(
+        testCards.red5,
+        [fivePointHand("p1"), dummyHand(200), dummyHand(300)],
+      );
+      expect(room.state.players.get(client1.sessionId)?.canDobon).toBe(true);
+
+      const p2Total = handTotal(room, client2.sessionId);
+      const p3Total = handTotal(room, client3.sessionId);
+
+      client1.send("dobon");
+      await new Promise((r) => setTimeout(r, 200));
+
+      expect(room.state.phase).toBe("result");
+      // 誰もカードを出していないので、ドボンされた人はいない
+      expect(room.state.dobonTargetId).toBe("");
+
+      const result = room.state.gameHistory[room.state.gameHistory.length - 1];
+      expect(result.finishType).toBe("dobon");
+      expect(result.winnerId).toBe(client1.sessionId);
+      // 場札の点数は含まない
+      expect(result.scoreChanges.get(client1.sessionId)).toBe(
+        p2Total + p3Total,
+      );
+      expect(result.scoreChanges.get(client2.sessionId)).toBe(-p2Total);
+      expect(result.scoreChanges.get(client3.sessionId)).toBe(-p3Total);
+      expect(room.state.nextGameStartPlayerId).toBe(client1.sessionId);
+    });
+
+    it("最初の手番の人も他のプレイヤーと同じく自分の手札の合計点数を支払う", async () => {
+      const { room, client1, client2, client3 } = await setupGame(
+        testCards.red5,
+        [fivePointHand("p1"), fivePointHand("p2"), fivePointHand("p3")],
+      );
+      const clients = [client1, client2, client3];
+      const firstTurnId = room.state.currentTurnPlayerId;
+      const dobonClient = clients.find((c) => c.sessionId !== firstTurnId);
+      if (!dobonClient) throw new Error("dobonClient not found");
+
+      // 最初の手番の人の手札（5点）とドボンした人の手札（5点）が同じでも、ドボン返しにはならない
+      dobonClient.send("dobon");
+      for (const c of clients) {
+        if (c !== dobonClient) c.send("skipDobon");
+      }
+      await new Promise((r) => setTimeout(r, 200));
+
+      expect(room.state.phase).toBe("result");
+      for (const player of room.state.players.values()) {
+        expect(player.canDobonReturn).toBe(false);
+      }
+
+      const result = room.state.gameHistory[room.state.gameHistory.length - 1];
+      expect(result.scoreChanges.get(firstTurnId)).toBe(-5);
+      expect(result.scoreChanges.get(dobonClient.sessionId)).toBe(10);
+    });
+
+    it("最初の手番の人もドボンでき、他のドボンした人と同じく受け取る", async () => {
+      const { room, client1, client2, client3 } = await setupGame(
+        testCards.red5,
+        [fivePointHand("p1"), fivePointHand("p2"), fivePointHand("p3")],
+      );
+      const clients = [client1, client2, client3];
+      const firstTurnId = room.state.currentTurnPlayerId;
+      const firstTurnClient = clients.find((c) => c.sessionId === firstTurnId);
+      const otherDobonClient = clients.find((c) => c.sessionId !== firstTurnId);
+      const payerClient = clients.find(
+        (c) => c !== firstTurnClient && c !== otherDobonClient,
+      );
+      if (!firstTurnClient || !otherDobonClient || !payerClient) {
+        throw new Error("clients not found");
+      }
+      expect(room.state.players.get(firstTurnId)?.canDobon).toBe(true);
+
+      firstTurnClient.send("dobon");
+      otherDobonClient.send("dobon");
+      payerClient.send("skipDobon");
+      await new Promise((r) => setTimeout(r, 200));
+
+      expect(room.state.phase).toBe("result");
+      const result = room.state.gameHistory[room.state.gameHistory.length - 1];
+      // ドボンしていない人が、ドボンした2人それぞれに自分の手札の合計点数を支払う
+      expect(result.scoreChanges.get(payerClient.sessionId)).toBe(-10);
+      expect(result.scoreChanges.get(firstTurnId)).toBe(5);
+      expect(result.scoreChanges.get(otherDobonClient.sessionId)).toBe(5);
     });
   });
 

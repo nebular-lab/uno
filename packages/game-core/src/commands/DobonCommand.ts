@@ -45,10 +45,8 @@ export class DobonCommand extends Command<Payload> {
     player.canDobon = false;
     revealHand(player);
 
-    // ドボンされた人を特定（カードを出した人 = currentTurnPlayerId）
-    if (this.state.dobonTargetId === "") {
-      this.state.dobonTargetId = this.state.currentTurnPlayerId;
-    }
+    // ドボンされた人（dobonTargetId）はカードを出したときに PlayCardCommand が設定する。
+    // 最初の場札へのドボンでは誰もカードを出していないので空のまま（ドボンされた人はいない）
 
     // ゲーム進行を中断: 全プレイヤーのアクションを無効化（ドボン返し可能者を除く）
     this.disableAllPlayerActions();
