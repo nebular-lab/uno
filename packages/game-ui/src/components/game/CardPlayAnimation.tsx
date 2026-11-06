@@ -151,7 +151,11 @@ export const CardPlayAnimation = () => {
 
   return (
     <AnimatePresence>
-      <div className="pointer-events-none fixed inset-0 z-50">
+      {/* アニメーションごとに作り直し、新しいアニメーションを必ず出発点から再生する */}
+      <div
+        className="pointer-events-none fixed inset-0 z-50"
+        key={animation.id}
+      >
         {animation.cards.map((card, index) => (
           <AnimatedCard
             card={card}

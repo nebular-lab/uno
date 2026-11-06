@@ -27,6 +27,9 @@ import { fieldCardPositionAtom } from "./cardPositionAtom";
 // Jotaiのデフォルトストア（アニメーション用）
 const store = getDefaultStore();
 
+// アニメーションIDを一意にするための連番（同じミリ秒に複数のイベントが届いても区別できるようにする）
+let animationSeq = 0;
+
 // ゲームルーム接続状態
 export const gameStateAtom = atom<GameRoomState>({ status: "idle" });
 
@@ -260,7 +263,7 @@ export const setupRoomStateSync = (
     }
 
     const animation: CardAnimation = {
-      id: `play-${Date.now()}`,
+      id: `play-${Date.now()}-${++animationSeq}`,
       type: "playCard",
       playerId: event.playerId,
       seatId: event.seatId,
@@ -281,15 +284,18 @@ export const setupRoomStateSync = (
     store.set(currentAnimationAtom, animation);
 
     // アニメーション完了後にクリア
+    // 再生中に次のアニメーションが始まっていたら、それを途中で消さないよう自分のときだけクリアする
     setTimeout(() => {
-      store.set(currentAnimationAtom, null);
+      if (store.get(currentAnimationAtom)?.id === animation.id) {
+        store.set(currentAnimationAtom, null);
+      }
     }, event.animationDuration);
   });
 
   // ドローアニメーションイベントを購読
   room.onMessage("drawCardAnimation", (event: DrawCardAnimationEvent) => {
     const animation: DrawCardAnimation = {
-      id: `draw-${Date.now()}`,
+      id: `draw-${Date.now()}-${++animationSeq}`,
       playerId: event.playerId,
       seatId: event.seatId,
       cardCount: event.cardCount,
@@ -299,9 +305,11 @@ export const setupRoomStateSync = (
 
     store.set(currentDrawAnimationAtom, animation);
 
-    // アニメーション完了後にクリア
+    // アニメーション完了後にクリア（次のアニメーションが始まっていたら消さない）
     setTimeout(() => {
-      store.set(currentDrawAnimationAtom, null);
+      if (store.get(currentDrawAnimationAtom)?.id === animation.id) {
+        store.set(currentDrawAnimationAtom, null);
+      }
     }, event.animationDuration);
   });
 
