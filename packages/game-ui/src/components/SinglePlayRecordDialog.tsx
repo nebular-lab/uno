@@ -1,5 +1,9 @@
 import { useAtomValue } from "jotai";
-import { singlePlayRecordsAtom } from "../atoms/singlePlayRecordAtom";
+import {
+  getSinglePlayOutcome,
+  type SinglePlayOutcome,
+  singlePlayRecordsAtom,
+} from "../atoms/singlePlayRecordAtom";
 import { cn } from "../lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 
@@ -108,8 +112,12 @@ const SummaryItem = ({
   </div>
 );
 
+// 対戦数に対する割合（%、小数第1位まで）
+const formatRate = (count: number, total: number) =>
+  `${Math.round((count / total) * 1000) / 10}%`;
+
 /**
- * シングルプレイの成績（通算収支・平均収支・対戦数・累計収支の推移）
+ * シングルプレイの成績（通算収支・平均収支・対戦数・各結果の割合・累計収支の推移）
  */
 const SinglePlayRecordView = () => {
   const records = useAtomValue(singlePlayRecordsAtom);
@@ -123,6 +131,17 @@ const SinglePlayRecordView = () => {
   // 1ゲームあたりの平均収支（小数第1位まで）
   const average =
     records.length > 0 ? Math.round((total / records.length) * 10) / 10 : 0;
+
+  // 結果ごとのゲーム数
+  const outcomeCounts: Record<SinglePlayOutcome, number> = {
+    agari: 0,
+    dobon: 0,
+    doboned: 0,
+    none: 0,
+  };
+  for (const record of records) {
+    outcomeCounts[getSinglePlayOutcome(record)]++;
+  }
 
   if (records.length === 0) {
     return (
@@ -147,6 +166,20 @@ const SinglePlayRecordView = () => {
         />
         <SummaryItem label="対戦数" value={`${records.length}`} />
       </div>
+      <div className="flex gap-3">
+        <SummaryItem
+          label="ドボン率"
+          value={formatRate(outcomeCounts.dobon, records.length)}
+        />
+        <SummaryItem
+          label="上がり率"
+          value={formatRate(outcomeCounts.agari, records.length)}
+        />
+        <SummaryItem
+          label="被ドボン率"
+          value={formatRate(outcomeCounts.doboned, records.length)}
+        />
+      </div>
       <div className="flex min-h-0 flex-1 flex-col rounded-xl border border-slate-700 bg-slate-800/50 p-3">
         <div className="mb-1 text-xs text-slate-400">累計収支の推移</div>
         <div className="min-h-0 flex-1">
@@ -170,7 +203,7 @@ export const SinglePlayRecordDialog = ({ open, onOpenChange }: Props) => (
   <Dialog onOpenChange={onOpenChange} open={open}>
     <DialogContent
       className="flex w-[90%] max-w-[1100px] flex-col overflow-hidden p-6"
-      style={{ height: "520px" }}
+      style={{ height: "600px" }}
     >
       <DialogHeader>
         <DialogTitle className="text-xl font-bold text-white">成績</DialogTitle>
