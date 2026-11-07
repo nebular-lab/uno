@@ -1,5 +1,8 @@
 import {
   Button,
+  Dialog,
+  DialogContent,
+  RuleBook,
   SinglePlayRecordDialog,
   TutorialVideoDialog,
 } from "@dobon-uno/game-ui";
@@ -11,6 +14,7 @@ export function TitleScreen() {
   const startSinglePlay = useSetAtom(startSinglePlayAtom);
   const [showRecord, setShowRecord] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [showRuleBook, setShowRuleBook] = useState(false);
 
   return (
     <div className="h-full flex flex-col items-center justify-center bg-gradient-to-b from-slate-900 to-slate-800 text-foreground relative overflow-hidden">
@@ -49,12 +53,24 @@ export function TitleScreen() {
           >
             ルール説明動画
           </Button>
+          <Button
+            className="text-base h-12 bg-slate-700 hover:bg-slate-600 border-0 font-medium shadow transition-all hover:scale-[1.02] text-slate-200"
+            onClick={() => setShowRuleBook(true)}
+          >
+            ルール説明
+          </Button>
         </div>
       </div>
 
       <SinglePlayRecordDialog onOpenChange={setShowRecord} open={showRecord} />
 
       <TutorialVideoDialog onOpenChange={setShowTutorial} open={showTutorial} />
+
+      <Dialog onOpenChange={setShowRuleBook} open={showRuleBook}>
+        <DialogContent className="max-w-[480px] h-[520px] p-0 overflow-hidden">
+          <RuleBook />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

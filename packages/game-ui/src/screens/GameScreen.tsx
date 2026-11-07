@@ -21,7 +21,6 @@ import { Table } from "../components/game/Table";
 import { TableContainer } from "../components/game/TableContainer";
 import { TurnDirectionIndicator } from "../components/game/TurnDirectionIndicator";
 import { SinglePlayRecordDialog } from "../components/SinglePlayRecordDialog";
-import { TutorialVideoDialog } from "../components/TutorialVideoDialog";
 import { Button } from "../components/ui/button";
 import {
   Dialog,
@@ -388,14 +387,17 @@ export const GameScreen = () => {
         >
           <Settings className="size-6" />
         </Button>
-        <Button
-          className="size-[80px] bg-slate-700 text-white hover:bg-slate-600"
-          onClick={() => setShowRuleBook(true)}
-          size="icon"
-          variant="ghost"
-        >
-          <BookOpen className="size-6" />
-        </Button>
+        {/* シングルプレイはタイトル画面でルールを見るので、ゲーム中は出さない */}
+        {!isSinglePlay && (
+          <Button
+            className="size-[80px] bg-slate-700 text-white hover:bg-slate-600"
+            onClick={() => setShowRuleBook(true)}
+            size="icon"
+            variant="ghost"
+          >
+            <BookOpen className="size-6" />
+          </Button>
+        )}
       </div>
 
       {/* プレイヤーシート */}
@@ -874,13 +876,8 @@ export const GameScreen = () => {
         />
       )}
 
-      {/* ルール（シングルプレイはルール説明動画） */}
-      {isSinglePlay ? (
-        <TutorialVideoDialog
-          onOpenChange={setShowRuleBook}
-          open={showRuleBook}
-        />
-      ) : (
+      {/* ルール（シングルプレイはタイトル画面で見る） */}
+      {!isSinglePlay && (
         <Dialog onOpenChange={setShowRuleBook} open={showRuleBook}>
           <DialogContent className="max-w-[480px] h-[520px] p-0 overflow-hidden">
             <RuleBook />
