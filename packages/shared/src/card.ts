@@ -92,9 +92,8 @@ const COLOR_ORDER: Record<string, number> = {
 };
 
 /**
- * カードソート用の値優先度
- * 仕様: 数字 → 記号カード(skip, reverse) → ドローカード(draw2) → force-change
- * ワイルド系: wild → draw4
+ * カードソート用の値優先度（同じカテゴリ・同じ色の中での順番）
+ * 数字は 0 → 9、記号は skip → reverse → draw2、ワイルド系は wild → draw4
  */
 const VALUE_ORDER: Record<string, number> = {
   "0": 0,
@@ -117,23 +116,24 @@ const VALUE_ORDER: Record<string, number> = {
 
 /**
  * カードのカテゴリを取得
- * 0=数字, 1=記号, 2=特殊（force-change, wild, draw4）
+ * 0=数字, 1=強制色変え, 2=記号（skip, reverse, draw2）, 3=ワイルド系（wild, draw4）
  */
 function getCategory(value: string): number {
   if (/^[0-9]$/.test(value)) return 0; // 数字
-  if (value === "skip" || value === "reverse" || value === "draw2") return 1; // 記号
-  return 2; // 特殊（force-change, wild, draw4）
+  if (value === "force-change") return 1; // 強制色変え
+  if (value === "skip" || value === "reverse" || value === "draw2") return 2; // 記号
+  return 3; // ワイルド系（wild, draw4）
 }
 
 /**
  * カードをソートするための比較関数
- * カテゴリ優先（数字→記号→特殊）→ 同カテゴリ内で色順 → 同色内で値順
+ * カテゴリ優先（数字→強制色変え→記号→ワイルド系）→ 同カテゴリ内で色順 → 同色内で値順
  */
 export function compareCards(
   a: { color: string; value: string },
   b: { color: string; value: string },
 ): number {
-  // カテゴリで比較（数字→記号→特殊）
+  // カテゴリで比較（数字→強制色変え→記号→ワイルド系）
   const catA = getCategory(a.value);
   const catB = getCategory(b.value);
   if (catA !== catB) {
